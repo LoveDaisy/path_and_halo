@@ -36,7 +36,9 @@ bending_angle_min = min(bending_angle);
 
 %%
 sun_altitude = 10;  % degree
-ray_in = -[cosd(sun_altitude) * cosd(-90), cosd(sun_altitude) * sind(-90), sind(sun_altitude)];
+sun_longitude = 0;
+ray_in = -[cosd(sun_altitude) * cosd(sun_longitude), ...
+    cosd(sun_altitude) * sind(sun_longitude), sind(sun_altitude)];
 ray_out = -r0;
 
 crystal_zenith_mean = 90;
@@ -58,9 +60,6 @@ for i = 1:n_pix
     curr_r0 = r0(curr_idx, :);
     curr_r2 = r2(curr_idx, :);
     curr_len = sum(curr_idx);
-    if curr_len > 100
-        fprintf('!!!');
-    end
     
     % find rotation between (r0 + r2) and (ray_in + ray_out)
     tmp_vec_a = curr_r0 + curr_r2;
