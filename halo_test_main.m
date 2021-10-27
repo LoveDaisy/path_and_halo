@@ -1,8 +1,14 @@
 clear; close all; clc;
 
 n = 1.31;
-norm1 = [-sqrt(3)/2, 1/2, 0];  % face 3
-norm2 = [sqrt(3)/2, 1/2, 0];   % face 5
+norm1 = [0, 0, 1];
+norm2 = [0, 0, -1];
+norm3 = [-sqrt(3)/2, 1/2, 0];   % face 3
+norm4 = [0, 1, 0];              % face 4
+norm5 = [sqrt(3)/2, 1/2, 0];    % face 5
+norm6 = [sqrt(3)/2, -1/2, 0];   % face 6
+norm7 = [0, -1, 0];             % face 7
+norm8 = [-sqrt(3)/2, -1/2, 0];  % face 8
 
 n_side = 2^6;
 n_pix = nSide2nPix(n_side);
@@ -16,10 +22,13 @@ r0_ll = [atan2d(r0(:, 2), r0(:, 1)), asind(r0(:, 3) ./ sqrt(sum(r0.^2, 2)))];  %
 r1 = nan(size(r0));
 r2 = nan(size(r0));
 
-valid_idx = r0 * norm1' < 0;
-r1(valid_idx, :) = refract(r0(valid_idx, :), norm1, 1, n);
-valid_idx = valid_idx & (r1 * norm2' > 0);
-r2(valid_idx, :) = refract(r1(valid_idx, :), norm2, n, 1);
+first_norm = norm4;
+second_norm = norm6;
+
+valid_idx = r0 * first_norm' < 0;
+r1(valid_idx, :) = refract(r0(valid_idx, :), first_norm, 1, n);
+valid_idx = valid_idx & (r1 * second_norm' > 0);
+r2(valid_idx, :) = refract(r1(valid_idx, :), second_norm, n, 1);
 valid_idx = valid_idx & sum(r2.^2, 2) > 1e-4;
 r2(~valid_idx, :) = nan;
 
