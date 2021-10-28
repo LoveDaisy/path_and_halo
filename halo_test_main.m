@@ -10,7 +10,7 @@ norm6 = [sqrt(3)/2, -1/2, 0];   % face 6
 norm7 = [0, -1, 0];             % face 7
 norm8 = [-sqrt(3)/2, -1/2, 0];  % face 8
 
-n_side = 2^6;
+n_side = 2^7;
 n_pix = nSide2nPix(n_side);
 dr = sqrt(4 * pi / n_pix) * 180 / pi * 0.5;
 
@@ -44,7 +44,7 @@ bending_angle_min = min(bending_angle);
 % box on;
 
 %%
-sun_altitude = 10;  % degree
+sun_altitude = 20;  % degree
 sun_longitude = 0;
 ray_in = -[cosd(sun_altitude) * cosd(sun_longitude), ...
     cosd(sun_altitude) * sind(sun_longitude), sind(sun_altitude)];
@@ -53,9 +53,29 @@ ray_out = -r0;
 crystal_zenith_mean = 90;
 crystal_zenith_std = 1;
 
-halo_img = zeros(n_pix, 1);
-for i = 1:n_pix
-    curr_ray_out = ray_out(i, :);
+img_wid = ceil(380 / dr);
+img_hei = img_wid / 2;
+lon_data = linspace(0, 360, img_wid);
+lat_data = linspace(-90, 90, img_hei);
+[lon, lat] = meshgrid(lon_data, lat_data);
+total_pix = numel(lon);
+halo_img = zeros(img_hei, img_wid);
+cm = repmat((0:255)', 1, 3) / 255;
+
+progress_count = 0;
+progress_bin = 0.005;
+for i = 1:total_pix
+    progress_count = progress_count + 1 / total_pix;
+    if progress_count > progress_bin
+        fprintf('processing %05.2f%%...\n', i / total_pix * 100);
+        progress_count = progress_count - progress_bin;
+        figure(2); clf;
+        imagesc(lon_data, lat_data, halo_img);
+        colormap(cm);
+        axis equal; axis tight;
+        drawnow;
+    end
+    curr_ray_out = [cosd(lat(i)) * cosd(lon(i)), cosd(lat(i)) * sind(lon(i)), sind(lat(i))];
     curr_bending = acosd(dot(curr_ray_out, ray_in));
     if curr_bending < bending_angle_min || curr_bending > bending_angle_max
         continue;
@@ -112,7 +132,8 @@ end
 
 %%
 figure(2); clf;
-scatter(r0_ll(:, 1), r0_ll(:, 2), 10, halo_img, 'filled');
+show_img = halo_img / max(halo_img(:));
+imshow(show_img.^.85 * 2.5);
+colormap(cm);
 axis equal; axis tight;
-box on;
 
