@@ -10,7 +10,7 @@ norm6 = [sqrt(3)/2, -1/2, 0];   % face 6
 norm7 = [0, -1, 0];             % face 7
 norm8 = [-sqrt(3)/2, -1/2, 0];  % face 8
 
-n_side = 2^7;
+n_side = 2^6;
 n_pix = nSide2nPix(n_side);
 dr = sqrt(4 * pi / n_pix) * 180 / pi * 0.5;
 
@@ -45,17 +45,18 @@ bending_angle_min = min(bending_angle);
 
 %%
 sun_altitude = 20;  % degree
-sun_longitude = 0;
+sun_longitude = 180;
 ray_in = -[cosd(sun_altitude) * cosd(sun_longitude), ...
     cosd(sun_altitude) * sind(sun_longitude), sind(sun_altitude)];
 ray_out = -r0;
 
 crystal_zenith_mean = 90;
-crystal_zenith_std = 1;
+crystal_zenith_std = 0.2;
 
-img_wid = ceil(380 / dr);
+img_dr = dr * 4;
+img_wid = ceil(180 / img_dr) * 2;
 img_hei = img_wid / 2;
-lon_data = linspace(0, 360, img_wid);
+lon_data = linspace(-180, 180, img_wid);
 lat_data = linspace(-90, 90, img_hei);
 [lon, lat] = meshgrid(lon_data, lat_data);
 total_pix = numel(lon);
@@ -63,12 +64,14 @@ halo_img = zeros(img_hei, img_wid);
 cm = repmat((0:255)', 1, 3) / 255;
 
 progress_count = 0;
-progress_bin = 0.005;
+progress_bin = 0.002;
+curr_len = 0;
+search_size = zeros(total_pix, 1);
 for i = 1:total_pix
     progress_count = progress_count + 1 / total_pix;
-    if progress_count > progress_bin
+    if progress_count > progress_bin && curr_len > 0
         fprintf('processing %05.2f%%...\n', i / total_pix * 100);
-        progress_count = progress_count - progress_bin;
+        progress_count = progress_count - floor(progress_count / progress_bin) * progress_bin;
         figure(2); clf;
         imagesc(lon_data, lat_data, halo_img);
         colormap(cm);
@@ -78,23 +81,24 @@ for i = 1:total_pix
     curr_ray_out = [cosd(lat(i)) * cosd(lon(i)), cosd(lat(i)) * sind(lon(i)), sind(lat(i))];
     curr_bending = acosd(dot(curr_ray_out, ray_in));
     if curr_bending < bending_angle_min || curr_bending > bending_angle_max
+        curr_len = 0;
         continue;
     end
     
-    curr_idx = abs(bending_angle - curr_bending) < dr & valid_idx;
+    curr_idx = abs(bending_angle - curr_bending) < img_dr & valid_idx;
     if ~any(curr_idx)
+        curr_len = 0;
         continue;
     end
     
     curr_r0 = r0(curr_idx, :);
     curr_r2 = r2(curr_idx, :);
     curr_len = sum(curr_idx);
+    search_size(i) = curr_len;
     
-    % find rotation between (r0 + r2) and (ray_in + ray_out)
-    tmp_vec_a = curr_r0 + curr_r2;
-    tmp_vec_a = bsxfun(@times, tmp_vec_a, 1./sqrt(sum(tmp_vec_a.^2, 2)));
-    tmp_vec_b = ray_in + curr_ray_out;
-    tmp_vec_b = tmp_vec_b / norm(tmp_vec_b);
+    % find rotation between r0 and ray_in
+    tmp_vec_a = curr_r0;
+    tmp_vec_b = ray_in;
     q1_axis = zeros(size(tmp_vec_a));
     for j = 1:curr_len
         q1_axis(j, :) = cross(tmp_vec_a(j, :), tmp_vec_b);
@@ -104,20 +108,20 @@ for i = 1:total_pix
     q1_axis = bsxfun(@times, q1_axis, 1./sqrt(sum(q1_axis.^2, 2)));
     q1 = [cosd(-q1_theta/2), bsxfun(@times, sind(-q1_theta/2), q1_axis)];
     
-    % find rotation between rotated (r0 - r2) and (ray_in - ray_out)
-    tmp_vec_a = quatrotate(q1, curr_r0 - curr_r2);
+    % find rotation between rotated r2 and ray_out
+    tmp_vec_a = quatrotate(q1, curr_r2);
+    tmp_vec_a = tmp_vec_a - bsxfun(@times, tmp_vec_a * ray_in', ray_in);
     tmp_vec_a = bsxfun(@times, tmp_vec_a, 1./sqrt(sum(tmp_vec_a.^2, 2)));
-    tmp_vec_b = ray_in - curr_ray_out;
+    tmp_vec_b = curr_ray_out;
+    tmp_vec_b = tmp_vec_b - (tmp_vec_b * ray_in') * ray_in;
     tmp_vec_b = tmp_vec_b / norm(tmp_vec_b);
-    q2_axis = zeros(size(tmp_vec_a));
-    for j = 1:curr_len
-        q2_axis(j, :) = cross(tmp_vec_a(j, :), tmp_vec_b);
-    end
-    tmp_cos = tmp_vec_a * tmp_vec_b';
-    q2_theta = atan2d(sqrt(sum(q2_axis.^2, 2)), tmp_cos);
-    q2_axis0 = (ray_in + curr_ray_out) / norm(ray_in + curr_ray_out);
-    q2_axis = bsxfun(@times, q2_axis0, sign(q2_axis * q2_axis0'));
+    q2_axis = ray_in;
+    q2_theta = acosd(tmp_vec_a * tmp_vec_b');
     q2 = [cosd(-q2_theta/2), bsxfun(@times, sind(-q2_theta/2), q2_axis)];
+    q3 = [cosd(q2_theta/2), bsxfun(@times, sind(q2_theta/2), q2_axis)];
+    curr_idx = quatrotate(q2, tmp_vec_a) * tmp_vec_b' > ...
+        quatrotate(q3, tmp_vec_a) * tmp_vec_b';
+    q2(~curr_idx, :) = q3(~curr_idx, :);
     
     % total quaternion
     q_all = quatmultiply(q1, q2);
