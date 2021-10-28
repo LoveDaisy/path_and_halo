@@ -1,14 +1,16 @@
 clear; close all; clc;
 
 n = 1.31;
-norm1 = [0, 0, 1];
-norm2 = [0, 0, -1];
-norm3 = [-sqrt(3)/2, 1/2, 0];   % face 3
-norm4 = [0, 1, 0];              % face 4
-norm5 = [sqrt(3)/2, 1/2, 0];    % face 5
-norm6 = [sqrt(3)/2, -1/2, 0];   % face 6
-norm7 = [0, -1, 0];             % face 7
-norm8 = [-sqrt(3)/2, -1/2, 0];  % face 8
+prism_h = 1;
+face_norm = [0, 0, 1;     % face 1
+    0, 0, -1;             % face 2
+    -sqrt(3)/2, 1/2, 0;   % face 3
+    0, 1, 0;              % face 4
+    sqrt(3)/2, 1/2, 0;    % face 5
+    sqrt(3)/2, -1/2, 0;   % face 6
+    0, -1, 0;             % face 7
+    -sqrt(3)/2, -1/2, 0]; % face 8
+face_area = [sqrt(3) / 2; sqrt(3) / 2; prism_h; prism_h; prism_h; prism_h; prism_h; prism_h];
 
 n_side = 2^6;
 n_pix = nSide2nPix(n_side);
@@ -22,26 +24,21 @@ r0_ll = [atan2d(r0(:, 2), r0(:, 1)), asind(r0(:, 3) ./ sqrt(sum(r0.^2, 2)))];  %
 r1 = nan(size(r0));
 r2 = nan(size(r0));
 
-first_norm = norm4;
-second_norm = norm6;
+entry_face_idx = 3;
+exit_face_idx = 5;
+entry_norm = face_norm(entry_face_idx, :);
+exit_norm = face_norm(exit_face_idx, :);
 
-valid_idx = r0 * first_norm' < 0;
-r1(valid_idx, :) = refract(r0(valid_idx, :), first_norm, 1, n);
-valid_idx = valid_idx & (r1 * second_norm' > 0);
-r2(valid_idx, :) = refract(r1(valid_idx, :), second_norm, n, 1);
+valid_idx = r0 * entry_norm' < 0;
+r1(valid_idx, :) = refract(r0(valid_idx, :), entry_norm, 1, n);
+valid_idx = valid_idx & (r1 * exit_norm' > 0);
+r2(valid_idx, :) = refract(r1(valid_idx, :), exit_norm, n, 1);
 valid_idx = valid_idx & sum(r2.^2, 2) > 1e-4;
 r2(~valid_idx, :) = nan;
 
 bending_angle = acosd(sum(r0 .* r2, 2));
 bending_angle_max = max(bending_angle);
 bending_angle_min = min(bending_angle);
-
-%%
-% figure(1); clf;
-% scatter(atan2d(r0(:, 2), r0(:, 1)), asind(r0(:, 3) ./ sqrt(sum(r0.^2, 2))), ...
-%     10, bending_angle, 'filled');
-% axis equal; axis tight;
-% box on;
 
 %%
 sun_altitude = 20;  % degree
@@ -52,8 +49,16 @@ ray_out = -r0;
 
 crystal_zenith_mean = 90;
 crystal_zenith_std = 0.2;
+dist_helper = @(zen) exp(-(zen - crystal_zenith_mean).^2 / ...
+    2 / crystal_zenith_std^2) ./ crystal_zenith_std;
+dist_x = linspace(-90, 90, 500);
+dist_y = dist_helper(dist_x);
+dist_total = sum(dist_y) * (dist_x(2) - dist_x(1));
+crystal_zenith_dist = @(zen) dist_helper(zen) / dist_total;
+clear dist_x dist_y;
 
-img_dr = dr * 4;
+
+img_dr = dr * 1;
 img_wid = ceil(180 / img_dr) * 2;
 img_hei = img_wid / 2;
 lon_data = linspace(-180, 180, img_wid);
@@ -126,12 +131,19 @@ for i = 1:total_pix
     % total quaternion
     q_all = quatmultiply(q1, q2);
     
+    % projected face area
+    proj_face_area = zeros(curr_len, size(face_norm, 1));
+    for j = 1:size(face_norm, 1)
+        proj_face_area(:, j) = -quatrotate(q_all, face_norm(j, :)) * ray_in';
+    end
+    geo_factor = max(proj_face_area(:, entry_face_idx), 0) ./ sum(max(proj_face_area, 0), 2);
+    
     % crystal main axis
     main_axis = quatrotate(q_all, [0, 0, 1]);
     lambda = atan2d(main_axis(:, 2), main_axis(:, 1));
     zen = 90 - asind(main_axis(:, 3));
-    w = exp(-(zen - crystal_zenith_mean).^2 / 2 / crystal_zenith_std^2) / crystal_zenith_std;
-    halo_img(i) = sum(w);
+    w = crystal_zenith_dist(zen);
+    halo_img(i) = sum(w .* geo_factor);
 end
 
 %%
