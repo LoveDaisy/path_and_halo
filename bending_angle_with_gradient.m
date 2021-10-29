@@ -1,4 +1,5 @@
-function [ray_out, g] = bending_angle_with_gradient(ray_in, face_normal, n)
+function [ray_out, bending_angle, g_out, g_angle] = ...
+    bending_angle_with_gradient(ray_in, face_normal, n)
 % INPUT
 %    ray_in:       m*2, [longitude, latitude] in degree
 %    face_normal:  k*3, [nx, ny, nz] face normals
@@ -9,30 +10,37 @@ face_n = size(face_normal, 1);
 ray_n = size(ray_in, 1);
 
 % auto differentiation forward mode
-dx = ones(size(ray_in));
-x = ray_in;
 
 % convert to xyz coordinate
-dy = ll2xyz_gradient(x);
-g = zeros(ray_n, 3);
-for k = 1:ray_n
-    g(k, :) =  dx(k, :) * dy(:, :, k)';
-end
-dx = g;
-x = ll2xyz(x);
+ray_xyz = ll2xyz(ray_in);
+g_xyz = ll2xyz_gradient(ray_in);
 
 % refract on each face
-for k = 1:face_n
-    x = refract(x, face_normal(k, :), n(k), n(k+1));
+curr_ray = ray_xyz;
+g_ray = g_xyz;
+for i = 1:face_n
+    [curr_ray, g_curr] = refract_with_gradient(curr_ray, face_normal(i, :), n(i), n(i+1));
+    for j = 1:ray_n
+        g_ray(:, :, j) = g_curr(:, :, j) * g_ray(:, :, j);
+    end
 end
 
 % convert back to longitude & latitude coordinate
-dy = xyz2ll_gradient(x);
-g = zeros(ray_n, 2);
-for k = 1:ray_n
-    g(k, :) = dx(k, :) * dy(:, :, k)';
+ray_out = xyz2ll(curr_ray);
+g_ll = xyz2ll_gradient(curr_ray);
+g_out = zeros(2, 2, ray_n);
+for i = 1:ray_n
+    g_out(:, :, i) = g_ll(:, :, i) * g_ray(:, :, i);
 end
-ray_out = xyz2ll(x);
+
+% find out bending angle
+cos_angle = sum(curr_ray .* ray_xyz, 2);
+g_cos = zeros(ray_n, 2);
+for i = 1:ray_n
+    g_cos(i, :) = ray_xyz(i, :) * g_ray(:, :, i) + curr_ray(i, :) * g_xyz(:, :, i);
+end
+bending_angle = acosd(cos_angle);
+g_angle = bsxfun(@times, -1 ./ sqrt(1 - cos_angle.^2), g_cos) * 180 / pi;
 end
 
 
