@@ -10,14 +10,7 @@ face_norm = [0, 0, 1;     % face 1
     -sqrt(3)/2, -1/2, 0]; % face 8
 n = 1.31;
 
-n_side = 2^5;
-n_pix = nSide2nPix(n_side);
-dr = sqrt(4 * pi / n_pix) * 180 / pi * 0.5;
-
-[ray_in_x, ray_in_y, ray_in_z] = pix2vec(n_side, 1:n_pix);
-r0 = -[ray_in_x', ray_in_y', ray_in_z'];
-clear ray_in_x ray_in_y ray_in_z;
-r0_ll = [atan2d(r0(:, 2), r0(:, 1)), asind(r0(:, 3) ./ sqrt(sum(r0.^2, 2)))];  % longitude, latitude
+[r0, r0_ll, dr] = generate_healpix_grids(5);
 
 r1 = nan(size(r0));
 r2 = nan(size(r0));
