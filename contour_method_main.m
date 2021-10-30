@@ -37,7 +37,7 @@ sun_longitude = 180;
 ray_in = -[cosd(sun_altitude) * cosd(sun_longitude), cosd(sun_altitude) * sind(sun_longitude), ...
     sind(sun_altitude)];
 
-target_bending = 26;
+target_bending = 21.8395;
 
 [~, min_idx] = min(abs(target_bending - bending_angle));
 start_pt1 = r0_ll(min_idx, :);
@@ -51,7 +51,7 @@ res_store(1, :) = [x, a];
 grad_store = nan(res_num, 2);
 grad_store(1, :) = g_a;
 
-h = 1;
+h = 5;
 i = 2;
 k = 1;
 config = [start_pt1, 1; start_pt1, -1; start_pt2, 1; start_pt2, -1];
