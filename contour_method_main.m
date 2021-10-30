@@ -32,12 +32,7 @@ bending_angle_max = max(bending_angle);
 bending_angle_min = min(bending_angle);
 
 %%
-sun_altitude = 20;
-sun_longitude = 180;
-ray_in = -[cosd(sun_altitude) * cosd(sun_longitude), cosd(sun_altitude) * sind(sun_longitude), ...
-    sind(sun_altitude)];
-
-target_bending = 21.8395;
+target_bending = 34;
 
 [~, min_idx] = min(abs(target_bending - bending_angle));
 start_pt1 = r0_ll(min_idx, :);

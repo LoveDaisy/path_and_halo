@@ -1,9 +1,12 @@
 function [x, a, g_a] = find_bending_angle_solution(x0, target, face_norm, n, varargin)
 % INPUT
-%    target:      m-vector or scalar, the target bending angle
+%    target:     m-vector or scalar, the target bending angle
 %    x:          m*2, initial point
 %    face_norm:  k*3, face normal
 %    n:          k-vector, refractive index
+% PARAEMTER (optional)
+%   'eps':       scalar, default 1e-8
+%   'MaxIter':   scalar, default 10
 
 p = inputParser;
 p.addParameter('eps', 1e-8);
