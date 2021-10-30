@@ -102,34 +102,8 @@ for i = 1:total_pix
     search_size(i) = curr_len;
     
     % find rotation between r0 and ray_in
-    tmp_vec_a = curr_r0;
-    tmp_vec_b = ray_in;
-    q1_axis = zeros(size(tmp_vec_a));
-    for j = 1:curr_len
-        q1_axis(j, :) = cross(tmp_vec_a(j, :), tmp_vec_b);
-    end
-    tmp_cos = tmp_vec_a * tmp_vec_b';
-    q1_theta = atan2d(sqrt(sum(q1_axis.^2, 2)), tmp_cos);
-    q1_axis = bsxfun(@times, q1_axis, 1./sqrt(sum(q1_axis.^2, 2)));
-    q1 = [cosd(-q1_theta/2), bsxfun(@times, sind(-q1_theta/2), q1_axis)];
-    
-    % find rotation between rotated r2 and ray_out
-    tmp_vec_a = quatrotate(q1, curr_r2);
-    tmp_vec_a = tmp_vec_a - bsxfun(@times, tmp_vec_a * ray_in', ray_in);
-    tmp_vec_a = bsxfun(@times, tmp_vec_a, 1./sqrt(sum(tmp_vec_a.^2, 2)));
-    tmp_vec_b = curr_ray_out;
-    tmp_vec_b = tmp_vec_b - (tmp_vec_b * ray_in') * ray_in;
-    tmp_vec_b = tmp_vec_b / norm(tmp_vec_b);
-    q2_axis = ray_in;
-    q2_theta = acosd(tmp_vec_a * tmp_vec_b');
-    q2 = [cosd(-q2_theta/2), bsxfun(@times, sind(-q2_theta/2), q2_axis)];
-    q3 = [cosd(q2_theta/2), bsxfun(@times, sind(q2_theta/2), q2_axis)];
-    curr_idx = quatrotate(q2, tmp_vec_a) * tmp_vec_b' > ...
-        quatrotate(q3, tmp_vec_a) * tmp_vec_b';
-    q2(~curr_idx, :) = q3(~curr_idx, :);
-    
-    % total quaternion
-    q_all = quatmultiply(q1, q2);
+    q_all = find_rotation([curr_r0, curr_r2], repmat([ray_in, curr_ray_out], [curr_len, 1]), ...
+        'eps', inf);
     
     % projected face area
     proj_face_area = zeros(curr_len, size(face_norm, 1));
