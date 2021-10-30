@@ -37,13 +37,13 @@ g_a = g_cos_alpha(valid_ind, :) - bsxfun(@times, sign(cos_alpha(valid_ind)) / ..
 r = bsxfun(@times, ray_in(valid_ind, :), 1 ./ ray_in_norm(valid_ind)) - bsxfun(@times, a, face_normal);
 g_r1 = bsxfun(@times, [sum(ray_in(valid_ind, [2, 3]).^2, 2), ...
     -prod(ray_in(valid_ind, [1, 2]), 2), ...
-    -prod(ray_in(valid_ind, [1, 3]), 2)], 1 ./ ray_in_norm.^3) - face_normal(1) * g_a;
+    -prod(ray_in(valid_ind, [1, 3]), 2)], 1 ./ ray_in_norm(valid_ind).^3) - face_normal(1) * g_a;
 g_r2 = bsxfun(@times, [-prod(ray_in(valid_ind, [1, 2]), 2), ...
     sum(ray_in(valid_ind, [1, 3]).^2, 2), ...
-    -prod(ray_in(valid_ind, [2, 3]), 2)], 1 ./ ray_in_norm.^3) - face_normal(2) * g_a;
+    -prod(ray_in(valid_ind, [2, 3]), 2)], 1 ./ ray_in_norm(valid_ind).^3) - face_normal(2) * g_a;
 g_r3 = bsxfun(@times, [-prod(ray_in(valid_ind, [1, 3]), 2), ...
     -prod(ray_in(valid_ind, [2, 3]), 2), ...
-    sum(ray_in(valid_ind, [1, 2]).^2, 2)], 1 ./ ray_in_norm.^3) - face_normal(3) * g_a;
+    sum(ray_in(valid_ind, [1, 2]).^2, 2)], 1 ./ ray_in_norm(valid_ind).^3) - face_normal(3) * g_a;
 g_r = cat(3, g_r1, g_r2, g_r3);
 g_r0 = permute(g_r, [3, 2, 1]);
 
@@ -60,7 +60,7 @@ g_r3 = bsxfun(@times, [-prod(r(:, [3, 1]), 2), ...
 g_r = cat(3, g_r1, g_r2, g_r3);
 g_r = permute(g_r, [3, 2, 1]);
 r = bsxfun(@times, r, 1 ./ r_norm);
-for i = 1:ray_n
+for i = 1:sum(valid_ind)
     g_r(:, :, i) = g_r(:, :, i) * g_r0(:, :, i);
 end
 

@@ -30,9 +30,9 @@ entry_norm = face_norm(entry_face_idx, :);
 exit_norm = face_norm(exit_face_idx, :);
 
 valid_idx = r0 * entry_norm' < 0;
-r1(valid_idx, :) = refract(r0(valid_idx, :), entry_norm, 1, n);
+r1(valid_idx, :) = refract_with_gradient(r0(valid_idx, :), entry_norm, 1, n);
 valid_idx = valid_idx & (r1 * exit_norm' > 0);
-r2(valid_idx, :) = refract(r1(valid_idx, :), exit_norm, n, 1);
+r2(valid_idx, :) = refract_with_gradient(r1(valid_idx, :), exit_norm, n, 1);
 valid_idx = valid_idx & sum(r2.^2, 2) > 1e-4;
 r2(~valid_idx, :) = nan;
 
