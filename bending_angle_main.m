@@ -37,39 +37,49 @@ sun_longitude = 180;
 ray_in = -[cosd(sun_altitude) * cosd(sun_longitude), cosd(sun_altitude) * sind(sun_longitude), ...
     sind(sun_altitude)];
 
-% lon = -32;
-% lat = -24;
-% ray_out = [cosd(lat) * cosd(lon), cosd(lat) * sind(lon), sind(lat)];
-% target_bending = acosd(dot(ray_out, ray_in));
-target_bending = 38;
+target_bending = 26;
 
 [~, min_idx] = min(abs(target_bending - bending_angle));
-x = r0_ll(min_idx, :);
-[~, a, ~, g_angle] = ...
-    bending_angle_with_gradient(x, face_norm([entry_face_idx, exit_face_idx], :), [n, 1]);
-da = target_bending - a;
-while abs(da) > 1e-8
-    x = da / norm(g_angle)^2 * g_angle + x;
-    [~, a, ~, g_angle] = ...
-        bending_angle_with_gradient(x, face_norm([entry_face_idx, exit_face_idx], :), [n, 1]);
-    da = target_bending - a;
-end
+start_pt1 = r0_ll(min_idx, :);
+start_pt2 = start_pt1; start_pt2(2) = -start_pt1(2);
+[x, a, g_a] = find_bending_angle_solution(start_pt1, target_bending, ...
+    face_norm([entry_face_idx, exit_face_idx], :), [n, 1]);
 
-res_num = 500;
-res_store = zeros(res_num + 1, 3);  % [x1, x2, y]
+res_num = 200;
+res_store = nan(res_num, 3);  % [x1, x2, y]
 res_store(1, :) = [x, a];
+grad_store = nan(res_num, 2);
+grad_store(1, :) = g_a;
+
 h = 1;
-for i = 1:res_num
-    x = res_store(i, 1:2);
-    [~, a, ~, g_angle] = ...
-        bending_angle_with_gradient(x, face_norm([entry_face_idx, exit_face_idx], :), [n, 1]);
-    da = target_bending - a;
-    x = da / norm(g_angle)^2 * g_angle + x;
-    [~, a, ~, g_angle] = ...
-        bending_angle_with_gradient(x, face_norm([entry_face_idx, exit_face_idx], :), [n, 1]);
+i = 2;
+k = 1;
+config = [start_pt1, 1; start_pt1, -1; start_pt2, 1; start_pt2, -1];
+while i <= res_num
+    x0 = res_store(i-1, 1:2) + h * [g_a(2), -g_a(1)] * config(k, 3);
+    [x, a, g_a] = find_bending_angle_solution(x0, target_bending, ...
+        face_norm([entry_face_idx, exit_face_idx], :), [n, 1]);
+    change_config = isnan(a);
+    if change_config && k < 4
+        k = k + 1;
+        [x, a, g_a] = find_bending_angle_solution(config(k, 1:2), target_bending, ...
+            face_norm([entry_face_idx, exit_face_idx], :), [n, 1]);
+    end
+    if isnan(a)
+        break;
+    end
     res_store(i, :) = [x, a];
-    t_a = [g_angle(2), -g_angle(1)];
-    res_store(i+1, 1:2) = x + t_a * h;
+    grad_store(i, :) = g_a;
+    
+    % a simple adaptive schedule
+    dv_norm = acosd(dot(grad_store(i-1, :), g_a) / norm(g_a) / norm(grad_store(i-1, :)));
+    if ~change_config && dv_norm < 1.5 && h < 10
+        h = h * 1.5;
+    elseif ~change_config && dv_norm > 3 && h > 0.01
+        h = h / 1.5;
+    else
+        i = i + 1;
+    end
 end
 
 figure(1); clf;
