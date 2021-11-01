@@ -21,7 +21,7 @@ exit_face_idx = 5;
 %%
 target_bending = 43;
 
-[contour_pt, pt_grad] = find_bending_angle_contour(target_bending, ...
+[x_contour, g_angle] = find_bending_angle_contour(target_bending, ...
     face_norm([entry_face_idx, exit_face_idx], :), [1.31, 1]);
 
 

@@ -1,4 +1,5 @@
-function [contour_pt, pt_grad] = find_bending_angle_contour(target_angle, face_norm, n, varargin)
+function [x_contour, g_angle, y_val, g_jacobian] = ...
+    find_bending_angle_contour(target_angle, face_norm, n, varargin)
 % INPUT
 %   target_angle:       scalar
 %   face_norm:          n*3
@@ -32,8 +33,10 @@ bending_angle = acosd(sum(r0 .* r1, 2));
 bending_angle_max = max(bending_angle);
 bending_angle_min = min(bending_angle);
 bending_angle_diff = abs(target_angle - bending_angle);
-contour_pt = {};
-pt_grad = {};
+x_contour = {};
+g_angle = {};
+y_val = {};
+g_jacobian = {};
 if target_angle < bending_angle_min || target_angle > bending_angle_max
     return;
 end
@@ -47,43 +50,43 @@ checked_idx = false(size(seeds_idx));
 start_p = r0_ll(min_idx, :);
 i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
-    [res_store_fwd, grad_store_fwd, closed] = search_one_direction(start_p, ...
+    [x_store_fwd, g_a_store_fwd, ~, ~, closed] = search_one_direction(start_p, ...
         target_angle, face_norm, ...
         n, 1, p.Results.MaxIter);
-    valid_idx_fwd = ~isnan(res_store_fwd(:, 1));
+    valid_idx_fwd = ~isnan(x_store_fwd(:, 1));
     if ~closed
-        [res_store_bck, grad_store_bck, ~] = search_one_direction(start_p, ...
+        [res_store_bck, grad_store_bck, ~, ~, ~] = search_one_direction(start_p, ...
             target_angle, face_norm, ...
             n, -1, p.Results.MaxIter);
         valid_idx_bck = ~isnan(res_store_bck(:, 1));
-        curr_contour = [flipud(res_store_bck(valid_idx_bck, 1:2)); res_store_fwd(valid_idx_fwd, 1:2)];
-        curr_grad = [flipud(grad_store_bck(valid_idx_bck, 1:2)); grad_store_fwd(valid_idx_fwd, 1:2)];
+        curr_x = [flipud(res_store_bck(valid_idx_bck, 1:2)); x_store_fwd(valid_idx_fwd, 1:2)];
+        curr_g_a = [flipud(grad_store_bck(valid_idx_bck, 1:2)); g_a_store_fwd(valid_idx_fwd, 1:2)];
     else
-        curr_contour = res_store_fwd(valid_idx_fwd, 1:2);
-        curr_contour = [curr_contour; curr_contour(1, :)];
-        curr_grad = grad_store_fwd(valid_idx_fwd, 1:2);
-        curr_grad = [curr_grad; curr_grad(1, :)];
+        curr_x = x_store_fwd(valid_idx_fwd, 1:2);
+        curr_x = [curr_x; curr_x(1, :)];
+        curr_g_a = g_a_store_fwd(valid_idx_fwd, 1:2);
+        curr_g_a = [curr_g_a; curr_g_a(1, :)];
     end
     
-    if isempty(curr_contour)
+    if isempty(curr_x)
         break;
     end
-    contour_pt{i} = curr_contour;
-    pt_grad{i} = curr_grad;
+    x_contour{i} = curr_x;
+    g_angle{i} = curr_g_a;
     i = i + 1;
     
     if ~closed
         % first filter out those very close to contour line
         next_idx = find(seeds_idx & ~checked_idx);
-        d = distance_to_poly_line(r0_ll(next_idx, :), curr_contour);
+        d = distance_to_poly_line(r0_ll(next_idx, :), curr_x);
         checked_idx(next_idx(d < r_lim)) = true;
         next_idx = find(seeds_idx & ~checked_idx);
         
         % then find exact solution from other points
         for j = 1:length(next_idx)
-            [x, a, ~] = find_bending_angle_solution(r0_ll(next_idx(j), :), target_angle, ...
+            [x, a] = find_bending_angle_solution(r0_ll(next_idx(j), :), target_angle, ...
                 face_norm, n, 'eps', r_lim * 0.1);
-            d = distance_to_poly_line(x, curr_contour);
+            d = distance_to_poly_line(x, curr_x);
             if abs(a - target_angle) > r_lim * 0.1 || d < r_lim
                 checked_idx(next_idx(j)) = true;
             end
@@ -97,23 +100,23 @@ while sum(seeds_idx & ~checked_idx) > 0
     end
 end
 
-for i = 2:length(contour_pt)
-    curr_contour = contour_pt{i};
-    curr_grad = pt_grad{i};
+for i = 2:length(x_contour)
+    curr_x = x_contour{i};
+    curr_g_a = g_angle{i};
     for j = 1:i-1
-        prev_contour = contour_pt{j};
-        d = distance_to_poly_line(curr_contour, prev_contour);
-        curr_contour = curr_contour(d > r_lim, :);
-        curr_grad = curr_grad(d > r_lim, :);
+        prev_contour = x_contour{j};
+        d = distance_to_poly_line(curr_x, prev_contour);
+        curr_x = curr_x(d > r_lim, :);
+        curr_g_a = curr_g_a(d > r_lim, :);
     end
-    contour_pt{i} = curr_contour;
-    pt_grad{i} = curr_grad;
+    x_contour{i} = curr_x;
+    g_angle{i} = curr_g_a;
 end
 end
 
 
-function [res_store, grad_store, closed] = search_one_direction(x0, target_angle, face_norm, n, ...
-    direction, res_num)
+function [x_store, g_a_store, y_store, jacobian_store, closed] = ...
+    search_one_direction(x0, target_angle, face_norm, n, direction, res_num)
 h = 1;
 max_h = 5;
 min_h = 0.02;
@@ -121,13 +124,15 @@ hh = -0.00;
 
 [x, a, g_a] = find_bending_angle_solution(x0, target_angle, face_norm, n);
 
-res_store = nan(res_num, 5);  % [x1, x2, y]
-res_store(1, :) = [x, a, h, 0];
-grad_store = nan(res_num, 4);  % [original_gradient, normalized_co_gradient]
+x_store = nan(res_num, 5);  % [x1, x2, angle]
+x_store(1, :) = [x, a, h, 0];
+y_store = nan(res_num, 2);
+jacobian_store = nan(2, 2, res_num);
+g_a_store = nan(res_num, 4);  % [original_gradient, normalized_co_gradient]
 
-grad_store(1, 1:2) = g_a;
+g_a_store(1, 1:2) = g_a;
 g_a = g_a * [0, -1; 1, 0] * direction;
-grad_store(1, 3:4) = g_a / norm(g_a);
+g_a_store(1, 3:4) = g_a / norm(g_a);
 
 i = 2;
 non_shrink_cnt = 0;
@@ -135,33 +140,33 @@ closed = false;
 
 while i <= res_num
     if i <= 3
-        x0 = res_store(i-1, 1:2) + h * grad_store(i-1, 3:4);
+        x0 = x_store(i-1, 1:2) + h * g_a_store(i-1, 3:4);
     else
         % use 2nd order prediction
-        tmp_t = cumsum(res_store(i-3:i-1, 5) * direction);
-        tmp_x = res_store(i-3:i-1, 1:2);
+        tmp_t = cumsum(x_store(i-3:i-1, 5) * direction);
+        tmp_x = x_store(i-3:i-1, 1:2);
         new_t = tmp_t(3) + h * direction;
         new_x = (new_t - tmp_t(1)) * (new_t - tmp_t(2)) * (tmp_t(1) - tmp_t(2)) * tmp_x(3, :) + ...
             (new_t - tmp_t(2)) * (new_t - tmp_t(3)) * (tmp_t(2) - tmp_t(3)) * tmp_x(1, :) + ...
             (new_t - tmp_t(3)) * (new_t - tmp_t(1)) * (tmp_t(3) - tmp_t(1)) * tmp_x(2, :);
         x0 = -new_x / ((tmp_t(1) - tmp_t(2)) * (tmp_t(2) - tmp_t(3)) * (tmp_t(3) - tmp_t(1)));
     end
-    x0 = x0 + hh * h * grad_store(i-1, 1:2) / norm(grad_store(i-1, 1:2));
+    x0 = x0 + hh * h * g_a_store(i-1, 1:2) / norm(g_a_store(i-1, 1:2));
     [x, a, g_a] = find_bending_angle_solution(x0, target_angle, face_norm, n);
-    if i >= 3 && dot(x - res_store(i-1, 1:2), grad_store(i-1, 3:4)) / ...
-            norm(x - res_store(i-1, 1:2)) < 0
+    if i >= 3 && dot(x - x_store(i-1, 1:2), g_a_store(i-1, 3:4)) / ...
+            norm(x - x_store(i-1, 1:2)) < 0
         break;
     end
     
     if i > 3
-        d = distance_to_poly_line(x, res_store(1:i-1, 1:2));
-        if d < norm(x - res_store(i-1, 1:2)) * 0.5
+        d = distance_to_poly_line(x, x_store(1:i-1, 1:2));
+        if d < norm(x - x_store(i-1, 1:2)) * 0.5
             closed = true;
             break;
         end
     end
     
-    grad_store(i, 1:2) = g_a;
+    g_a_store(i, 1:2) = g_a;
     g_a = g_a * [0, -1; 1, 0] * direction;
     g_a = g_a / norm(g_a);
     
@@ -180,9 +185,9 @@ while i <= res_num
             h = h * 1.2;
         end
     end
-    s = norm(x - res_store(i-1, 1:2));
-    res_store(i, :) = [x, a, h, s];
-    grad_store(i, 3:4) = g_a;
+    s = norm(x - x_store(i-1, 1:2));
+    x_store(i, :) = [x, a, h, s];
+    g_a_store(i, 3:4) = g_a;
     
     i = i + 1;
 end
