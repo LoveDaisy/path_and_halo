@@ -23,8 +23,15 @@ while abs(da) > p.Results.eps && iter_num < p.Results.MaxIter
     step = da / norm(g_a)^2;
     step = min(abs(step), max_step) * sign(step);
     dx = step * g_a;
-    x = x + dx;
-    [~, a, ~, g_a] = bending_angle_with_gradient(x, face_norm, n);
+    
+    alpha = 2;
+    a = nan;
+    while isnan(a) && alpha > 0.1
+        alpha = alpha / 2;
+        [~, a, ~, g_a] = bending_angle_with_gradient(x + dx * alpha, face_norm, n);
+    end
+    
+    x = x + dx * alpha;
     da = target - a;
     iter_num = iter_num + 1;
 end
