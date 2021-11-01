@@ -109,7 +109,7 @@ function [res_store, grad_store, closed] = search_one_direction(x0, target_angle
 h = 1;
 max_h = 5;
 min_h = 0.02;
-% hh = -0.01;
+hh = -0.00;
 
 [x, a, g_a] = find_bending_angle_solution(x0, target_angle, face_norm, n);
 
@@ -138,7 +138,7 @@ while i <= res_num
             (new_t - tmp_t(3)) * (new_t - tmp_t(1)) * (tmp_t(3) - tmp_t(1)) * tmp_x(2, :);
         x0 = -new_x / ((tmp_t(1) - tmp_t(2)) * (tmp_t(2) - tmp_t(3)) * (tmp_t(3) - tmp_t(1)));
     end
-%     x0 = x0 + hh * h * grad_store(i-1, 1:2) / norm(grad_store(i-1, 1:2));
+    x0 = x0 + hh * h * grad_store(i-1, 1:2) / norm(grad_store(i-1, 1:2));
     [x, a, g_a] = find_bending_angle_solution(x0, target_angle, face_norm, n);
     if i >= 3 && dot(x - res_store(i-1, 1:2), grad_store(i-1, 3:4)) / ...
             norm(x - res_store(i-1, 1:2)) < 0

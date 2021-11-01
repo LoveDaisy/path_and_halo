@@ -17,6 +17,12 @@ x = x0;
 max_step = 50;
 
 [~, a, ~, g_a] = bending_angle_with_gradient(x, face_norm, n);
+if isnan(a)
+    x = nan(size(x0));
+    g_a(:) = nan;
+    return
+end
+
 da = target - a;
 iter_num = 1;
 while abs(da) > p.Results.eps && iter_num < p.Results.MaxIter
