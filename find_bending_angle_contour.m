@@ -1,4 +1,4 @@
-function contour_pts = find_bending_angle_contour(target_angle, face_norm, n, varargin)
+function [contour_pt, pt_grad] = find_bending_angle_contour(target_angle, face_norm, n, varargin)
 % INPUT
 %   target_angle:       scalar
 %   face_norm:          n*3
@@ -32,7 +32,8 @@ bending_angle = acosd(sum(r0 .* r1, 2));
 bending_angle_max = max(bending_angle);
 bending_angle_min = min(bending_angle);
 bending_angle_diff = abs(target_angle - bending_angle);
-contour_pts = {};
+contour_pt = {};
+pt_grad = {};
 if target_angle < bending_angle_min || target_angle > bending_angle_max
     return;
 end
@@ -46,25 +47,29 @@ checked_idx = false(size(seeds_idx));
 start_p = r0_ll(min_idx, :);
 i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
-    [res_store_fwd, ~, closed] = search_one_direction(start_p, ...
+    [res_store_fwd, grad_store_fwd, closed] = search_one_direction(start_p, ...
         target_angle, face_norm, ...
         n, 1, p.Results.MaxIter);
     valid_idx_fwd = ~isnan(res_store_fwd(:, 1));
     if ~closed
-        [res_store_bck, ~, ~] = search_one_direction(start_p, ...
+        [res_store_bck, grad_store_bck, ~] = search_one_direction(start_p, ...
             target_angle, face_norm, ...
             n, -1, p.Results.MaxIter);
         valid_idx_bck = ~isnan(res_store_bck(:, 1));
         curr_contour = [flipud(res_store_bck(valid_idx_bck, 1:2)); res_store_fwd(valid_idx_fwd, 1:2)];
+        curr_grad = [flipud(grad_store_bck(valid_idx_bck, 1:2)); grad_store_fwd(valid_idx_fwd, 1:2)];
     else
         curr_contour = res_store_fwd(valid_idx_fwd, 1:2);
         curr_contour = [curr_contour; curr_contour(1, :)];
+        curr_grad = grad_store_fwd(valid_idx_fwd, 1:2);
+        curr_grad = [curr_grad; curr_grad(1, :)];
     end
     
     if isempty(curr_contour)
         break;
     end
-    contour_pts{i} = curr_contour;
+    contour_pt{i} = curr_contour;
+    pt_grad{i} = curr_grad;
     i = i + 1;
     
     if ~closed
@@ -92,14 +97,17 @@ while sum(seeds_idx & ~checked_idx) > 0
     end
 end
 
-for i = 2:length(contour_pts)
-    curr_contour = contour_pts{i};
+for i = 2:length(contour_pt)
+    curr_contour = contour_pt{i};
+    curr_grad = pt_grad{i};
     for j = 1:i-1
-        prev_contour = contour_pts{j};
+        prev_contour = contour_pt{j};
         d = distance_to_poly_line(curr_contour, prev_contour);
         curr_contour = curr_contour(d > r_lim, :);
+        curr_grad = curr_grad(d > r_lim, :);
     end
-    contour_pts{i} = curr_contour;
+    contour_pt{i} = curr_contour;
+    pt_grad{i} = curr_grad;
 end
 end
 

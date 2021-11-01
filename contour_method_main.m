@@ -21,15 +21,7 @@ exit_face_idx = 5;
 %%
 target_bending = 43;
 
-res_store = find_bending_angle_contour(target_bending, ...
+[contour_pt, pt_grad] = find_bending_angle_contour(target_bending, ...
     face_norm([entry_face_idx, exit_face_idx], :), [1.31, 1]);
 
-%%
-figure(1); clf;
-hold on;
-for i = 1:length(res_store)
-    plot(res_store{i}(:, 1), res_store{i}(:, 2), '-o');
-    axis equal; axis tight;
-    set(gca, 'xlim', [-180, 180], 'ylim', [-90, 90]);
-end
-box on;
+
