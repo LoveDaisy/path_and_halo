@@ -10,7 +10,7 @@ function [x, a, g_a] = find_bending_angle_solution(x0, target, face_norm, n, var
 
 p = inputParser;
 p.addParameter('eps', 1e-8);
-p.addParameter('MaxIter', 10);
+p.addParameter('MaxIter', 5);
 p.parse(varargin{:});
 
 x = x0;
@@ -26,7 +26,7 @@ while abs(da) > p.Results.eps && iter_num < p.Results.MaxIter
     
     alpha = 2;
     a = nan;
-    while isnan(a) && alpha > 0.1
+    while (isnan(a) || abs(a - target) > abs(da) * 0.8) && alpha > 0.1
         alpha = alpha / 2;
         [~, a, ~, g_a] = bending_angle_with_gradient(x + dx * alpha, face_norm, n);
     end
@@ -36,9 +36,6 @@ while abs(da) > p.Results.eps && iter_num < p.Results.MaxIter
     iter_num = iter_num + 1;
 end
 
-if iter_num >= p.Results.MaxIter
-    warning('Iteration exceed limit %d!', p.Results.MaxIter);
-end
 if abs(da) > p.Results.eps
     x(:) = nan;
     a = nan;
