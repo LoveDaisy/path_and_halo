@@ -8,7 +8,7 @@ function q = find_rotation(origin, target, varargin)
 %   q:              n*4, quaternion
 
 p = inputParser;
-p.addParameter('eps', 1e-3);
+p.addParameter('eps', inf);
 p.parse(varargin{:});
 
 num = size(origin, 1);
