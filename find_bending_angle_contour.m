@@ -7,47 +7,33 @@ function [x_contour, g_angle, y_val, jacobian] = ...
 
 p = inputParser;
 p.addParameter('eps', 1e-8);
-p.addParameter('MaxIter', 200);
+p.addParameter('MaxIter', 100);
 p.addParameter('GridLevel', 5);
+p.addParameter('config', []);
 p.parse(varargin{:});
 
-face_num = size(face_norm, 1);
-n = [1; n(:)];
-
-% initial grid
-[r0, r0_ll, dr] = generate_healpix_grids(p.Results.GridLevel);
-valid_idx = r0 * face_norm(1, :)' < 0;
-
-r1 = r0;
-for i = 1:face_num
-    r1(valid_idx, :) = refract_with_gradient(r1(valid_idx, :), face_norm(i, :), n(i), n(i+1));
-    if i > 1
-        valid_idx = valid_idx & (r1 * face_norm(i, :)' > 0);
-    end
+if isempty(p.Results.config)
+    config = generate_init_config(face_norm, n, p.Results.GridLevel);
+else
+    config = p.Results.config;
 end
-valid_idx = valid_idx & sum(r1.^2, 2) > 1e-4;
-r1(~valid_idx, :) = nan;
-n = n(2:end);
-
-bending_angle = acosd(sum(r0 .* r1, 2));
-bending_angle_max = max(bending_angle);
-bending_angle_min = min(bending_angle);
-bending_angle_diff = abs(target_angle - bending_angle);
+bending_angle_diff = abs(target_angle - config.bending_angle);
 x_contour = {};
 g_angle = {};
 y_val = {};
 jacobian = {};
-if target_angle < bending_angle_min || target_angle > bending_angle_max
+if target_angle < config.bending_angle_min || target_angle > config.bending_angle_max
     return;
 end
 
 
-r_lim = dr * 2;
-[~, min_idx] = min(bending_angle_diff);
-seeds_idx = abs(target_angle - bending_angle) < r_lim;
+r_lim = config.dr * 2;
+
+seeds_idx = bending_angle_diff < r_lim;
 checked_idx = false(size(seeds_idx));
 
-start_p = r0_ll(min_idx, :);
+[~, min_idx] = min(bending_angle_diff);
+start_p = config.r0_ll(min_idx, :);
 i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
     [x_store_fwd, g_a_store_fwd, y_store_fwd, g_y_store_fwd, closed] = search_one_direction(start_p, ...
@@ -57,6 +43,11 @@ while sum(seeds_idx & ~checked_idx) > 0
         [x_store_bck, g_a_store_bck, y_store_bck, g_y_store_bck, ~] = search_one_direction(start_p, ...
             target_angle, face_norm, n, -1, p.Results.MaxIter);
         valid_idx_bck = find(~isnan(x_store_bck(:, 1)));
+        
+        % filter out those identical to the other line
+        d = distance_to_poly_line(x_store_bck(valid_idx_bck, 1:2), x_store_fwd(valid_idx_fwd, 1:2));
+        valid_idx_bck = valid_idx_bck(d > r_lim * 2);
+        
         valid_idx_bck = wrev(valid_idx_bck);
         curr_x = [x_store_bck(valid_idx_bck, 1:2); x_store_fwd(valid_idx_fwd, 1:2)];
         curr_g_a = [g_a_store_bck(valid_idx_bck, 1:2); g_a_store_fwd(valid_idx_fwd, 1:2)];
@@ -73,7 +64,7 @@ while sum(seeds_idx & ~checked_idx) > 0
         curr_g_y = cat(3, curr_g_y, curr_g_y(:, :, 1));
     end
     
-    if isempty(curr_x)
+    if isempty(curr_x) || size(curr_x, 1) < 2
         break;
     end
     x_contour{i} = curr_x;
@@ -85,13 +76,13 @@ while sum(seeds_idx & ~checked_idx) > 0
     if ~closed
         % first filter out those very close to contour line
         next_idx = find(seeds_idx & ~checked_idx);
-        d = distance_to_poly_line(r0_ll(next_idx, :), curr_x);
+        d = distance_to_poly_line(config.r0_ll(next_idx, :), curr_x);
         checked_idx(next_idx(d < r_lim)) = true;
         next_idx = find(seeds_idx & ~checked_idx);
         
         % then find exact solution from other points
         for j = 1:length(next_idx)
-            [x, a] = find_bending_angle_solution(r0_ll(next_idx(j), :), target_angle, ...
+            [x, a] = find_bending_angle_solution(config.r0_ll(next_idx(j), :), target_angle, ...
                 face_norm, n, 'eps', r_lim * 0.1);
             d = distance_to_poly_line(x, curr_x);
             if abs(a - target_angle) > r_lim * 0.1 || d < r_lim
@@ -99,14 +90,18 @@ while sum(seeds_idx & ~checked_idx) > 0
             end
         end
         next_idx = find(seeds_idx & ~checked_idx);
+        if isempty(next_idx)
+            continue;
+        end
         
         [~, min_idx] = min(bending_angle_diff(next_idx));
-        start_p = r0_ll(next_idx(min_idx), :);
+        start_p = config.r0_ll(next_idx(min_idx), :);
     else
         checked_idx(:) = true;
     end
 end
 
+dup_idx = false(length(x_contour), 1);
 for i = 2:length(x_contour)
     curr_x = x_contour{i};
     curr_g_a = g_angle{i};
@@ -115,18 +110,25 @@ for i = 2:length(x_contour)
     for j = 1:i-1
         prev_contour = x_contour{j};
         d = distance_to_poly_line(curr_x, prev_contour);
-        valid_idx = d > r_lim;
+        valid_idx = d > r_lim * 2;
         
         curr_x = curr_x(valid_idx, :);
         curr_g_a = curr_g_a(valid_idx, :);
         curr_y = curr_y(valid_idx, :);
         curr_g_y = curr_g_y(:, :, valid_idx);
     end
+    if isempty(curr_x) ||  size(curr_x, 1) < 2
+        dup_idx(i) = true;
+    end
     x_contour{i} = curr_x;
     g_angle{i} = curr_g_a;
     y_val{i} = curr_y;
     jacobian{i} = curr_g_y;
 end
+x_contour = x_contour(~dup_idx);
+g_angle = g_angle(~dup_idx);
+y_val = y_val(~dup_idx);
+jacobian = jacobian(~dup_idx);
 end
 
 
@@ -134,7 +136,7 @@ function [x_store, g_a_store, y_store, g_y_store, closed] = ...
     search_one_direction(x0, target_angle, face_norm, n, direction, res_num)
 h = 1;
 max_h = 5;
-min_h = 0.02;
+min_h = 0.1;
 hh = -0.00;
 
 [x, a, g_a, y, g_y] = find_bending_angle_solution(x0, target_angle, face_norm, n);
