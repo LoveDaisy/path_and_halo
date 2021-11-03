@@ -36,8 +36,8 @@ config = generate_init_config(face_norm([entry_face_idx, exit_face_idx], :), [1.
 
 % halo_img_x = linspace(-180, 180, 512);
 % halo_img_y = linspace(-90, 90, 256);
-halo_img_x = -10:.1:10;
-halo_img_y = -30:.1:0;
+halo_img_x = -10:.5:10;
+halo_img_y = -30:.5:0;
 halo_img = zeros(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
@@ -46,8 +46,8 @@ for w = 1:length(halo_img_x)
     for h = 1:length(halo_img_y)
 % for w = 240:256
 %     for h = 90:150
-% for w = 208
-%     for h = 182
+% for w = 100
+%     for h = 240
         lon = halo_img_x(w);
         lat = halo_img_y(h);
         ray_out_xyz = ll2xyz_with_gradient([lon, lat]);
@@ -68,6 +68,7 @@ for w = 1:length(halo_img_x)
 %             fprintf('!!!\n');
 %         end
         p_store = {};
+        axis_store = {};
         for k = 1:length(x_contour)
             curr_x_ll = x_contour{k};
             curr_y_ll = y_val{k};
@@ -95,7 +96,8 @@ for w = 1:length(halo_img_x)
             
             p = p ./ max(curr_g_a_norm, 1e-3);
             weight = weight + nansum((p(1:end-1) + p(2:end)) / 2 .* diff(interp_s));
-            p_store{k} = [interp_s, p];
+            p_store{k} = [interp_s, p, [0; cumsum(sqrt(sum(diff(curr_axis_ll).^2, 2)))]];
+            axis_store{k} = curr_axis_ll;
         end
         halo_img(h, w) = weight;
         
@@ -117,6 +119,7 @@ for w = 1:length(halo_img_x)
             hold on;
             for k = 1:length(x_contour)
                 plot(x_contour{k}(:,1), x_contour{k}(:,2), '-o');
+                plot(axis_store{k}(:, 1), axis_store{k}(:, 2)*10, '-s');
             end
             title(sprintf('lon lat: (%d,%d) = (%05.2f,%05.2f)\nw: %05.2e', w, h, lon, lat, weight));
             axis equal; axis tight;
@@ -128,7 +131,8 @@ for w = 1:length(halo_img_x)
             set(gcf, 'position', tmp_f4_pos + [0, -tmp_f4_pos(4), 0, 0]);
             hold on;
             for k = 1:length(x_contour)
-                plot(p_store{k}(:, 1), p_store{k}(:, 2), '-o');
+%                 plot(p_store{k}(:, 1), p_store{k}(:, 2), '-o');
+                plot(p_store{k}(:, 3), p_store{k}(:, 2), '-s');
             end
             title(sprintf('w: %05.3e', weight));
             box on;
