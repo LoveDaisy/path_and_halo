@@ -74,30 +74,43 @@ for w = 1:length(halo_img_x)
             curr_y_ll = y_val{k};
             curr_g_angle = g_angle{k};
             curr_g_a_norm = sqrt(sum(curr_g_angle.^2, 2));
-            curr_ds = sqrt(sum(diff(curr_x_ll).^2, 2));
-            curr_s = [0; cumsum(curr_ds)];
-            
-            interp_res = 0.05;
-            interp_s = (min(curr_s):interp_res:max(curr_s))';
-            curr_x_ll = interp1(curr_s, curr_x_ll, interp_s, 'linear', 0);
-            curr_y_ll = interp1(curr_s, curr_y_ll, interp_s, 'linear', 0);
-            curr_g_a_norm = interp1(curr_s, curr_g_a_norm, interp_s, 'linear', 0);
             
             curr_x_xyz = ll2xyz_with_gradient(curr_x_ll);
             curr_y_xyz = ll2xyz_with_gradient(curr_y_ll);
-            
             curr_origin_input_output = [curr_x_xyz, curr_y_xyz];
+            
             curr_q = find_rotation(curr_origin_input_output, ...
                 repmat(curr_target_input_output, [size(curr_x_ll, 1), 1]));
-            
             curr_axis = quatrotate(curr_q, [0, 0, 1]);
             curr_axis_ll = xyz2ll_with_gradient(curr_axis);
+            
             p = axis_pdf(curr_axis_ll(:, 1), curr_axis_ll(:, 2));
             
-            p = p ./ max(curr_g_a_norm, 1e-3);
-            weight = weight + nansum((p(1:end-1) + p(2:end)) / 2 .* diff(interp_s));
-            p_store{k} = [interp_s, p, [0; cumsum(sqrt(sum(diff(curr_axis_ll).^2, 2)))]];
-            axis_store{k} = curr_axis_ll;
+            % then interpolation
+            for kk = 2:size(curr_axis_ll, 1)
+                if max(p(kk-1:kk)) < 1e-10
+                    continue;
+                end
+                ds = acosd(dot(curr_axis(kk, :), curr_axis(kk-1, :)));
+                interp_num = max(floor(ds / 0.05) + 1, 2);
+                tmp_ds = linspace(0, ds, interp_num)';
+                tmp_q = quatinterp(repmat(curr_q(kk-1, :), [interp_num, 1]), ...
+                    repmat(curr_q(kk, :), [interp_num, 1]), tmp_ds / ds);
+                tmp_axis = quatrotate(tmp_q, [0, 0, 1]);
+                tmp_axis_ll = xyz2ll_with_gradient(tmp_axis);
+
+                tmp_p = axis_pdf(tmp_axis_ll(:, 1), tmp_axis_ll(:, 2));
+                tmp_norm = interp1([0; ds], curr_g_a_norm([kk-1; kk]), tmp_ds);
+                tmp_p = tmp_p ./ tmp_norm;
+                weight = weight + nansum((tmp_p(1:end-1) + tmp_p(2:end)) / 2 .* diff(tmp_ds));
+            end
+            
+            % p = axis_pdf(curr_axis_ll(:, 1), curr_axis_ll(:, 2));
+            
+            % p = p ./ max(curr_g_a_norm, 1e-3);
+            % weight = weight + nansum((p(1:end-1) + p(2:end)) / 2 .* diff(interp_s));
+            % p_store{k} = [interp_s, p, [0; cumsum(sqrt(sum(diff(curr_axis_ll).^2, 2)))]];
+            % axis_store{k} = curr_axis_ll;
         end
         halo_img(h, w) = weight;
         
@@ -119,7 +132,7 @@ for w = 1:length(halo_img_x)
             hold on;
             for k = 1:length(x_contour)
                 plot(x_contour{k}(:,1), x_contour{k}(:,2), '-o');
-                plot(axis_store{k}(:, 1), axis_store{k}(:, 2)*10, '-s');
+                % plot(axis_store{k}(:, 1), axis_store{k}(:, 2)*10, '-s');
             end
             title(sprintf('lon lat: (%d,%d) = (%05.2f,%05.2f)\nw: %05.2e', w, h, lon, lat, weight));
             axis equal; axis tight;
@@ -127,17 +140,17 @@ for w = 1:length(halo_img_x)
             set(gca, 'xlim', [-180, 180], 'ylim', [-90, 90]);
             drawnow;
             
-            figure(6); clf;
-            set(gcf, 'position', tmp_f4_pos + [0, -tmp_f4_pos(4), 0, 0]);
-            hold on;
-            for k = 1:length(x_contour)
-%                 plot(p_store{k}(:, 1), p_store{k}(:, 2), '-o');
-                plot(p_store{k}(:, 3), p_store{k}(:, 2), '-s');
-            end
-            title(sprintf('w: %05.3e', weight));
-            box on;
-            set(gca, 'yscale', 'log', 'ylim', [1e-12, 1e-1]);
-            drawnow;
+            % figure(6); clf;
+            % set(gcf, 'position', tmp_f4_pos + [0, -tmp_f4_pos(4), 0, 0]);
+            % hold on;
+            % for k = 1:length(x_contour)
+                % plot(p_store{k}(:, 1), p_store{k}(:, 2), '-o');
+                % plot(p_store{k}(:, 3), p_store{k}(:, 2), '-s');
+            % end
+            % title(sprintf('w: %05.3e', weight));
+            % box on;
+            % set(gca, 'yscale', 'log', 'ylim', [1e-12, 1e-1]);
+            % drawnow;
 %         end
     end
 end
