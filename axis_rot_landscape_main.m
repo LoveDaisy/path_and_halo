@@ -39,12 +39,9 @@ for i = 1:total_num
     curr_rot = [axis_u_ll(ll_idx, :), roll(roll_idx)];
     axis_rot(i, :) = curr_rot;
     
-    rot_m = rotz(90 + axis_u_ll(ll_idx, 1)) * rotx(90 - axis_u_ll(ll_idx, 2)) * rotz(roll(roll_idx));
-    
-    tmp_norm = crystal_face_norm * rot_m';
-    [tmp_out, ~, ~, ~] = bending_angle_with_gradient([sun_longitude, sun_altitude], ...
-        tmp_norm, crystal_n);
-    ray_out(i, :) = ll2xyz_with_gradient(tmp_out);
+    tmp_ll = crystal_system_with_gradient(curr_rot, [sun_longitude, sun_altitude], ...
+        crystal_face_norm, crystal_n);
+    ray_out(i, :) = ll2xyz_with_gradient(tmp_ll);
 end
 bending_angle = acosd(ray_out * ray_in');
 ray_out_ll = xyz2ll_with_gradient(ray_out);

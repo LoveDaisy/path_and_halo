@@ -1,5 +1,5 @@
 function [ray_out, bending_angle, g_out, g_angle] = ...
-    bending_angle_with_gradient(ray_in, face_normal, n)
+    trace_ray_ll_with_gradient(ray_in, face_normal, n)
 % INPUT
 %    ray_in:       m*2, [longitude, latitude] in degree
 %    face_normal:  k*3, [nx, ny, nz] face normals

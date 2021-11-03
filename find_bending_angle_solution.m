@@ -16,7 +16,7 @@ p.parse(varargin{:});
 x = x0;
 max_step = 50;
 
-[y, a, g_y, g_a] = bending_angle_with_gradient(x, face_norm, n);
+[y, a, g_y, g_a] = trace_ray_ll_with_gradient(x, face_norm, n);
 if isnan(a)
     x = nan(size(x0));
     y = nan(size(x0));
@@ -34,7 +34,7 @@ while abs(da) > p.Results.eps && iter_num < p.Results.MaxIter
     a = nan;
     while (isnan(a) || abs(a - target) > abs(da) * 0.8) && alpha > 0.1
         alpha = alpha / 2;
-        [y, a, g_y, g_a] = bending_angle_with_gradient(x + dx * alpha, face_norm, n);
+        [y, a, g_y, g_a] = trace_ray_ll_with_gradient(x + dx * alpha, face_norm, n);
     end
     
     x = x + dx * alpha;
