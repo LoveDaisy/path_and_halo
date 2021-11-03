@@ -1,25 +1,58 @@
-function [ray_out_ll, g_ll_rot] = crystal_system_with_gradient(rot_llq, ray_in_ll, face_norm, n)
+function [ray_out_ll, g_rot] = crystal_system_with_gradient(rot_llq, ray_in_ll, face_norm, n)
 % INPUT
 %   rot_llq:            n*3
 %   ray_in_ll:          1*2
 %   face_norm:          k*3
 %   n:                  k*1
 
-num = size(ray_in_ll, 1);
+num = size(rot_llq, 1);
 
 xyz0 = ll2xyz_with_gradient(ray_in_ll);
+q1 = rot_llq(:, 1);
+q2 = rot_llq(:, 2);
+q3 = rot_llq(:, 3);
+cq1 = cosd(q1);
+sq1 = sind(q1);
+cq2 = cosd(q2);
+sq2 = sind(q2);
+cq3 = cosd(q3);
+sq3 = sind(q3);
+
+g_r_mat = zeros(3, 3, num, 3);
+g_r_mat(:, :, :, 1) = reshape( ...
+    [-cq1 .* cq3 + sq1 .* sq2 .* sq3, -sq1 .* cq3 - cq1 .* sq2 .* sq3, zeros(num, 1), ...
+    sq1 .* sq2 .* cq3 + cq1 .* sq3, -cq1 .* sq2 .* cq3 + sq1 .* sq3, zeros(num, 1), ...
+    -sq1 .* cq2, cq1 .* cq2, zeros(num, 1)]', [3, 3, num, 1]) * pi / 180;
+g_r_mat(:, :, :, 2) = reshape( ...
+    [-cq1 .* cq2 .* sq3, -sq1 .* cq2 .* sq3, -sq2 .* sq3, ...
+    -cq1 .* cq2 .* cq3, -sq1 .* cq2 .* cq3, -sq2 .* cq3, ...
+    -cq1 .* sq2, -sq1 .* sq2, cq2]', [3, 3, num, 1]) * pi / 180;
+g_r_mat(:, :, :, 3) = reshape( ...
+    [-cq1 .* sq2 .* cq3 + sq1 .* sq3, -sq1 .* sq2 .* cq3 - cq1 .* sq3, cq2 .* cq3, ...
+    sq1 .* cq3 + cq1 .* sq2 .* sq3, -cq1 .* cq3 + sq1 .* sq2 .* sq3, -cq2 .* sq3, ...
+    zeros(num, 3)]', [3, 3, num, 1]) * pi / 180;
 
 ray_in_xyz = zeros(num, 3);
+rot_mat_store = zeros(3, 3, num);
 for i = 1:num
-    curr_rot_mat = rotz(90 + rot_llq(1)) * rotx(90 - rot_llq(2)) * rotz(rot_llq(3));
+    curr_rot_mat = rotz(90 + rot_llq(i, 1)) * rotx(90 - rot_llq(i, 2)) * rotz(rot_llq(i, 3));
+    rot_mat_store(:, :, i) = curr_rot_mat;
     ray_in_xyz(i, :) = xyz0 * curr_rot_mat;
 end
 
 [ray_out_xyz, ~, g_out, ~] = trace_ray_xyz_with_gradient(ray_in_xyz, face_norm, n);
 
+g_xyz = zeros(3, 3, num);
 for i = 1:num
-    curr_rot_mat = rotz(90 + rot_llq(1)) * rotx(90 - rot_llq(2)) * rotz(rot_llq(3));
-    ray_out_xyz(i, :) = ray_out_xyz(i, :) * curr_rot_mat';
+    g_xyz1 = [xyz0 * g_r_mat(:, :, i, 1); xyz0 * g_r_mat(:, :, i, 2); xyz0 * g_r_mat(:, :, i, 3)]';
+    g_xyz(:, :, i) = [ray_out_xyz(i, :) * g_r_mat(:, :, i, 1)'; ray_out_xyz(i, :) * g_r_mat(:, :, i, 2)'; ...
+        ray_out_xyz(i, :) * g_r_mat(:, :, i, 3)']' +  rot_mat_store(:, :, i) * g_out(:, :, i) * g_xyz1;
+    ray_out_xyz(i, :) = ray_out_xyz(i, :) * rot_mat_store(:, :, i)';
 end
-ray_out_ll = xyz2ll_with_gradient(ray_out_xyz);
+
+[ray_out_ll, g_ll] = xyz2ll_with_gradient(ray_out_xyz);
+g_rot = zeros(2, 3, num);
+for i = 1:num
+    g_rot(:, :, i) = g_ll(:, :, i) * g_xyz(:, :, i);
+end
 end

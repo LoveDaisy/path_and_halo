@@ -20,7 +20,7 @@ ray_in = bsxfun(@times, ray_in, 1 ./ ray_in_norm);
 
 % refract on each face
 curr_ray = ray_in;
-g_out = repmat(g_norm, [1, 1, ray_n]);
+g_out = g_norm;
 for i = 1:face_n
     [curr_ray, g_curr] = refract_with_gradient(curr_ray, face_normal(i, :), n(i), n(i+1));
     for j = 1:ray_n
