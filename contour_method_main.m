@@ -110,7 +110,7 @@ for w = 1:length(halo_img_x)
             % p = p ./ max(curr_g_a_norm, 1e-3);
             % weight = weight + nansum((p(1:end-1) + p(2:end)) / 2 .* diff(interp_s));
             % p_store{k} = [interp_s, p, [0; cumsum(sqrt(sum(diff(curr_axis_ll).^2, 2)))]];
-            % axis_store{k} = curr_axis_ll;
+            axis_store{k} = curr_axis_ll;
         end
         halo_img(h, w) = weight;
         
@@ -132,7 +132,7 @@ for w = 1:length(halo_img_x)
             hold on;
             for k = 1:length(x_contour)
                 plot(x_contour{k}(:,1), x_contour{k}(:,2), '-o');
-                % plot(axis_store{k}(:, 1), axis_store{k}(:, 2)*10, '-s');
+                plot(axis_store{k}(:, 1), axis_store{k}(:, 2), '-s');
             end
             title(sprintf('lon lat: (%d,%d) = (%05.2f,%05.2f)\nw: %05.2e', w, h, lon, lat, weight));
             axis equal; axis tight;
