@@ -14,7 +14,7 @@ p.addParameter('config', []);
 p.parse(varargin{:});
 
 if isempty(p.Results.config)
-    config = init_config_3d(face_norm, n, sun_ll, p.Results.GridLevel);
+    config = init_config_3d(face_norm, refract_n, sun_ll, p.Results.GridLevel);
 else
     config = p.Results.config;
 end
@@ -29,13 +29,13 @@ checked_idx = false(size(seeds_idx));
 start_rot = config.axis_rot_store(min_idx, :);
 contour_i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
-    [x_contour_fwd, y_val_fwd, jacobian_fwd, closed] = search_one_direction(start_rot, sun_ll, target_ll, ...
-        face_norm, refract_n, 1, num);
+    [x_contour_fwd, y_val_fwd, jacobian_fwd, closed] = search_direction(start_rot, sun_ll, target_ll, ...
+        face_norm, refract_n, 1, p.Results.MaxIter);
     valid_idx_fwd = ~isnan(x_contour_fwd(:, 1));
 
     if ~closed
-        [x_contour_bck, y_val_bck, jacobian_bck, ~] = search_one_direction(start_rot, sun_ll, target_ll, ...
-            face_norm, refract_n, 1, num);
+        [x_contour_bck, y_val_bck, jacobian_bck, ~] = search_direction(start_rot, sun_ll, target_ll, ...
+            face_norm, refract_n, -1, p.Results.MaxIter);
         valid_idx_bck = ~isnan(x_contour_bck(:, 1));
 
         % filter out those identical to the other line
@@ -66,7 +66,7 @@ end
 end
 
 
-function [x_contour, y_val, jacobian, closed] = search_one_direction(rot0, sun_ll, target_ll, face_norm, refract_n, ...
+function [x_contour, y_val, jacobian, closed] = search_direction(rot0, sun_ll, target_ll, face_norm, refract_n, ...
     direction, num)
 h = 1;
 max_h = 5;
@@ -164,8 +164,9 @@ num = size(rot0, 1);
 [out_ll, j_rot] = crystal_system_with_gradient(rot0, sun_ll, face_norm, refract_n);
 
 if any(isnan(out_ll))
-    out_ll = nan(num, 2);
-    j_rot = nan(2, 3, num);
+    out_ll = nan(1, 2);
+    j_rot = nan(2, 3, 1);
+    x = nan(1, 3);
     return;
 end
 
@@ -190,7 +191,8 @@ while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
 end
 
 if norm(dy) > p.Results.eps
-    out_ll = nan(num, 2);
-    j_rot = nan(2, 3, num);
+    out_ll = nan(1, 2);
+    j_rot = nan(2, 3, 1);
+    x = nan(1, 3);
 end
 end

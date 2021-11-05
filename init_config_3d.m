@@ -13,8 +13,17 @@ axis_rot_store = [repmat(rot0_ll, [r_num, 1]), kron(roll0, ones(a_num, 1))];
 
 out_xyz = zeros(total_num, 3);
 out_ll = zeros(total_num, 2);
-mat_store = zeros(3, 3, total_num);
+mat_store = zeros(2, 3, total_num);
+
+progress_cnt = 0;
+progress_bin = 0.1;
 for i = 1:total_num
+    if progress_cnt > progress_bin
+        fprintf('init_config_3d (%04.1f%%)...\n', i / total_num * 100);
+        progress_cnt = progress_cnt - floor(progress_cnt / progress_bin) * progress_bin;
+    end
+    progress_cnt = progress_cnt + 1 / total_num;
+
     [tmp_out_ll, tmp_jacob] = crystal_system_with_gradient(axis_rot_store(i, :), sun_ll, face_norm, n);
     out_ll(i, :) = tmp_out_ll;
     out_xyz(i, :) = ll2xyz_with_gradient(tmp_out_ll);
@@ -22,7 +31,7 @@ for i = 1:total_num
 end
 
 sun_xyz = ll2xyz_with_gradient(sun_ll);
-bending_angle = acosd(sum(sun_xyz .* out_xyz, 2));
+bending_angle = acosd(out_xyz * sun_xyz');
 bending_angle_max = max(bending_angle);
 bending_angle_min = min(bending_angle);
 

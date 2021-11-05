@@ -6,7 +6,7 @@ function [ray_out, g] = refract_with_gradient(ray_in, face_normal, n0, n1)
 
 ray_n = size(ray_in, 1);
 
-ray_out = zeros(size(ray_in));
+ray_out = nan(size(ray_in));
 g = nan(3, 3, ray_n);
 ray_in_norm = sqrt(sum(ray_in.^2, 2));
 valid_input = sum(abs(ray_in), 2) > 1e-4;
