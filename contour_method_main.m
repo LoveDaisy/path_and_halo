@@ -32,7 +32,7 @@ ray_in_xyz = [cosd(sun_altitude) * cosd(sun_longitude), ...
     cosd(sun_altitude) * sind(sun_longitude), ...
     sind(sun_altitude)];
 
-config = generate_init_config(face_norm([entry_face_idx, exit_face_idx], :), [1.31, 1], 6);
+config = init_config_2d(face_norm([entry_face_idx, exit_face_idx], :), [1.31, 1], 6);
 
 % halo_img_x = linspace(-180, 180, 512);
 % halo_img_y = linspace(-90, 90, 256);

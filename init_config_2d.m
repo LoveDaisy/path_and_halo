@@ -1,4 +1,4 @@
-function config = generate_init_config(face_norm, n, level)
+function config = init_config_2d(face_norm, n, level)
 face_num = size(face_norm, 1);
 n = [1; n(:)];
 

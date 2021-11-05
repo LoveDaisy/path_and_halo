@@ -13,7 +13,7 @@ p.addParameter('config', []);
 p.parse(varargin{:});
 
 if isempty(p.Results.config)
-    config = generate_init_config(face_norm, n, p.Results.GridLevel);
+    config = init_config_2d(face_norm, n, p.Results.GridLevel);
 else
     config = p.Results.config;
 end
