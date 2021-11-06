@@ -1,6 +1,4 @@
 function config = init_config_3d(face_norm, n, sun_ll, level)
-n = [1; n(:)];
-
 % initial grid
 [~, rot0_ll, dr] = generate_healpix_grids(level);
 roll0 = (0:dr*2:360)';

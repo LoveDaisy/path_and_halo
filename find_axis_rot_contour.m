@@ -19,30 +19,59 @@ else
     config = p.Results.config;
 end
 
+x_contour = {};
+y_val = {};
+jacobian = {};
+
 target_xyz = ll2xyz_with_gradient(target_ll);
 target_diff = acosd(config.out_xyz * target_xyz');
 
 seeds_idx = target_diff < config.dr;
 checked_idx = false(size(seeds_idx));
+dup_dr = config.dr * 2;
+seeds_dr = config.dr * 2;
 
 [~, min_idx] = min(target_diff);
 start_rot = config.axis_rot_store(min_idx, :);
+checked_idx(min_idx) = true;
+
 contour_i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
     [x_contour_fwd, y_val_fwd, jacobian_fwd, closed] = search_direction(start_rot, sun_ll, target_ll, ...
         face_norm, refract_n, 1, p.Results.MaxIter);
     valid_idx_fwd = ~isnan(x_contour_fwd(:, 1));
+    if sum(valid_idx_fwd) < 2
+        valid_idx_fwd(:) = false;
+    end
 
     if ~closed
         [x_contour_bck, y_val_bck, jacobian_bck, ~] = search_direction(start_rot, sun_ll, target_ll, ...
             face_norm, refract_n, -1, p.Results.MaxIter);
         valid_idx_bck = ~isnan(x_contour_bck(:, 1));
+        valid_idx_bck = find(valid_idx_bck);
+        if sum(valid_idx_fwd) >= 2
+            valid_idx_bck = valid_idx_bck(2:end);
+        end
 
         % filter out those identical to the other line
-        d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), x_contour_fwd(valid_idx_fwd, :));
-        valid_idx_bck = valid_idx_bck(d > config.dr * 2);
-        
+        if ~isempty(valid_idx_bck) && sum(valid_idx_fwd) > 1
+            d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), x_contour_fwd(valid_idx_fwd, :));
+            valid_idx_bck = valid_idx_bck(d > dup_dr);
+        end
+        if ~isempty(valid_idx_bck) && sum(valid_idx_fwd) > 1
+            tmp_x = x_contour_fwd(valid_idx_fwd, :);
+            tmp_x(:, 3) = tmp_x(:, 3) + 360;
+            d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
+            valid_idx_bck = valid_idx_bck(d > dup_dr);
+        end
+        if ~isempty(valid_idx_bck) && sum(valid_idx_fwd) > 1
+            tmp_x = x_contour_fwd(valid_idx_fwd, :);
+            tmp_x(:, 3) = tmp_x(:, 3) - 360;
+            d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
+            valid_idx_bck = valid_idx_bck(d > dup_dr);
+        end
         valid_idx_bck = wrev(valid_idx_bck);
+
         curr_x = [x_contour_bck(valid_idx_bck, :); x_contour_fwd(valid_idx_fwd, :)];
         curr_j = cat(3, jacobian_bck(:, :, valid_idx_bck), jacobian_fwd(:, :, valid_idx_fwd));
         curr_y = [y_val_bck(valid_idx_bck, :); y_val_fwd(valid_idx_fwd, :)];
@@ -54,13 +83,47 @@ while sum(seeds_idx & ~checked_idx) > 0
         curr_y = y_val_fwd(valid_idx_fwd, :);
         curr_y = [curr_y; curr_y(1, :)];
     end
-
+    
     if isempty(curr_x) || size(curr_x, 1) < 2
         break;
     end
+    
+    % check seeds
+    tmp_idx = find(seeds_idx & ~checked_idx);
+    for j = 1:length(tmp_idx)
+        tmp_x0 = config.axis_rot_store(tmp_idx(j), :);
+        [tmp_x, tmp_out_ll, ~] = find_solution(tmp_x0, sun_ll, target_ll, face_norm, refract_n);
+        d = distance_to_poly_line(tmp_x, curr_x);
+        if d < seeds_dr
+            checked_idx(tmp_idx(j)) = true;
+        end
+    end
+    tmp_idx = find(seeds_idx & ~checked_idx);
+    
+    [~, min_idx] = min(target_diff(tmp_idx));
+    start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
+    
+    % filter out identical to other lines up to a period
+    dup = false;
+    for j = 1:length(x_contour)
+        tmp_x = curr_x;
+        d1 = distance_to_poly_line(tmp_x, x_contour{j});
+        tmp_x(:, 3) = curr_x(:, 3) + 360;
+        d2 = distance_to_poly_line(tmp_x, x_contour{j});
+        tmp_x(:, 3) = curr_x(:, 3) - 360;
+        d3 = distance_to_poly_line(tmp_x, x_contour{j});
+        if sum(min([d1, d2, d3], [], 2) < dup_dr) > length(d1) * 0.3
+            dup = true;
+            break;
+        end
+    end
+    if dup
+        continue;
+    end
+    
     x_contour{contour_i} = curr_x;
     y_val{contour_i} = curr_y;
-    jacobian{i} = curr_j;
+    jacobian{contour_i} = curr_j;
     contour_i = contour_i + 1;
 end
 end
@@ -69,8 +132,8 @@ end
 function [x_contour, y_val, jacobian, closed] = search_direction(rot0, sun_ll, target_ll, face_norm, refract_n, ...
     direction, num)
 h = 1;
-max_h = 5;
-min_h = 0.1;
+max_h = 7;
+min_h = 0.3;
 
 x_contour = nan(num, 3);
 y_val = nan(num, 2);
@@ -81,7 +144,7 @@ closed = false;
 
 [rot, out_ll, j_rot] = find_solution(rot0, sun_ll, target_ll, face_norm, refract_n);
 co_gradient = cross(j_rot(1, :), j_rot(2, :));
-co_gradient = co_gradient' / norm(co_gradient) * direction;
+co_gradient = co_gradient / norm(co_gradient) * direction;
 
 x_contour(1, :) = rot;
 y_val(1, :) = out_ll;
@@ -103,9 +166,10 @@ while i <= num
             (new_t - tmp_t(3)) * (new_t - tmp_t(1)) * (tmp_t(3) - tmp_t(1)) * tmp_x(2, :);
         x0 = -new_x / ((tmp_t(1) - tmp_t(2)) * (tmp_t(2) - tmp_t(3)) * (tmp_t(3) - tmp_t(1)));
     end
-    [x, out_ll, j_rot] = find_solution(x0, sun_ll, target_ll, face_norm, n);
+    [x, out_ll, j_rot] = find_solution(x0, sun_ll, target_ll, face_norm, refract_n);
     co_gradient = cross(j_rot(1, :), j_rot(2, :));
-    co_gradient = co_gradient' / norm(co_gradient) * direction;
+    co_gradient = co_gradient / norm(co_gradient) * direction;
+    co_g_store(i, :) = co_gradient;
 
     if i >= 3 && dot(x - x_contour(i-1, :), co_g_store(i, :)) / ...
             norm(x - x_contour(i-1, :)) < 0
@@ -160,13 +224,17 @@ p.parse(varargin{:});
 
 max_step = 50;
 
-num = size(rot0, 1);
+out_ll = nan(1, 2);
+j_rot = nan(2, 3, 1);
+x = nan(1, 3);
+
+if any(isnan(rot0)) || any(isinf(rot0))
+    return;
+end
+
 [out_ll, j_rot] = crystal_system_with_gradient(rot0, sun_ll, face_norm, refract_n);
 
 if any(isnan(out_ll))
-    out_ll = nan(1, 2);
-    j_rot = nan(2, 3, 1);
-    x = nan(1, 3);
     return;
 end
 
@@ -174,7 +242,8 @@ dy = target_ll - out_ll;
 iter_num = 1;
 x = rot0;
 while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
-    dx = j_rot' * (j_rot * j_rot') \ dy;
+%     dx = dy / (j_rot * j_rot') * j_rot;
+    dx = dy / j_rot';
     dx = min(norm(dx), max_step) * dx / norm(dx);
 
     % then linear search
@@ -182,7 +251,7 @@ while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
     alpha = 2;
     while (any(isnan(out_ll)) || norm(target_ll - out_ll) > norm(dy) * 0.8) && alpha > 0.1
         alpha = alpha / 2;
-        [out_ll, ~] = crystal_system_with_gradient(x + dx * alpha, face_norm, n);
+        [out_ll, j_rot] = crystal_system_with_gradient(x + dx * alpha, sun_ll, face_norm, refract_n);
     end
 
     x = x + dx;
@@ -190,7 +259,7 @@ while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
     iter_num = iter_num + 1;
 end
 
-if norm(dy) > p.Results.eps
+if any(isnan(out_ll)) || norm(dy) > p.Results.eps
     out_ll = nan(1, 2);
     j_rot = nan(2, 3, 1);
     x = nan(1, 3);
