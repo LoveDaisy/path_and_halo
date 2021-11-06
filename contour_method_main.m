@@ -8,6 +8,8 @@ face_norm = [0, 0, 1;     % face 1
     sqrt(3)/2, -1/2, 0;   % face 6
     0, -1, 0;             % face 7
     -sqrt(3)/2, -1/2, 0]; % face 8
+crystal_h = 10;
+face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal_h * ones(6, 1)];
 n = 1.31;
 
 entry_face_idx = 3;
@@ -33,16 +35,16 @@ ray_in_xyz = ll2xyz_with_gradient(sun_ll);
 config = init_config_3d(crystal_face_norm, crystal_n, sun_ll, 3);
 
 %%
-halo_img_x = -6:.1:6;
-halo_img_y = -20:.1:0;
+halo_img_x = -6:.5:6;
+halo_img_y = -20:.5:0;
 halo_img = zeros(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
 progress_bin = 0.001;
 for w = 1:length(halo_img_x)
     for h = 1:length(halo_img_y)
-% for w = 70
-%     for h = 211
+% for w = 59
+%     for h = 178
         lon = halo_img_x(w);
         lat = halo_img_y(h);
         ray_out_xyz = ll2xyz_with_gradient([lon, lat]);
@@ -71,24 +73,26 @@ for w = 1:length(halo_img_x)
             curr_j = jacobian{k};
             p = axis_pdf(curr_rot);
             curr_det_j = zeros(size(curr_rot, 1), 1);
+            face_area_factor = zeros(length(p), 1);
             for j = 1:length(p)
                 curr_det_j(j) = det(curr_j(:, :, j) * curr_j(:, :, j)');
+                tmp_rot_mat = rotz(90 + curr_rot(j, 1)) * rotx(90 - curr_rot(j, 2)) * rotz(curr_rot(j, 3));
+                tmp_face_norm = face_norm * tmp_rot_mat';
+                tmp_face_area = face_area .* (-tmp_face_norm * ray_in_xyz');
+                tmp_face_area = tmp_face_area(tmp_face_area > 0);
+                face_area_factor(j) = max(tmp_face_area(entry_face_idx), 0) / sum(max(tmp_face_area, 0));
             end
             ds = sqrt(sum(diff(curr_rot).^2, 2));
             s = [0; cumsum(ds)];
             
-            sig_range = [0; p > 1e-8; 0];
-            i1 = max(find(diff(sig_range) > 0) - 1, 1);
-            i2 = min(find(diff(sig_range) < 0) + 1, length(p));
-            for j = 1:length(i1)
-                tmp_s = (s(i1(j)):0.05:s(i2(j)))';
-                tmp_rot = interp1(s, curr_rot, tmp_s, 'spline');
-                tmp_det_j = interp1(s, curr_det_j, tmp_s, 'spline');
-                tmp_p = axis_pdf(tmp_rot);
-                tmp_p = tmp_p ./ tmp_det_j;
-                weight = weight + sum((tmp_p(1:end-1) + tmp_p(2:end)) / 2 .* diff(tmp_s));
-                curr_p_store{j} = [tmp_s, tmp_p];
-            end
+            tmp_s = (s(1):0.05:s(end))';
+            tmp_rot = interp1(s, curr_rot, tmp_s, 'spline');
+            tmp_det_j = interp1(s, curr_det_j, tmp_s, 'spline');
+            tmp_face_factor = interp1(s, face_area_factor, tmp_s, 'linear');
+            tmp_p = axis_pdf(tmp_rot);
+            tmp_p = tmp_p ./ tmp_det_j .* tmp_face_factor;
+            weight = weight + sum((tmp_p(1:end-1) + tmp_p(2:end)) / 2 .* diff(tmp_s));
+            curr_p_store{k} = [tmp_s, tmp_p];
         end
         halo_img(h, w) = weight;
         
