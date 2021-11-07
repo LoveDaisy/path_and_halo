@@ -72,34 +72,17 @@ for w = 1:length(halo_img_x)
         end
         
         weight = 0;
-        interp_p_store = {};
-        interp_rot_store = {};
+        interp_p_store = cell(size(x_contour));
+        interp_rot_store = cell(size(x_contour));
         for k = 1:length(x_contour)
             curr_rot = x_contour{k};
             curr_j = jacobian{k};
-            p = axis_pdf(curr_rot);
-            curr_det_j = zeros(size(curr_rot, 1), 1);
-            face_area_factor = zeros(length(p), 1);
-            for j = 1:length(p)
-                curr_det_j(j) = det(curr_j(:, :, j) * curr_j(:, :, j)');
-                tmp_rot_mat = rotz(90 + curr_rot(j, 1)) * rotx(90 - curr_rot(j, 2)) * rotz(curr_rot(j, 3));
-                tmp_face_norm = face_norm * tmp_rot_mat';
-                tmp_face_area = face_area .* (-tmp_face_norm * ray_in_xyz');
-                tmp_face_area = tmp_face_area(tmp_face_area > 0);
-                face_area_factor(j) = max(tmp_face_area(entry_face_idx), 0) / sum(max(tmp_face_area, 0));
-            end
-            ds = sqrt(sum(diff(curr_rot).^2, 2));
-            s = [0; cumsum(ds)];
-            
-            tmp_s = (s(1):0.05:s(end))';
-            tmp_rot = interp1(s, curr_rot, tmp_s, 'spline');
-            tmp_det_j = interp1(s, curr_det_j, tmp_s, 'spline');
-            tmp_face_factor = interp1(s, face_area_factor, tmp_s, 'linear');
-            tmp_p = axis_pdf(tmp_rot);
-            tmp_p = tmp_p ./ tmp_det_j .* tmp_face_factor;
-            weight = weight + sum((tmp_p(1:end-1) + tmp_p(2:end)) / 2 .* diff(tmp_s));
+            [tmp_w, tmp_s, tmp_p, tmp_rot] = ...
+                compute_axis_rot_weight(curr_rot, curr_j, axis_pdf, face_norm, face_area, ...
+                entry_face_idx, sun_ll);
             interp_p_store{k} = [tmp_s, tmp_p];
             interp_rot_store{k} = tmp_rot;
+            weight = weight + tmp_w;
         end
         halo_img(h, w) = weight;
         
@@ -123,7 +106,6 @@ for w = 1:length(halo_img_x)
             subplot(2,1,2);
             hold on;
             for k = 1:length(interp_p_store)
-                plot(s, p, '-ok');
                 plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 2), '.-');
             end
             drawnow;
