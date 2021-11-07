@@ -35,17 +35,17 @@ ray_in_xyz = ll2xyz_with_gradient(sun_ll);
 config = init_config_3d(crystal_face_norm, crystal_n, sun_ll, 3);
 
 %%
-halo_img_x = -3:.02:-1;
-halo_img_y = 41.6:.02:42.2;
+halo_img_x = -4:.01:0;
+halo_img_y = 41.5:.01:42.5;
 halo_img = zeros(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
 progress_bin = 0.001;
 update_progress = false;
-for w = 1:length(halo_img_x)
+for w = 53:length(halo_img_x)
     for h = 1:length(halo_img_y)
-% for w = 26
-%     for h = 8
+% for w = 315
+%     for h = 36
         lon = halo_img_x(w);
         lat = halo_img_y(h);
 
@@ -89,7 +89,7 @@ for w = 1:length(halo_img_x)
         if weight > 1e-8 && update_progress
             figure(1); clf;
             f1_pos = get(gcf, 'position');
-            imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 20e-4));
+            imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 5e-5));
             axis equal; axis tight; axis xy;
             title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
             drawnow;
@@ -115,7 +115,7 @@ end
 
 %%
 figure(1); clf;
-imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 20e-4));
+imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 5e-5));
 axis equal; axis tight; axis xy;
 drawnow;
 
