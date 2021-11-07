@@ -28,7 +28,7 @@ target_diff = acosd(config.out_xyz * target_xyz');
 
 seeds_idx = target_diff < config.dr;
 checked_idx = false(size(seeds_idx));
-dup_dr = config.dr * 2;
+dup_dr = config.dr;
 seeds_dr = config.dr * 2;
 
 [~, min_idx] = min(target_diff);
@@ -54,6 +54,7 @@ while sum(seeds_idx & ~checked_idx) > 0
         end
 
         % filter out those identical to the other line
+        num_before = length(valid_idx_bck);
         if ~isempty(valid_idx_bck) && sum(valid_idx_fwd) > 1
             d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), x_contour_fwd(valid_idx_fwd, :));
             valid_idx_bck = valid_idx_bck(d > dup_dr);
@@ -70,11 +71,19 @@ while sum(seeds_idx & ~checked_idx) > 0
             d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
             valid_idx_bck = valid_idx_bck(d > dup_dr);
         end
+        num_after = length(valid_idx_bck);
         valid_idx_bck = wrev(valid_idx_bck);
 
         curr_x = [x_contour_bck(valid_idx_bck, :); x_contour_fwd(valid_idx_fwd, :)];
         curr_j = cat(3, jacobian_bck(:, :, valid_idx_bck), jacobian_fwd(:, :, valid_idx_fwd));
         curr_y = [y_val_bck(valid_idx_bck, :); y_val_fwd(valid_idx_fwd, :)];
+        
+        % entire contour is closed
+        if num_before - num_after > 1 && norm(curr_x(1, :) - curr_x(end, :)) < dup_dr
+            curr_x = [curr_x; curr_x(1, :)];
+            curr_j = cat(3, curr_j, curr_j(:, :, 1));
+            curr_y = [curr_y; curr_y(1, :)];
+        end
     else
         curr_x = x_contour_fwd(valid_idx_fwd, :);
         curr_x = [curr_x; curr_x(1, :)];
@@ -132,7 +141,7 @@ end
 function [x_contour, y_val, jacobian, closed] = search_direction(rot0, sun_ll, target_ll, face_norm, refract_n, ...
     direction, num)
 h = 1;
-max_h = 7;
+max_h = 5;
 min_h = 0.3;
 
 x_contour = nan(num, 3);
@@ -219,7 +228,7 @@ function [x, out_ll, j_rot] = find_solution(rot0, sun_ll, target_ll, face_norm, 
 
 p = inputParser;
 p.addParameter('eps', 1e-8);
-p.addParameter('MaxIter', 5);
+p.addParameter('MaxIter', 10);
 p.parse(varargin{:});
 
 max_step = 50;
