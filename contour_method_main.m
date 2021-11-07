@@ -35,16 +35,16 @@ ray_in_xyz = ll2xyz_with_gradient(sun_ll);
 config = init_config_3d(crystal_face_norm, crystal_n, sun_ll, 3);
 
 %%
-halo_img_x = -6:.5:6;
-halo_img_y = -20:.5:0;
+halo_img_x = -3:.02:-1;
+halo_img_y = 41.6:.02:42.2;
 halo_img = zeros(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
 progress_bin = 0.001;
 for w = 1:length(halo_img_x)
     for h = 1:length(halo_img_y)
-% for w = 59
-%     for h = 178
+% for w = 17
+%     for h = 15
         lon = halo_img_x(w);
         lat = halo_img_y(h);
         ray_out_xyz = ll2xyz_with_gradient([lon, lat]);
@@ -67,7 +67,8 @@ for w = 1:length(halo_img_x)
         end
         
         weight = 0;
-        curr_p_store = {};
+        interp_p_store = {};
+        interp_rot_store = {};
         for k = 1:length(x_contour)
             curr_rot = x_contour{k};
             curr_j = jacobian{k};
@@ -92,14 +93,15 @@ for w = 1:length(halo_img_x)
             tmp_p = axis_pdf(tmp_rot);
             tmp_p = tmp_p ./ tmp_det_j .* tmp_face_factor;
             weight = weight + sum((tmp_p(1:end-1) + tmp_p(2:end)) / 2 .* diff(tmp_s));
-            curr_p_store{k} = [tmp_s, tmp_p];
+            interp_p_store{k} = [tmp_s, tmp_p];
+            interp_rot_store{k} = tmp_rot;
         end
         halo_img(h, w) = weight;
         
         if weight > 1e-8
             figure(1); clf;
             f1_pos = get(gcf, 'position');
-            imagesc(halo_img_x, halo_img_y, log10(halo_img ./ (halo_img + 1e-1) + 9e-3));
+            imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 20e-4));
             axis equal; axis tight; axis xy;
             title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
             drawnow;
@@ -109,13 +111,15 @@ for w = 1:length(halo_img_x)
             subplot(2,1,1);
             hold on;
             for k = 1:length(x_contour)
-                plot3(x_contour{k}(:, 1), x_contour{k}(:, 2), x_contour{k}(:, 3), '-o');
+                plot(x_contour{k}(:, 2), x_contour{k}(:, 3), '-o');
+                plot(interp_rot_store{k}(:, 2), interp_rot_store{k}(:, 3), '.-');
                 title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
             end
             subplot(2,1,2);
             hold on;
-            for k = 1:length(curr_p_store)
-                plot(curr_p_store{k}(:, 1), curr_p_store{k}(:, 2), '.-');
+            for k = 1:length(interp_p_store)
+                plot(s, p, '-ok');
+                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 2), '.-');
             end
             drawnow;
         end
@@ -124,7 +128,7 @@ end
 
 %%
 figure(1); clf;
-imagesc(halo_img_x, halo_img_y, log10(halo_img ./ (halo_img + 1e-1) + 9e-3));
+imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 20e-4));
 axis equal; axis tight; axis xy;
 drawnow;
 
