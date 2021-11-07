@@ -39,9 +39,19 @@ contour_i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
     [x_contour_fwd, y_val_fwd, jacobian_fwd, closed] = search_direction(start_rot, sun_ll, target_ll, ...
         face_norm, refract_n, 1, p.Results.MaxIter);
-    valid_idx_fwd = ~isnan(x_contour_fwd(:, 1));
-    if sum(valid_idx_fwd) < 2
-        valid_idx_fwd(:) = false;
+    valid_idx_fwd = find(~isnan(x_contour_fwd(:, 1)));
+    if length(valid_idx_fwd) < 2
+        valid_idx_fwd = [];
+    end
+    
+    % check seeds
+    for i = 2:length(valid_idx_fwd)
+        tmp_idx = find(seeds_idx & ~checked_idx);
+        [tmp_dist, tmp_vn, ~] = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), ...
+            x_contour_fwd(valid_idx_fwd(i-1:i), :));
+        tmp_dy = tmp_vn * jacobian_fwd(:, :, i)';
+        checked_idx(tmp_idx(tmp_dist < config.dr | ...
+            (sum(tmp_dy.^2, 2) < config.dr^2))) = true;
     end
 
     if ~closed
@@ -49,27 +59,37 @@ while sum(seeds_idx & ~checked_idx) > 0
             face_norm, refract_n, -1, p.Results.MaxIter);
         valid_idx_bck = ~isnan(x_contour_bck(:, 1));
         valid_idx_bck = find(valid_idx_bck);
-        if sum(valid_idx_fwd) >= 2
+        if length(valid_idx_fwd) >= 2
             valid_idx_bck = valid_idx_bck(2:end);
+        end
+
+        % check seeds
+        for i = 2:length(valid_idx_bck)
+            tmp_idx = find(seeds_idx & ~checked_idx);
+            [tmp_dist, tmp_vn, ~] = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), ...
+                x_contour_bck(valid_idx_bck(i-1:i), :));
+            tmp_dy = tmp_vn * jacobian_bck(:, :, i)';
+            checked_idx(tmp_idx(tmp_dist < config.dr | ...
+                (sum(tmp_dy.^2, 2) < config.dr^2))) = true;
         end
 
         % filter out those identical to the other line
         num_before = length(valid_idx_bck);
-        if ~isempty(valid_idx_bck) && sum(valid_idx_fwd) > 1
-            d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), x_contour_fwd(valid_idx_fwd, :));
-            valid_idx_bck = valid_idx_bck(d > dup_dr);
+        if ~isempty(valid_idx_bck) && length(valid_idx_fwd) > 1
+            dist = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), x_contour_fwd(valid_idx_fwd, :));
+            valid_idx_bck = valid_idx_bck(dist > dup_dr);
         end
-        if ~isempty(valid_idx_bck) && sum(valid_idx_fwd) > 1
+        if ~isempty(valid_idx_bck) && length(valid_idx_fwd) > 1
             tmp_x = x_contour_fwd(valid_idx_fwd, :);
             tmp_x(:, 3) = tmp_x(:, 3) + 360;
-            d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
-            valid_idx_bck = valid_idx_bck(d > dup_dr);
+            dist = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
+            valid_idx_bck = valid_idx_bck(dist > dup_dr);
         end
-        if ~isempty(valid_idx_bck) && sum(valid_idx_fwd) > 1
+        if ~isempty(valid_idx_bck) && length(valid_idx_fwd) > 1
             tmp_x = x_contour_fwd(valid_idx_fwd, :);
             tmp_x(:, 3) = tmp_x(:, 3) - 360;
-            d = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
-            valid_idx_bck = valid_idx_bck(d > dup_dr);
+            dist = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
+            valid_idx_bck = valid_idx_bck(dist > dup_dr);
         end
         num_after = length(valid_idx_bck);
         valid_idx_bck = wrev(valid_idx_bck);
@@ -99,11 +119,14 @@ while sum(seeds_idx & ~checked_idx) > 0
     
     % check seeds
     tmp_idx = find(seeds_idx & ~checked_idx);
+    dist = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), curr_x);
+    checked_idx(tmp_idx(dist <= seeds_dr)) = true;
+    tmp_idx = find(seeds_idx & ~checked_idx);
     for j = 1:length(tmp_idx)
         tmp_x0 = config.axis_rot_store(tmp_idx(j), :);
-        [tmp_x, tmp_out_ll, ~] = find_solution(tmp_x0, sun_ll, target_ll, face_norm, refract_n);
-        d = distance_to_poly_line(tmp_x, curr_x);
-        if d < seeds_dr
+        [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, face_norm, refract_n);
+        dist = distance_to_poly_line(tmp_x, curr_x);
+        if dist <= seeds_dr
             checked_idx(tmp_idx(j)) = true;
         end
     end

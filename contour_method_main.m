@@ -41,12 +41,14 @@ halo_img = zeros(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
 progress_bin = 0.001;
+update_progress = false;
 for w = 1:length(halo_img_x)
     for h = 1:length(halo_img_y)
-% for w = 17
-%     for h = 15
+% for w = 26
+%     for h = 8
         lon = halo_img_x(w);
         lat = halo_img_y(h);
+
         ray_out_xyz = ll2xyz_with_gradient([lon, lat]);
         curr_bending_angle = acosd(dot(ray_out_xyz, ray_in_xyz));
         curr_target_input_output = [ray_in_xyz, ray_out_xyz];
@@ -58,6 +60,9 @@ for w = 1:length(halo_img_x)
             fprintf('process (%d,%d) = (%.3f,%.3f), %05.2f%%\n', w, h, lon, lat, ...
                 checked_pix / numel(halo_img) * 100);
             progress_cnt = progress_cnt - floor(progress_cnt / progress_bin) * progress_bin;
+            update_progress = true;
+        else
+            update_progress = false;
         end
 
         [x_contour, y_val, jacobian] = find_axis_rot_contour(sun_ll, ...
@@ -98,7 +103,7 @@ for w = 1:length(halo_img_x)
         end
         halo_img(h, w) = weight;
         
-        if weight > 1e-8
+        if weight > 1e-8 && update_progress
             figure(1); clf;
             f1_pos = get(gcf, 'position');
             imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 20e-4));
