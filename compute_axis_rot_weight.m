@@ -16,14 +16,46 @@ for j = 1:length(p)
     tmp_face_area = tmp_face_area(tmp_face_area > 0);
     face_area_factor(j) = max(tmp_face_area(entry_face_idx), 0) / sum(max(tmp_face_area, 0));
 end
-ds = sqrt(sum(diff(curr_x).^2, 2));
-s = [0; cumsum(ds)];
 
-interp_s = (s(1):0.05:s(end))';
-interp_rot = interp1(s, curr_x, interp_s, 'spline');
+[interp_rot, s, interp_s] = spline_interp_rot(curr_x);
 tmp_det_j = interp1(s, curr_det_j, interp_s, 'spline');
-tmp_face_factor = interp1(s, face_area_factor, interp_s, 'linear');
+tmp_face_factor = interp1(s, face_area_factor, interp_s, 'linear', 'extrap');
 interp_p = axis_pdf(interp_rot);
 interp_p = interp_p ./ tmp_det_j .* tmp_face_factor;
 w = sum((interp_p(1:end-1) + interp_p(2:end)) / 2 .* diff(interp_s));
+end
+
+
+function [interp_rot, s, interp_s] = spline_interp_rot(curr_x)
+ds = sqrt(sum(diff(curr_x).^2, 2));
+if any(ds < 1e-6)
+    fprintf('!!!');
+end
+s = [0; cumsum(ds)];
+num = size(curr_x, 1);
+
+is_period = norm(curr_x(1, :) - curr_x(end, :)) < 1e-8;
+
+ss = 0.05;
+s_diff = inf;
+iter_num = 1;
+while s_diff > 1e-3 && iter_num < 3
+    interp_s = [(s(1):ss:s(end))'; s];
+    [c, ~, ic] = unique(interp_s);
+    [interp_s, ics] = sort(c);
+    [~, isc] = sort(ics);
+    if is_period
+        interp_rot = interp1([s; s(end) + s(2:end)], [curr_x; curr_x(2:end, :)], interp_s, 'spline');
+        interp_rot = interp_rot(1:length(interp_s), :);
+    else
+        interp_rot = interp1(s, curr_x, interp_s, 'spline');
+    end
+
+    new_ds = sqrt(sum(diff(interp_rot).^2, 2));
+    new_s = [0; cumsum(new_ds)];
+    s_diff = abs(new_s(end) - s(end)) / s(end);
+    
+    s = new_s(isc(ic(end-num+1:end)));
+    iter_num = iter_num + 1;
+end
 end

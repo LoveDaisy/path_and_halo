@@ -99,7 +99,8 @@ while sum(seeds_idx & ~checked_idx) > 0
         curr_y = [y_val_bck(valid_idx_bck, :); y_val_fwd(valid_idx_fwd, :)];
         
         % entire contour is closed
-        if num_before - num_after > 1 && norm(curr_x(1, :) - curr_x(end, :)) < dup_dr
+        if num_before - num_after > 1 && norm(curr_x(1, :) - curr_x(end, :)) < dup_dr + ...
+                max(norm(curr_x(2, :) - curr_x(1, :)), norm(curr_x(end, :) - curr_x(end-1, :)))
             curr_x = [curr_x; curr_x(1, :)];
             curr_j = cat(3, curr_j, curr_j(:, :, 1));
             curr_y = [curr_y; curr_y(1, :)];
@@ -125,9 +126,28 @@ while sum(seeds_idx & ~checked_idx) > 0
     for j = 1:length(tmp_idx)
         tmp_x0 = config.axis_rot_store(tmp_idx(j), :);
         [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, face_norm, refract_n);
-        dist = distance_to_poly_line(tmp_x, curr_x);
-        if dist <= seeds_dr
-            checked_idx(tmp_idx(j)) = true;
+        lon_offset = [-360, 1; 360, 1; 0, 1];
+        lat_offset = [-180, -1; 180, -1; 0, 1];
+        roll_offset = [-360, 1; 360, 1; 0, 1];
+        comb_offset = zeros(27, 6);
+        comb_i = 1;
+        for lon_i = 1:3
+            for lat_i = 1:3
+                for roll_i = 1:3
+                    comb_offset(comb_i, :) = ...
+                        [lon_offset(lon_i, 1), lat_offset(lat_i, 1), roll_offset(roll_i, 1), ...
+                        lon_offset(lon_i, 2), lat_offset(lat_i, 2), roll_offset(roll_i, 2)];
+                    comb_i = comb_i + 1;
+                end
+            end
+        end
+        for comb_i = 1:27
+            dist = distance_to_poly_line(tmp_x .* comb_offset(comb_i, 4:6) + ...
+                comb_offset(comb_i, 1:3), curr_x);
+            if dist <= seeds_dr
+                checked_idx(tmp_idx(j)) = true;
+                break;
+            end
         end
     end
     tmp_idx = find(seeds_idx & ~checked_idx);
@@ -209,14 +229,24 @@ while i <= num
     end
 
     if i > 3
-        d = distance_to_poly_line(x, x_contour(1:i-1, :));
+        [d, ~, idx_t] = distance_to_poly_line(x, x_contour(1:i-1, :));
         if d < norm(x - x_contour(i-1, :)) * 0.5
             closed = true;
+            if idx_t(2) > 1 - 1e-6
+                x_contour(i, :) = x;
+                jacobian(:, :, i) = j_rot;
+                y_val(i, :) = out_ll;
+            end
             break;
         end
     end
 
     % a simple adaptive schedule
+    % 1. estimate curvature
+    rho = acos(dot(x_contour(i-1, :), x) / norm(x_contour(i-1, :)) / norm(x));
+    rho = sqrt(sum((x_contour(i-1, :) - x).^2, 2)) / rho;
+    
+    % 2. shrink or extend
     if any(isnan(x))
         non_shrink_cnt = 0;
         h = h / 2;
@@ -230,6 +260,7 @@ while i <= num
         if  non_shrink_cnt > 1
             h = h * 1.2;
         end
+        h = max(min(h, rho * 0.02), min_h);
     end
     ds_store(i) = norm(x - x_contour(i-1, :));
     x_contour(i, :) = x;
