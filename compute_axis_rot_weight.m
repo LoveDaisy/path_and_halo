@@ -18,11 +18,11 @@ for j = 1:length(p)
 end
 
 [interp_rot, s, interp_s] = spline_interp_rot(curr_x);
-tmp_det_j = interp1(s, curr_det_j, interp_s, 'spline');
+tmp_det_j = exp(interp1(s, log(curr_det_j), interp_s, 'spline'));
 tmp_face_factor = interp1(s, face_area_factor, interp_s, 'linear', 'extrap');
 interp_p = axis_pdf(interp_rot);
-interp_p = interp_p ./ tmp_det_j .* tmp_face_factor;
-w = sum((interp_p(1:end-1) + interp_p(2:end)) / 2 .* diff(interp_s));
+interp_p = [interp_p ./ tmp_det_j .* tmp_face_factor, interp_p, 1 ./ tmp_det_j, tmp_face_factor];
+w = sum((interp_p(1:end-1, 1) + interp_p(2:end, 1)) / 2 .* diff(interp_s));
 end
 
 
