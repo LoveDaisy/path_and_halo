@@ -29,7 +29,7 @@ target_diff = acosd(config.out_xyz * target_xyz');
 seeds_idx = target_diff < config.dr;
 checked_idx = false(size(seeds_idx));
 dup_dr = config.dr;
-seeds_dr = config.dr;
+seeds_dr = config.dr * 2;
 
 [~, min_idx] = min(target_diff);
 start_rot = config.axis_rot_store(min_idx, :);
@@ -45,13 +45,14 @@ while sum(seeds_idx & ~checked_idx) > 0
     end
     
     % check seeds
-    for i = 2:length(valid_idx_fwd)
-        tmp_idx = find(seeds_idx & ~checked_idx);
-        [tmp_dist, tmp_vn, ~] = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), ...
-            x_contour_fwd(valid_idx_fwd(i-1:i), :));
-        tmp_dy = tmp_vn * jacobian_fwd(:, :, i)';
-        checked_idx(tmp_idx(tmp_dist < config.dr | ...
-            (sum(tmp_dy.^2, 2) < config.dr^2))) = true;
+    tmp_idx = find(seeds_idx & ~checked_idx);
+    if ~isempty(tmp_idx) && length(valid_idx_fwd) >= 2
+        [tmp_dist, tmp_vn, tmp_it] = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), ...
+            x_contour_fwd(valid_idx_fwd, :));
+        for i = 1:length(tmp_idx)
+            tmp_dy = tmp_vn(i, :) * jacobian_fwd(:, :, tmp_it(i, 1))';
+            checked_idx(tmp_idx(i)) = tmp_dist(i) < seeds_dr || sum(tmp_dy.^2, 2) < seeds_dr^2;
+        end
     end
 
     if ~closed
@@ -64,13 +65,14 @@ while sum(seeds_idx & ~checked_idx) > 0
         end
 
         % check seeds
-        for i = 2:length(valid_idx_bck)
-            tmp_idx = find(seeds_idx & ~checked_idx);
-            [tmp_dist, tmp_vn, ~] = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), ...
-                x_contour_bck(valid_idx_bck(i-1:i), :));
-            tmp_dy = tmp_vn * jacobian_bck(:, :, i)';
-            checked_idx(tmp_idx(tmp_dist < config.dr | ...
-                (sum(tmp_dy.^2, 2) < config.dr^2))) = true;
+        tmp_idx = find(seeds_idx & ~checked_idx);
+        if ~isempty(tmp_idx) && length(valid_idx_bck) >= 2
+            [tmp_dist, tmp_vn, tmp_it] = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), ...
+                x_contour_bck(valid_idx_bck, :));
+            for i = 1:length(tmp_idx)
+                tmp_dy = tmp_vn(i, :) * jacobian_bck(:, :, tmp_it(i, 1))';
+                checked_idx(tmp_idx(i)) = tmp_dist(i) < seeds_dr || sum(tmp_dy.^2, 2) < seeds_dr^2;
+            end
         end
 
         % filter out those identical to the other line
@@ -125,7 +127,8 @@ while sum(seeds_idx & ~checked_idx) > 0
     tmp_idx = find(seeds_idx & ~checked_idx);
     for j = 1:length(tmp_idx)
         tmp_x0 = config.axis_rot_store(tmp_idx(j), :);
-        [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, face_norm, refract_n);
+        [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, face_norm, refract_n, ...
+            'eps', config.dr * 0.25);
         lon_offset = [-360, 1; 360, 1; 0, 1];
         lat_offset = [-180, -1; 180, -1; 0, 1];
         roll_offset = [-360, 1; 360, 1; 0, 1];
@@ -142,9 +145,10 @@ while sum(seeds_idx & ~checked_idx) > 0
             end
         end
         for comb_i = 1:27
-            dist = distance_to_poly_line(tmp_x .* comb_offset(comb_i, 4:6) + ...
+            [dist, tmp_vn, tmp_it] = distance_to_poly_line(tmp_x .* comb_offset(comb_i, 4:6) + ...
                 comb_offset(comb_i, 1:3), curr_x);
-            if dist <= seeds_dr
+            tmp_dy = norm(tmp_vn * curr_j(:, :, tmp_it(1))');
+            if dist <= seeds_dr || tmp_dy <= seeds_dr
                 checked_idx(tmp_idx(j)) = true;
                 break;
             end
