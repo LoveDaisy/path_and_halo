@@ -210,9 +210,9 @@ while i <= num
     if i <= 3
         x0 = x_contour(i-1, :) + h * co_gradient;
     else
-        tmp_t = cumsum(ds_store(i-3:i-1) * direction);
+        tmp_t = cumsum(ds_store(i-3:i-1));
         tmp_x = x_contour(i-3:i-1, :);
-        new_t = tmp_t(3) + h * direction;
+        new_t = tmp_t(3) + h;
         new_x = (new_t - tmp_t(1)) * (new_t - tmp_t(2)) * (tmp_t(1) - tmp_t(2)) * tmp_x(3, :) + ...
             (new_t - tmp_t(2)) * (new_t - tmp_t(3)) * (tmp_t(2) - tmp_t(3)) * tmp_x(1, :) + ...
             (new_t - tmp_t(3)) * (new_t - tmp_t(1)) * (tmp_t(3) - tmp_t(1)) * tmp_x(2, :);
@@ -230,9 +230,9 @@ while i <= num
 
     if i > 3
         [d, ~, idx_t] = distance_to_poly_line(x, x_contour(1:i-1, :));
-        if d < norm(x - x_contour(i-1, :)) * 0.5
+        if d < norm(x - x_contour(i-1, :)) * 0.2
             closed = true;
-            if idx_t(2) > 1 - 1e-6
+            if idx_t(2) > 1 - 1e-6 || idx_t(2) < 1e-6
                 x_contour(i, :) = x;
                 jacobian(:, :, i) = j_rot;
                 y_val(i, :) = out_ll;
@@ -243,11 +243,11 @@ while i <= num
 
     % a simple adaptive schedule
     % 1. estimate curvature
-    rho = acos(dot(x_contour(i-1, :), x) / norm(x_contour(i-1, :)) / norm(x));
-    rho = sqrt(sum((x_contour(i-1, :) - x).^2, 2)) / rho;
+    theta = acos(dot(x_contour(i-1, :), x) / norm(x_contour(i-1, :)) / norm(x));
+    rho = sqrt(sum((x_contour(i-1, :) - x).^2, 2)) / theta;
     
     % 2. shrink or extend
-    if any(isnan(x))
+    if any(isnan(x)) || abs(norm(x - x_contour(i-1, :)) - h) / h > 0.7 || theta > 2 * pi / 180
         non_shrink_cnt = 0;
         h = h / 2;
         if h > min_h
@@ -305,7 +305,6 @@ dy = target_ll - out_ll;
 iter_num = 1;
 x = rot0;
 while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
-%     dx = dy / (j_rot * j_rot') * j_rot;
     dx = dy / j_rot';
     dx = min(norm(dx), max_step) * dx / norm(dx);
 

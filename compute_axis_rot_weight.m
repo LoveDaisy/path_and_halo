@@ -28,9 +28,6 @@ end
 
 function [interp_rot, s, interp_s] = spline_interp_rot(curr_x)
 ds = sqrt(sum(diff(curr_x).^2, 2));
-if any(ds < 1e-6)
-    fprintf('!!!');
-end
 s = [0; cumsum(ds)];
 num = size(curr_x, 1);
 
