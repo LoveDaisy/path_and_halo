@@ -29,7 +29,7 @@ target_diff = acosd(config.out_xyz * target_xyz');
 seeds_idx = target_diff < config.dr;
 checked_idx = false(size(seeds_idx));
 dup_dr = config.dr;
-seeds_dr = config.dr * 2;
+seeds_dr = config.dr;
 
 [~, min_idx] = min(target_diff);
 start_rot = config.axis_rot_store(min_idx, :);
