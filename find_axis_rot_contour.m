@@ -316,7 +316,7 @@ while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
         [out_ll, j_rot] = crystal_system_with_gradient(x + dx * alpha, sun_ll, face_norm, refract_n);
     end
 
-    x = x + dx;
+    x = x + dx * alpha;
     dy = target_ll - out_ll;
     iter_num = iter_num + 1;
 end
