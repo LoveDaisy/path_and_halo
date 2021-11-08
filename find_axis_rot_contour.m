@@ -183,8 +183,8 @@ end
 
 function [x_contour, y_val, jacobian, closed] = search_direction(rot0, sun_ll, target_ll, face_norm, refract_n, ...
     direction, num)
-h = 1;
-max_h = 5;
+h = 3;
+max_h = 10;
 min_h = 0.3;
 
 x_contour = nan(num, 3);
@@ -243,11 +243,19 @@ while i <= num
 
     % a simple adaptive schedule
     % 1. estimate curvature
-    theta = acos(dot(x_contour(i-1, :), x) / norm(x_contour(i-1, :)) / norm(x));
-    rho = sqrt(sum((x_contour(i-1, :) - x).^2, 2)) / theta;
+    if i > 2
+        dx1 = x - x_contour(i-1, :);
+        dx0 = x_contour(i-1, :) - x_contour(i-2, :);
+        theta = acos(dot(dx1, dx0) / norm(dx1) / norm(dx0));
+        rho = norm(dx0) / theta;
+    else
+        dx1 = h;
+        theta = 0;
+        rho = inf;
+    end
     
     % 2. shrink or extend
-    if any(isnan(x)) || abs(norm(x - x_contour(i-1, :)) - h) / h > 0.7 || theta > 2 * pi / 180
+    if any(isnan(x)) || abs(norm(dx1) - h) / h > 0.7 || theta > 40 * pi / 180
         non_shrink_cnt = 0;
         h = h / 2;
         if h > min_h
@@ -260,7 +268,7 @@ while i <= num
         if  non_shrink_cnt > 1
             h = h * 1.2;
         end
-        h = max(min(h, rho * 0.02), min_h);
+        h = max(min(h, rho * .4), min_h);
     end
     ds_store(i) = norm(x - x_contour(i-1, :));
     x_contour(i, :) = x;
