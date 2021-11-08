@@ -1,12 +1,16 @@
 function [ray_out, bending_angle, g_out, g_angle] = ...
-    trace_ray_xyz_with_gradient(ray_in, face_normal, n)
+    trace_ray_xyz_with_gradient(ray_in, crystal, trace)
 % INPUT
-%    ray_in:       m*3, [longitude, latitude] in degree
-%    face_normal:  k*3, [nx, ny, nz] face normals
-%    n:            k-vector, refract index after each face
+%    ray_in:        n*3, [longitude, latitude] in degree
+%    crystal:       struct
+%       .face_norm  m*3, [nx, ny, nz] face normals
+%    trace:         struct
+%       .n          k-vector, refract index after each face
+%       .fid        k-vector, face id
 
-n = [1; n(:)];
-face_n = size(face_normal, 1);
+face_norm = crystal.face_norm(trace.fid, :);
+refract_n = [1; trace.n(:)];
+face_n = size(face_norm, 1);
 ray_n = size(ray_in, 1);
 
 % normalize
@@ -18,16 +22,16 @@ g_norm = bsxfun(@times, g_norm, 1 ./ ray_in_norm.^3);
 g_norm = reshape(g_norm', [3, 3, ray_n]);
 ray_in = bsxfun(@times, ray_in, 1 ./ ray_in_norm);
 
-valid_idx = ray_in * face_normal(1, :)' < 0;
+valid_idx = ray_in * face_norm(1, :)' < 0;
 
 % refract on each face
 curr_ray = ray_in;
 g_out = g_norm;
 for i = 1:face_n
     if i > 1
-        valid_idx = valid_idx & (curr_ray * face_normal(i, :)' > 0);
+        valid_idx = valid_idx & (curr_ray * face_norm(i, :)' > 0);
     end
-    [curr_ray, g_curr] = refract_with_gradient(curr_ray, face_normal(i, :), n(i), n(i+1));
+    [curr_ray, g_curr] = refract_with_gradient(curr_ray, face_norm(i, :), refract_n(i), refract_n(i+1));
     
     valid_idx = valid_idx & (~isnan(curr_ray(:, 1)));
 

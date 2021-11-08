@@ -1,4 +1,4 @@
-function config = init_config_3d(face_norm, n, sun_ll, level)
+function config = init_config_3d(crystal, trace, sun_ll, level)
 % initial grid
 [~, rot0_ll, dr] = generate_healpix_grids(level);
 roll0 = (0:dr*2:360)';
@@ -22,7 +22,7 @@ for i = 1:total_num
     end
     progress_cnt = progress_cnt + 1 / total_num;
 
-    [tmp_out_ll, tmp_jacob] = crystal_system_with_gradient(axis_rot_store(i, :), sun_ll, face_norm, n);
+    [tmp_out_ll, tmp_jacob] = crystal_system_with_gradient(axis_rot_store(i, :), sun_ll, crystal, trace);
     out_ll(i, :) = tmp_out_ll;
     out_xyz(i, :) = ll2xyz_with_gradient(tmp_out_ll);
     mat_store(:, :, i) = tmp_jacob;

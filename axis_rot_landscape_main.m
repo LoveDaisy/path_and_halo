@@ -10,15 +10,16 @@ face_norm = [0, 0, 1;     % face 1
     -sqrt(3)/2, -1/2, 0]; % face 8
 n = 1.31;
 
+crystal.face_norm = face_norm;
+trace.fid = [3; 5];
+trace.n = [n; 1];
+
 % initial grid
 [axis_u, axis_u_ll, dr] = generate_healpix_grids(3);
 u_num = size(axis_u, 1);
 roll = (0:(2*dr):360)';
 roll_num = length(roll);
 total_num = u_num * roll_num;
-
-crystal_face_norm = face_norm([3, 5], :);
-crystal_n = [n; 1];
 
 sun_altitude = 20;
 sun_longitude = 0;
@@ -41,7 +42,7 @@ for i = 1:total_num
     axis_rot(i, :) = curr_rot;
     
     [tmp_ll, tmp_jcb] = crystal_system_with_gradient(curr_rot, [sun_longitude, sun_altitude], ...
-        crystal_face_norm, crystal_n);
+        crystal, trace);
     ray_out_ll(i, :) = tmp_ll;
     jacob_store(:, :, i) = tmp_jcb;
 end

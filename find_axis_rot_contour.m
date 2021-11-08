@@ -1,10 +1,10 @@
 function [x_contour, y_val, jacobian] = find_axis_rot_contour(sun_ll, target_ll, ...
-    face_norm, refract_n, varargin)
+    crystal, trace, varargin)
 % INPUT
 %   sun_ll:             2-vector, [longitude, latitude] in degree
 %   target_ll:          2-vector, [longitude, latitude] in degree
-%   face_norm:          k*3
-%   refract_n:          k-vector
+%   crystal:
+%   trace:
 
 p = inputParser;
 p.addParameter('eps', 1e-8);
@@ -14,7 +14,7 @@ p.addParameter('config', []);
 p.parse(varargin{:});
 
 if isempty(p.Results.config)
-    config = init_config_3d(face_norm, refract_n, sun_ll, p.Results.GridLevel);
+    config = init_config_3d(crystal, trace, sun_ll, p.Results.GridLevel);
 else
     config = p.Results.config;
 end
@@ -38,7 +38,7 @@ checked_idx(min_idx) = true;
 contour_i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
     [x_contour_fwd, y_val_fwd, jacobian_fwd, closed] = search_direction(start_rot, sun_ll, target_ll, ...
-        face_norm, refract_n, 1, p.Results.MaxIter);
+        crystal, trace, 1, p.Results.MaxIter);
     valid_idx_fwd = find(~isnan(x_contour_fwd(:, 1)));
     if length(valid_idx_fwd) < 2
         valid_idx_fwd = [];
@@ -57,7 +57,7 @@ while sum(seeds_idx & ~checked_idx) > 0
 
     if ~closed
         [x_contour_bck, y_val_bck, jacobian_bck, ~] = search_direction(start_rot, sun_ll, target_ll, ...
-            face_norm, refract_n, -1, p.Results.MaxIter);
+            crystal, trace, -1, p.Results.MaxIter);
         valid_idx_bck = ~isnan(x_contour_bck(:, 1));
         valid_idx_bck = find(valid_idx_bck);
         if length(valid_idx_fwd) >= 2
@@ -127,7 +127,7 @@ while sum(seeds_idx & ~checked_idx) > 0
     tmp_idx = find(seeds_idx & ~checked_idx);
     for j = 1:length(tmp_idx)
         tmp_x0 = config.axis_rot_store(tmp_idx(j), :);
-        [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, face_norm, refract_n, ...
+        [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, crystal, trace, ...
             'eps', config.dr * 0.25);
         lon_offset = [-360, 1; 360, 1; 0, 1];
         lat_offset = [-180, -1; 180, -1; 0, 1];
@@ -185,7 +185,7 @@ end
 end
 
 
-function [x_contour, y_val, jacobian, closed] = search_direction(rot0, sun_ll, target_ll, face_norm, refract_n, ...
+function [x_contour, y_val, jacobian, closed] = search_direction(rot0, sun_ll, target_ll, crystal, trace, ...
     direction, num)
 h = 3;
 max_h = 15;
@@ -198,7 +198,7 @@ co_g_store = nan(num, 3);
 ds_store = nan(num, 1);
 closed = false;
 
-[rot, out_ll, j_rot] = find_solution(rot0, sun_ll, target_ll, face_norm, refract_n);
+[rot, out_ll, j_rot] = find_solution(rot0, sun_ll, target_ll, crystal, trace);
 co_gradient = cross(j_rot(1, :), j_rot(2, :));
 co_gradient = co_gradient / norm(co_gradient) * direction;
 
@@ -222,7 +222,7 @@ while i <= num
             (new_t - tmp_t(3)) * (new_t - tmp_t(1)) * (tmp_t(3) - tmp_t(1)) * tmp_x(2, :);
         x0 = -new_x / ((tmp_t(1) - tmp_t(2)) * (tmp_t(2) - tmp_t(3)) * (tmp_t(3) - tmp_t(1)));
     end
-    [x, out_ll, j_rot] = find_solution(x0, sun_ll, target_ll, face_norm, refract_n);
+    [x, out_ll, j_rot] = find_solution(x0, sun_ll, target_ll, crystal, trace);
     co_gradient = cross(j_rot(1, :), j_rot(2, :));
     co_gradient = co_gradient / norm(co_gradient) * direction;
     co_g_store(i, :) = co_gradient;
@@ -284,13 +284,13 @@ end
 end
 
 
-function [x, out_ll, j_rot] = find_solution(rot0, sun_ll, target_ll, face_norm, refract_n, varargin)
+function [x, out_ll, j_rot] = find_solution(rot0, sun_ll, target_ll, crystal, trace, varargin)
 % INPUT
 %   rot0:           1*3
 %   sun_ll:         1*2
 %   target_ll:      1*2
-%   face_norm:      k*3
-%   refract_n:      k*1
+%   crystal:
+%   trace:
 
 p = inputParser;
 p.addParameter('eps', 1e-8);
@@ -307,7 +307,7 @@ if any(isnan(rot0)) || any(isinf(rot0))
     return;
 end
 
-[out_ll, j_rot] = crystal_system_with_gradient(rot0, sun_ll, face_norm, refract_n);
+[out_ll, j_rot] = crystal_system_with_gradient(rot0, sun_ll, crystal, trace);
 
 if any(isnan(out_ll))
     return;
@@ -325,7 +325,7 @@ while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
     alpha = 2;
     while (any(isnan(out_ll)) || norm(target_ll - out_ll) > norm(dy) * 0.8) && alpha > 0.1
         alpha = alpha / 2;
-        [out_ll, j_rot] = crystal_system_with_gradient(x + dx * alpha, sun_ll, face_norm, refract_n);
+        [out_ll, j_rot] = crystal_system_with_gradient(x + dx * alpha, sun_ll, crystal, trace);
     end
 
     x = x + dx * alpha;

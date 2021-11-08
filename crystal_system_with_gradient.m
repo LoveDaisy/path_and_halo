@@ -1,9 +1,12 @@
-function [ray_out_ll, g_rot] = crystal_system_with_gradient(rot_llq, ray_in_ll, face_norm, n)
+function [ray_out_ll, g_rot] = crystal_system_with_gradient(rot_llq, ray_in_ll, crystal, trace)
 % INPUT
 %   rot_llq:            n*3
 %   ray_in_ll:          1*2
-%   face_norm:          k*3
-%   n:                  k*1
+%   crystal:            struct
+%       .face_norm      m*3
+%   trace:              struct
+%       .fid            k*1
+%       .n:             k*1
 
 num = size(rot_llq, 1);
 
@@ -40,7 +43,7 @@ for i = 1:num
     ray_in_xyz(i, :) = xyz0 * curr_rot_mat;
 end
 
-[ray_out_xyz, ~, g_out, ~] = trace_ray_xyz_with_gradient(ray_in_xyz, face_norm, n);
+[ray_out_xyz, ~, g_out, ~] = trace_ray_xyz_with_gradient(ray_in_xyz, crystal, trace);
 
 g_xyz = zeros(3, 3, num);
 for i = 1:num

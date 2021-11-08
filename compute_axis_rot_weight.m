@@ -1,6 +1,6 @@
 function [w, interp_s, interp_p, interp_rot] = ...
-    compute_axis_rot_weight(curr_x, curr_jacob, axis_pdf, all_face_norm, all_face_area, ...
-    entry_face_idx, sun_ll)
+    compute_axis_rot_weight(curr_x, curr_jacob, axis_pdf, crystal, ...
+    trace, sun_ll)
 
 ray_in_xyz = ll2xyz_with_gradient(sun_ll);
 
@@ -11,10 +11,10 @@ face_area_factor = zeros(length(p), 1);
 for j = 1:length(p)
     curr_det_j(j) = det(curr_jacob(:, :, j) * curr_jacob(:, :, j)');
     tmp_rot_mat = rotz(90 + curr_x(j, 1)) * rotx(90 - curr_x(j, 2)) * rotz(curr_x(j, 3));
-    tmp_face_norm = all_face_norm * tmp_rot_mat';
-    tmp_face_area = all_face_area .* (-tmp_face_norm * ray_in_xyz');
+    tmp_face_norm = crystal.face_norm * tmp_rot_mat';
+    tmp_face_area = crystal.face_area .* (-tmp_face_norm * ray_in_xyz');
     tmp_face_area = tmp_face_area(tmp_face_area > 0);
-    face_area_factor(j) = max(tmp_face_area(entry_face_idx), 0) / sum(max(tmp_face_area, 0));
+    face_area_factor(j) = max(tmp_face_area(trace.fid(1)), 0) / sum(max(tmp_face_area, 0));
 end
 
 [interp_rot, s, interp_s] = spline_interp_rot(curr_x);
