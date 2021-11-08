@@ -184,7 +184,7 @@ end
 function [x_contour, y_val, jacobian, closed] = search_direction(rot0, sun_ll, target_ll, face_norm, refract_n, ...
     direction, num)
 h = 3;
-max_h = 10;
+max_h = 15;
 min_h = 0.3;
 
 x_contour = nan(num, 3);
