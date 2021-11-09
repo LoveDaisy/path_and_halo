@@ -45,10 +45,11 @@ sun_ll = [sun_longitude, sun_altitude];
 ray_in_xyz = ll2xyz_with_gradient(sun_ll);
 
 config = init_config_3d(crystal, trace, sun_ll, 3);
+line_color = colormap('lines');
 
 %%
-halo_img_x = -4:.05:0;
-halo_img_y = -25:.05:0;
+halo_img_x = -40:.5:0;
+halo_img_y = -25:.5:60;
 halo_img = zeros(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
@@ -56,8 +57,8 @@ progress_bin = 0.001;
 update_progress = false;
 for w = length(halo_img_x):-1:1
     for h = 1:length(halo_img_y)
-% for w = 16
-%     for h = 90
+% for w = 79
+%     for h = 15
         lon = halo_img_x(w);
         lat = halo_img_y(h);
 
@@ -97,7 +98,7 @@ for w = length(halo_img_x):-1:1
         end
         halo_img(h, w) = weight;
         
-        if weight > 1e-6 && update_progress
+%         if weight > 1e-6 && update_progress
             figure(1); clf;
             f1_pos = get(gcf, 'position');
             imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 2e-5));
@@ -133,16 +134,20 @@ for w = length(halo_img_x):-1:1
             hold on;
             for k = 1:length(interp_p_store)
                 plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 2), '.-k', 'linewidth', 2);
-                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 3), '.-');
-                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 4), '--', 'linewidth', 2);
-                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 5), ':', 'linewidth', 3);
-                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 6), '-');
+                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 3), '.-', ...
+                    'color', line_color(1, :));
+                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 4), '--', 'linewidth', 2, ...
+                    'color', line_color(2, :));
+                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 5), ':', 'linewidth', 3, ...
+                    'color', line_color(3, :));
+                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 6), '-', 'linewidth', 1.2, ...
+                    'color', line_color(4, :));
             end
             plot([interp_p_store{1}(1,1), interp_p_store{1}(end,1)], [1, 1], ':k');
             set(gca, 'yscale', 'log', 'ylim', [1e-8, 1e4]);
             box on;
             drawnow;
-        end
+%         end
     end
 end
 
