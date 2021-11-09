@@ -9,14 +9,26 @@ crystal.face_norm = [0, 0, 1;     % face 1
             0, -1, 0;             % face 7
             -sqrt(3)/2, -1/2, 0]; % face 8
 crystal.h = 10;
+crystal.vtx = zeros(12, 3);
+for i = 1:6
+    crystal.vtx(i, :) = [cosd((4-i) * 60), sind((4-i)*60), crystal.h/2];
+end
+for i = 7:12
+    crystal.vtx(i, :) = [cosd((4-i) * 60), sind((4-i)*60), -crystal.h/2];
+end
+crystal.face = {[6; 5; 4; 3; 2; 1];
+                [7; 8; 9; 10; 11; 12];
+                [1; 2; 8; 7];
+                [2; 3; 9; 8];
+                [3; 4; 10; 9];
+                [4; 5; 11; 10];
+                [5; 6; 12; 11];
+                [6; 1; 7; 12]};
 crystal.face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal.h * ones(6, 1)];
+
 n = 1.31;
-
-entry_face_idx = 3;
-exit_face_idx = 5;
-
 trace.n = [n; 1];
-trace.fid = [entry_face_idx; exit_face_idx];
+trace.fid = [3; 5];
 
 crystal_zenith = [90, 0.2];  % mean, std
 tmp_x = linspace(-90, 90, 50000);
@@ -35,17 +47,17 @@ ray_in_xyz = ll2xyz_with_gradient(sun_ll);
 config = init_config_3d(crystal, trace, sun_ll, 3);
 
 %%
-halo_img_x = -4:.2:0;
-halo_img_y = -25:.2:0;
+halo_img_x = -4:.05:0;
+halo_img_y = -25:.05:0;
 halo_img = zeros(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
 progress_bin = 0.001;
 update_progress = false;
-for w = 1:length(halo_img_x)
+for w = length(halo_img_x):-1:1
     for h = 1:length(halo_img_y)
-% for w = 12
-%     for h = 18
+% for w = 16
+%     for h = 90
         lon = halo_img_x(w);
         lat = halo_img_y(h);
 
@@ -88,7 +100,7 @@ for w = 1:length(halo_img_x)
         if weight > 1e-6 && update_progress
             figure(1); clf;
             f1_pos = get(gcf, 'position');
-            imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 5e-5));
+            imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 2e-5));
             axis equal; axis tight; axis xy;
             title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
             drawnow;
@@ -124,6 +136,7 @@ for w = 1:length(halo_img_x)
                 plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 3), '.-');
                 plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 4), '--', 'linewidth', 2);
                 plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 5), ':', 'linewidth', 3);
+                plot(interp_p_store{k}(:, 1), interp_p_store{k}(:, 6), '-');
             end
             plot([interp_p_store{1}(1,1), interp_p_store{1}(end,1)], [1, 1], ':k');
             set(gca, 'yscale', 'log', 'ylim', [1e-8, 1e4]);
@@ -135,7 +148,12 @@ end
 
 %%
 figure(1); clf;
-imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 5e-5));
+imagesc(halo_img_x, halo_img_y, log10(halo_img * 1e-2 ./ (halo_img + 1e-2) + 2e-5));
 axis equal; axis tight; axis xy;
-drawnow;
 
+%%
+figure(3);
+imagesc([halo_img_x, -wrev(halo_img_x(1:end-1))], halo_img_y, ...
+    log10([halo_img, fliplr(halo_img(:, 1:end-1))] * 1e-2 ./ ...
+    ([halo_img, fliplr(halo_img(:, 1:end-1))] + 1e-2) + 2e-5));
+axis xy; axis equal; axis tight;
