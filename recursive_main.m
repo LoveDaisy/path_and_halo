@@ -52,9 +52,10 @@
 
 
 %%
-halo_img_x = linspace(-40,0,129);
-halo_img_y = linspace(-25,55,257);
+halo_img_x = linspace(-40,0,257);
+halo_img_y = linspace(-25,55,513);
 halo_img = nan(length(halo_img_y), length(halo_img_x));
+computed_img = false(size(halo_img));
 checked_pix = 0;
 progress_cnt = 0;
 progress_bin = 0.001;
@@ -87,12 +88,12 @@ for wi = 1:max_step:length(halo_img_x)-1
                 end
                 fprintf('(%d,%d): %05.2f%%\n', curr_box(1,1), curr_box(1,2), ...
                     checked_pix / numel(halo_img) * 100);
-                figure(1); clf;
+                figure(3); clf;
                 subplot(1,2,1)
                 imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
                 axis equal; axis tight; axis xy;
                 subplot(1,2,2)
-                imagesc(halo_img_x, halo_img_y, ~isnan(halo_img));
+                imagesc(halo_img_x, halo_img_y, computed_img);
                 axis equal; axis tight; axis xy;
                 drawnow;
                 
@@ -115,18 +116,28 @@ for wi = 1:max_step:length(halo_img_x)-1
                         weight = weight + tmp_w;
                     end
                     halo_img(curr_box(i, 2), curr_box(i, 1)) = weight;
+                    computed_img(curr_box(i, 2), curr_box(i, 1)) = true;
                     checked_pix = checked_pix + 1;
                     progress_cnt = progress_cnt + 1 / numel(halo_img);
                 end
                 curr_val(i) = halo_img(curr_box(i, 2), curr_box(i, 1));
             end
             curr_vis_val = halo_vis_fun(curr_val);
-            if max(curr_vis_val(:)) - min(curr_vis_val(:)) < 1e-2 && curr_level > 0
-                curr_checked_pix = isnan(halo_img(min(curr_box(:, 2)):max(curr_box(:, 2)), ...
-                    min(curr_box(:, 1)):max(curr_box(:, 1))));
-                curr_checked_pix = sum(curr_checked_pix(:));
-                halo_img(min(curr_box(:, 2)):max(curr_box(:, 2)), ...
-                    min(curr_box(:, 1)):max(curr_box(:, 1))) = interp2(curr_val, curr_level);
+            curr_n = cross([curr_step, 0, curr_vis_val(1, 2)] - [0, 0, curr_vis_val(1, 1)], ...
+                [0, curr_step, curr_vis_val(2, 1)] - [0, 0, curr_vis_val(1, 1)]);
+            curr_n = curr_n / norm(curr_n);
+            vd = [curr_step, curr_step, curr_vis_val(2, 2)] - [0, 0, curr_vis_val(1, 1)];
+            err_sin_q = dot(vd, curr_n) / norm(vd);
+            if (abs(err_sin_q) < 1e-3 && min(curr_val(:)) >= 1e-6) || ...
+                    (max(curr_vis_val(:)) - min(curr_vis_val(:)) < 1e-2)
+                row_range = min(curr_box(:, 2)):max(curr_box(:, 2));
+                col_range = min(curr_box(:, 1)):max(curr_box(:, 1));
+                interp_img = interp2(curr_val, curr_level);
+                origin_img = halo_img(row_range, col_range);
+                pix_to_fill = isnan(origin_img);
+                origin_img(pix_to_fill) = 0;
+                curr_checked_pix = sum(pix_to_fill(:));
+                halo_img(row_range, col_range) = interp_img .* pix_to_fill + origin_img .* ~pix_to_fill;
                 checked_pix = checked_pix + curr_checked_pix;
                 progress_cnt = progress_cnt + curr_checked_pix / numel(halo_img);
             elseif curr_level > 0
@@ -177,7 +188,7 @@ imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
 axis equal; axis tight; axis xy;
 
 %%
-figure(3);
+figure(2);
 imagesc([halo_img_x, -wrev(halo_img_x(1:end-1))], halo_img_y, ...
     halo_vis_fun([halo_img, fliplr(halo_img(:, 1:end-1))]));
 axis xy; axis equal; axis tight;
