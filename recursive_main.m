@@ -52,8 +52,8 @@ line_color = colormap('lines');
 
 
 %%
-halo_img_x = linspace(-40,0,129);
-halo_img_y = linspace(-25,55,257);
+halo_img_x = -40:.15:0;
+halo_img_y = -25:.15:60;
 halo_img = nan(length(halo_img_y), length(halo_img_x));
 computed_img = false(size(halo_img));
 checked_pix = 0;
@@ -214,13 +214,13 @@ while next_stack_idx > 0
         end
 
         curr_vis_val = halo_vis_fun(curr_vtx_val);
-        curr_n = cross([curr_step, 0, curr_vis_val(1, 2)] - [0, 0, curr_vis_val(1, 1)], ...
-            [0, curr_step, curr_vis_val(2, 1)] - [0, 0, curr_vis_val(1, 1)]);
-        curr_n = curr_n / norm(curr_n);
-        vd = [curr_step, curr_step, curr_vis_val(2, 2)] - [0, 0, curr_vis_val(1, 1)];
-        err_sin_q = abs(dot(vd, curr_n) / norm(vd));
+        % curr_n = cross([curr_step, 0, curr_vis_val(1, 2)] - [0, 0, curr_vis_val(1, 1)], ...
+        %     [0, curr_step, curr_vis_val(2, 1)] - [0, 0, curr_vis_val(1, 1)]);
+        % curr_n = curr_n / norm(curr_n);
+        % vd = [curr_step, curr_step, curr_vis_val(2, 2)] - [0, 0, curr_vis_val(1, 1)];
+        % err_sin_q = abs(dot(vd, curr_n) / norm(vd));
 
-        if curr_level > 0
+        if curr_level > 1
             center_x = curr_box(1, 1) + curr_step / 2;
             center_y = curr_box(1, 2) + curr_step / 2;
             if isnan(halo_img(center_y, center_x))
@@ -243,12 +243,14 @@ while next_stack_idx > 0
                 progress_cnt = progress_cnt + 1 / numel(halo_img);
             end
 
-            vd = [curr_step / 2, curr_step / 2, halo_vis_fun(halo_img(center_y, center_x))] - ...
-                [0, 0, curr_vis_val(1, 1)];
-            err_sin_q = max(abs(dot(vd, curr_n) / norm(vd)), err_sin_q);
+            center_val = halo_vis_fun(halo_img(center_y, center_x));
+        elseif curr_level > 0
+            center_val = nan;
+        else
+            center_val = mean(curr_vis_val(:));
         end
 
-        if (abs(err_sin_q) < 1e-3 && min(curr_vtx_val(:)) >= 1e-6) || ...
+        if (abs(center_val - mean(curr_vis_val(:))) * curr_step < 2e-2 && min(curr_vtx_val(:)) >= 1e-6) || ...
                 (max(curr_vis_val(:)) - min(curr_vis_val(:)) < 1e-2)
             row_range = min(curr_box(:, 2)):max(curr_box(:, 2));
             col_range = min(curr_box(:, 1)):max(curr_box(:, 1));
