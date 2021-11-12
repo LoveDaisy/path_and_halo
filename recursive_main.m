@@ -39,7 +39,9 @@ axis_pdf = @(llq) (exp(-(90 - llq(:, 2) - crystal_zenith(1)).^2 / 2 / crystal_ze
     crystal_zenith(2) / tmp_total) * (1 / 360) * (1 / 360);
 
 halo_vis_fun_helper = @(x, a, b) log10(x * b ./ (x + b) + a);
+inv_vis_fun_helper = @(x, a, b) 1 ./ (1 ./ (10.^x - a) - 1/b);
 halo_vis_fun = @(x) halo_vis_fun_helper(x, 2e-5, 1e-2);
+inv_vis_fun = @(x) inv_vis_fun_helper(x, 2e-5, 1e-2);
 
 %%
 sun_altitude = 20;
@@ -52,16 +54,21 @@ line_color = colormap('lines');
 
 
 %%
-halo_img_x = -40:.15:0;
-halo_img_y = -25:.15:60;
+halo_img_res = 0.02;
+halo_img_x = -60:halo_img_res:0;
+halo_img_y = -30:halo_img_res:65;
+
 halo_img = nan(length(halo_img_y), length(halo_img_x));
-computed_img = false(size(halo_img));
+computed_img = zeros(size(halo_img));
+level_img = zeros(size(halo_img));
+
 checked_pix = 0;
 progress_cnt = 0;
-progress_bin = 0.001;
+progress_bin = 0.0001;
 update_progress = false;
 
-recursive_level = 5;
+recursive_level = max(min(floor(log2(5 / halo_img_res)), 7), 2);
+% recursive_level = 5;
 curr_step = 2^recursive_level;
 
 recursive_stack = cell(32, 1);
@@ -99,7 +106,7 @@ while next_stack_idx > 0
             end
         end
         next_center = mean(next_box([1, 4], :));
-        if ~box_exist && ~computed_img(next_center(2), next_center(1))
+        if ~box_exist && computed_img(next_center(2), next_center(1)) <= 0
             next_stack_idx = next_stack_idx + 1;
             next_stack{next_stack_idx}.box = next_box;
             next_stack{next_stack_idx}.level = curr_level;
@@ -125,7 +132,7 @@ while next_stack_idx > 0
                 end
             end
             next_center = mean(next_box([1, 4], :));
-            if ~box_exist && ~computed_img(next_center(2), next_center(1))
+            if ~box_exist && computed_img(next_center(2), next_center(1)) <= 0
                 next_stack_idx = next_stack_idx + 1;
                 next_stack{next_stack_idx}.box = next_box;
                 next_stack{next_stack_idx}.level = tmp_level;
@@ -149,7 +156,7 @@ while next_stack_idx > 0
             end
         end
         next_center = mean(next_box([1, 4], :));
-        if ~box_exist && ~computed_img(next_center(2), next_center(1))
+        if ~box_exist && computed_img(next_center(2), next_center(1)) <= 0
             next_stack_idx = next_stack_idx + 1;
             next_stack{next_stack_idx}.box = next_box;
             next_stack{next_stack_idx}.level = curr_level;
@@ -175,7 +182,7 @@ while next_stack_idx > 0
                 end
             end
             next_center = mean(next_box([1, 4], :));
-            if ~box_exist && ~computed_img(next_center(2), next_center(1))
+            if ~box_exist && computed_img(next_center(2), next_center(1)) <= 0
                 next_stack_idx = next_stack_idx + 1;
                 next_stack{next_stack_idx}.box = next_box;
                 next_stack{next_stack_idx}.level = tmp_level;
@@ -191,11 +198,16 @@ while next_stack_idx > 0
         curr_vtx_val = zeros(2, 2);
     
         for i = 1:4
+            if curr_level < 1
+                level_img(curr_box(i, 2), curr_box(i, 1)) = recursive_level - curr_level + 1;
+            end
+            rec_fun_call = 0;
             if isnan(halo_img(curr_box(i, 2), curr_box(i, 1)))
                 lon = halo_img_x(curr_box(i, 1));
                 lat = halo_img_y(curr_box(i, 2));
                 [x_contour, y_val, jacobian] = find_axis_rot_contour(sun_ll, ...
                     [lon, lat], crystal, trace, 'config', config);
+                rec_fun_call = rec_fun_call + 1;
 
                 weight = 0;
                 for k = 1:length(x_contour)
@@ -206,19 +218,17 @@ while next_stack_idx > 0
                     weight = weight + tmp_w;
                 end
                 halo_img(curr_box(i, 2), curr_box(i, 1)) = weight;
-                computed_img(curr_box(i, 2), curr_box(i, 1)) = true;
+                computed_img(curr_box(i, 2), curr_box(i, 1)) = 2;
                 checked_pix = checked_pix + 1;
                 progress_cnt = progress_cnt + 1 / numel(halo_img);
             end
             curr_vtx_val(i) = halo_img(curr_box(i, 2), curr_box(i, 1));
         end
+        if rec_fun_call == 0 && curr_level < 1
+            continue;
+        end
 
         curr_vis_val = halo_vis_fun(curr_vtx_val);
-        % curr_n = cross([curr_step, 0, curr_vis_val(1, 2)] - [0, 0, curr_vis_val(1, 1)], ...
-        %     [0, curr_step, curr_vis_val(2, 1)] - [0, 0, curr_vis_val(1, 1)]);
-        % curr_n = curr_n / norm(curr_n);
-        % vd = [curr_step, curr_step, curr_vis_val(2, 2)] - [0, 0, curr_vis_val(1, 1)];
-        % err_sin_q = abs(dot(vd, curr_n) / norm(vd));
 
         if curr_level > 1
             center_x = curr_box(1, 1) + curr_step / 2;
@@ -238,28 +248,38 @@ while next_stack_idx > 0
                     weight = weight + tmp_w;
                 end
                 halo_img(center_y, center_x) = weight;
-                computed_img(center_y, center_x) = true;
+                computed_img(center_y, center_x) = 2;
+%                 level_img(curr_box(i, 2), curr_box(i, 1)) = recursive_level - curr_level + 1;
                 checked_pix = checked_pix + 1;
                 progress_cnt = progress_cnt + 1 / numel(halo_img);
             end
 
             center_val = halo_vis_fun(halo_img(center_y, center_x));
         elseif curr_level > 0
+            center_x = curr_box(1, 1) + curr_step / 2;
+            center_y = curr_box(1, 2) + curr_step / 2;
+            computed_img(center_y, center_x) = 1;
             center_val = nan;
         else
             center_val = mean(curr_vis_val(:));
         end
 
-        if (abs(center_val - mean(curr_vis_val(:))) * curr_step < 2e-2 && min(curr_vtx_val(:)) >= 1e-6) || ...
-                (max(curr_vis_val(:)) - min(curr_vis_val(:)) < 1e-2)
+        flat_unit = 2e-5 / halo_img_res;
+        diag_flat = abs(mean(curr_vis_val([2,3])) - mean(curr_vis_val([1,4]))) < 5 * flat_unit;
+        center_flat = isnan(center_val) || abs(center_val - mean(curr_vis_val(:))) < 2 * flat_unit;
+        if curr_level > 1 && ((diag_flat && center_flat && min(curr_vtx_val(:)) >= 1e-7) || ...
+                (max(curr_vis_val(:)) - min(curr_vis_val(:)) < 1e-2))
             row_range = min(curr_box(:, 2)):max(curr_box(:, 2));
             col_range = min(curr_box(:, 1)):max(curr_box(:, 1));
-            interp_img = interp2(curr_vtx_val, curr_level);
+            
+            interp_img = inv_vis_fun(interp2(curr_vis_val, curr_level));
             origin_img = halo_img(row_range, col_range);
+            
             pix_to_fill = isnan(origin_img);
             origin_img(pix_to_fill) = 0;
             curr_checked_pix = sum(pix_to_fill(:));
             halo_img(row_range, col_range) = interp_img .* pix_to_fill + origin_img .* ~pix_to_fill;
+            level_img(row_range, col_range) = recursive_level - curr_level + 1;
             checked_pix = checked_pix + curr_checked_pix;
             progress_cnt = progress_cnt + curr_checked_pix / numel(halo_img);
         elseif curr_level > 0
@@ -309,7 +329,8 @@ while next_stack_idx > 0
             imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
             axis equal; axis tight; axis xy;
             subplot(1,2,2)
-            imagesc(halo_img_x, halo_img_y, computed_img);
+%             imagesc(halo_img_x, halo_img_y, computed_img);
+            imagesc(halo_img_x, halo_img_y, level_img);
             axis equal; axis tight; axis xy;
             drawnow;
             
