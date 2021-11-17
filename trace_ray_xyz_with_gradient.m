@@ -14,13 +14,7 @@ face_n = size(face_norm, 1);
 ray_n = size(ray_in, 1);
 
 % normalize
-ray_in_norm = sqrt(sum(ray_in.^2, 2));
-g_norm = [sum(ray_in(:, [2, 3]).^2, 2), -prod(ray_in(:, [1, 2]), 2), -prod(ray_in(:, [1, 3]), 2), ...
-    -prod(ray_in(:, [2, 1]), 2), sum(ray_in(:, [1, 3]).^2, 2), -prod(ray_in(:, [2, 3]), 2), ...
-    -prod(ray_in(:, [3, 1]), 2), -prod(ray_in(:, [3, 2]), 2), sum(ray_in(:, [1, 2]).^2, 2)];
-g_norm = bsxfun(@times, g_norm, 1 ./ ray_in_norm.^3);
-g_norm = reshape(g_norm', [3, 3, ray_n]);
-ray_in = bsxfun(@times, ray_in, 1 ./ ray_in_norm);
+[ray_in, g_norm] = normalize_vector_with_gradient(ray_in);
 
 valid_idx = ray_in * face_norm(1, :)' < 0;
 
