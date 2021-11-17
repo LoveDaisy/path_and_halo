@@ -45,10 +45,10 @@ for j = 1:length(p)
         [tmp_exit_vtx(2, :) - tmp_exit_vtx(1, :);
         tmp_exit_vtx(4, :) - tmp_exit_vtx(1, :);
         -tmp_refract_ray];
-    quv = poly_x_unit_square(uvt(:, 1:2));
+    uv0 = [0, 0; 1, 0; 1, 1; 0, 1];
+    quv = poly_mask_clip(uvt(:, 1:2), uv0);
     if size(quv, 1) > 2
-        tmp_idx = convhull(quv(:, 1), quv(:, 2));
-        tmp_area = polyarea(quv(tmp_idx, 1), quv(tmp_idx, 2));
+        tmp_area = polyarea(quv(:, 1), quv(:, 2));
     else
         tmp_area = 0;
     end
@@ -67,102 +67,46 @@ w = sum((interp_p(1:end-1, 1) + interp_p(2:end, 1)) / 2 .* diff(interp_s));
 end
 
 
-function uv = poly_x_unit_square(uvq)
-uv0 = [0, 0; 1, 0; 1, 1; 0, 1];
-% [ux, vx] = polyxpoly([uvq(:, 1); uvq(1, 1)], [uvq(:, 2); uvq(1, 2)], ...
-%     [uv0(:, 1); uv0(1, 1)], [uv0(:, 2); uv0(1, 2)]);
-% tmp_in0 = inpolygon(uvq(:, 1), uvq(:, 2), uv0(:, 1), uv0(:, 2));
-% tmp_int = inpolygon(uv0(:, 1), uv0(:, 2), uvq(:, 1), uvq(:, 2));
-% uv = unique([uvq(tmp_in0, :); uv0(tmp_int, :); ux, vx], 'rows');
+function uv = poly_mask_clip(uvq, uv0)
+% INPUT
+%   uvq:        polygon to be clipped
+%   uv0:        *CONVEX* polygon mask
 
-vtx_num = size(uvq, 1);
-uvx = nan(vtx_num * 2, 2);
-uv_i = 1;
-% Top clip
-for i = 1:vtx_num
-    j = mod(i, vtx_num) + 1;
-    if uvq(i, 2) < 1 && uvq(j, 2) > 1
-        % Record two points
-        uvx(uv_i, :) = uvq(i, :);
-        uvx(uv_i + 1, :) = (1 - uvq(i, 2)) / (uvq(j, 2) - uvq(i, 2)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
-        uv_i = uv_i + 2;
-    elseif uvq(i, 2) > 1 && uvq(j, 2) < 1
-        % Record one points
-        uvx(uv_i, :) = (uvq(i, 2) - 1) / (uvq(i, 2) - uvq(j, 2)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
-        uv_i = uv_i + 1;
-    elseif uvq(i, 2) < 1 && uvq(j, 2) < 1
-        uvx(uv_i, :) = uvq(i, :);
-        uv_i = uv_i + 1;
+mask_vtx_num = size(uv0, 1);
+q_vtx_num = size(uvq, 1);
+uv = nan(q_vtx_num * 2, 2);
+for i1 = 1:mask_vtx_num
+    i2 = mod(i1, mask_vtx_num) + 1;
+    i3 = mod(i2, mask_vtx_num) + 1;
+
+    z0 = det([uv0(i2, :) - uv0(i1, :); uv0(i3, :) - uv0(i2, :)]);
+    uv_i = 1;
+    for j1 = 1:q_vtx_num
+        j2 = mod(j1, q_vtx_num) + 1;
+        z1 = det([uv0(i2, :) - uv0(i1, :); uvq(j1, :) - uv0(i1, :)]);
+        z2 = det([uv0(i2, :) - uv0(i1, :); uvq(j2, :) - uv0(i1, :)]);
+        
+        if z0 * z1 > 0 && z0 * z2 < 0
+            % From inner to outer: record tow points
+            uv(uv_i, :) = uvq(j1, :);
+            ab = -(uv0(i1, :) - uvq(j1, :)) / [uv0(i2, :) - uv0(i1, :); uvq(j2, :) - uvq(j1, :)];
+            uv(uv_i + 1, :) = uv0(i1, :) + ab(1) * (uv0(i2, :) - uv0(i1, :));
+            uv_i = uv_i + 2;
+        elseif z0 * z1 < 0 && z0 * z2 > 0
+            % From outer to inner: record one point
+            ab = -(uv0(i1, :) - uvq(j1, :)) / [uv0(i2, :) - uv0(i1, :); uvq(j2, :) - uvq(j1, :)];
+            uv(uv_i, :) = uv0(i1, :) + ab(1) * (uv0(i2, :) - uv0(i1, :));
+            uv_i = uv_i + 1;
+        elseif z0 * z1 > 0 && z0 * z2 > 0
+            % Two inner: record one point
+            uv(uv_i, :) = uvq(j1, :);
+            uv_i = uv_i + 1;
+        end
     end
+    q_vtx_num = uv_i - 1;
+    uvq = uv(1:q_vtx_num, :);
 end
-
-vtx_num = uv_i - 1;
-uvq = uvx(1:vtx_num, :);
-uvx = nan(vtx_num * 2, 2);
-uv_i = 1;
-% Right clip
-for i = 1:vtx_num
-    j = mod(i, vtx_num) + 1;
-    if uvq(i, 1) < 1 && uvq(j, 1) > 1
-        % Record two points
-        uvx(uv_i, :) = uvq(i, :);
-        uvx(uv_i + 1, :) = (1 - uvq(i, 1)) / (uvq(j, 1) - uvq(i, 1)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
-        uv_i = uv_i + 2;
-    elseif uvq(i, 1) > 1 && uvq(j, 1) < 1
-        % Record one points
-        uvx(uv_i, :) = (uvq(i, 1) - 1) / (uvq(i, 1) - uvq(j, 1)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
-        uv_i = uv_i + 1;
-    elseif uvq(i, 1) < 1 && uvq(j, 1) < 1
-        uvx(uv_i, :) = uvq(i, :);
-        uv_i = uv_i + 1;
-    end
-end
-
-vtx_num = uv_i - 1;
-uvq = uvx(1:vtx_num, :);
-uvx = nan(vtx_num * 2, 2);
-uv_i = 1;
-% Bottom clip
-for i = 1:vtx_num
-    j = mod(i, vtx_num) + 1;
-    if uvq(i, 2) > 0 && uvq(j, 2) < 0
-        % Record two points
-        uvx(uv_i, :) = uvq(i, :);
-        uvx(uv_i + 1, :) = uvq(i, 2) / (uvq(i, 2) - uvq(j, 2)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
-        uv_i = uv_i + 2;
-    elseif uvq(i, 2) < 0 && uvq(j, 2) > 0
-        % Record one points
-        uvx(uv_i, :) = -uvq(i, 2) / (uvq(j, 2) - uvq(i, 2)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
-        uv_i = uv_i + 1;
-    elseif uvq(i, 2) > 0 && uvq(j, 2) > 0
-        uvx(uv_i, :) = uvq(i, :);
-        uv_i = uv_i + 1;
-    end
-end
-
-vtx_num = uv_i - 1;
-uvq = uvx(1:vtx_num, :);
-uvx = nan(vtx_num * 2, 2);
-uv_i = 1;
-% Left clip
-for i = 1:vtx_num
-    j = mod(i, vtx_num) + 1;
-    if uvq(i, 1) > 0 && uvq(j, 1) < 0
-        % Record two points
-        uvx(uv_i, :) = uvq(i, :);
-        uvx(uv_i + 1, :) = uvq(i, 1) / (uvq(i, 1) - uvq(j, 1)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
-        uv_i = uv_i + 2;
-    elseif uvq(i, 1) < 0 && uvq(j, 1) > 0
-        % Record one points
-        uvx(uv_i, :) = -uvq(i, 1) / (uvq(j, 1) - uvq(i, 1)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
-        uv_i = uv_i + 1;
-    elseif uvq(i, 1) > 0 && uvq(j, 1) > 0
-        uvx(uv_i, :) = uvq(i, :);
-        uv_i = uv_i + 1;
-    end
-end
-
-uv = uvx(1:uv_i-1, :);
+uv = uv(1:q_vtx_num, :);
 end
 
 

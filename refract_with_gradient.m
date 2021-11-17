@@ -19,7 +19,10 @@ for i = 1:ray_n
 end
 
 delta = cos_alpha .^ 2 - 1 + (n1 / n0) ^ 2;
-g_delta = bsxfun(@times, cos_alpha * 2, g_cos_alpha);
+g_delta = g_cos_alpha;
+for i = 1:ray_n
+    g_delta(i, :) = g_delta(i, :) * cos_alpha(i) * 2;
+end
 
 valid_delta = delta > 0;
 valid_ind = valid_input & valid_delta;
@@ -29,11 +32,16 @@ g_cos_alpha(~valid_ind, :) = nan;
 if ~any(valid_ind)
     return;
 end
-a = cos_alpha(valid_ind) - sign(cos_alpha(valid_ind)) .* sqrt(delta(valid_ind));
-g_a = g_cos_alpha(valid_ind, :) - bsxfun(@times, sign(cos_alpha(valid_ind)) / ...
-    2 ./ sqrt(delta(valid_ind)), g_delta(valid_ind, :));
 
-r = ray_in(valid_ind, :) - bsxfun(@times, a, face_normal);
+valid_ind = find(valid_ind);
+a = cos_alpha(valid_ind) - sign(cos_alpha(valid_ind)) .* sqrt(delta(valid_ind));
+g_a = g_cos_alpha(valid_ind, :);
+for i = 1:length(valid_ind)
+    g_a(i, :) = g_a(i, :) - sign(cos_alpha(valid_ind(i))) / 2 / sqrt(delta(valid_ind(i))) * ...
+        g_delta(valid_ind(i), :);
+end
+
+r = ray_in(valid_ind, :) - a * face_normal;
 g_r = nan(3, 3, sum(valid_ind));
 for i = 1:sum(valid_ind)
     g_r(:, :, i) = g_norm(:, :, i) - face_normal' * g_a(i, :);
