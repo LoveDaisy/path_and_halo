@@ -54,9 +54,9 @@ line_color = colormap('lines');
 
 
 %%
-halo_img_res = 0.5;
-halo_img_x = -60:halo_img_res:0;
-halo_img_y = 40:halo_img_res:60;
+halo_img_res = 0.1;
+halo_img_x = -8:halo_img_res:0;
+halo_img_y = -25:halo_img_res:0;
 
 halo_img = nan(length(halo_img_y), length(halo_img_x));
 computed_img = zeros(size(halo_img));

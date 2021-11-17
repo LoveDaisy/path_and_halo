@@ -41,10 +41,10 @@ for i = 1:length(valid_ind)
         g_delta(valid_ind(i), :);
 end
 
-r = ray_in(valid_ind, :) - a * face_normal;
+r = ray_in(valid_ind, :) - a * face_normal * sign(n1 / n0);
 g_r = nan(3, 3, sum(valid_ind));
 for i = 1:sum(valid_ind)
-    g_r(:, :, i) = g_norm(:, :, i) - face_normal' * g_a(i, :);
+    g_r(:, :, i) = g_norm(:, :, i) - face_normal' * g_a(i, :) * sign(n1 / n0);
 end
 
 [r, g_norm_r] = normalize_vector_with_gradient(r);

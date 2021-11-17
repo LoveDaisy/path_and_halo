@@ -9,51 +9,33 @@ curr_det_j = zeros(size(curr_x, 1), 1);
 face_area_factor = zeros(length(p), 1);
 t_factor = zeros(length(p), 1);
 
-for j = 1:length(p)
-    curr_det_j(j) = det(curr_jacob(:, :, j) * curr_jacob(:, :, j)');
-    tmp_rot_mat = rotz(90 + curr_x(j, 1)) * rotx(90 - curr_x(j, 2)) * rotz(curr_x(j, 3));
+for i = 1:length(p)
+    curr_det_j(i) = det(curr_jacob(:, :, i) * curr_jacob(:, :, i)');
+    tmp_rot_mat = rotz(90 + curr_x(i, 1)) * rotx(90 - curr_x(i, 2)) * rotz(curr_x(i, 3));
     
     tmp_crystal = crystal;
     tmp_crystal.face_norm = crystal.face_norm * tmp_rot_mat';
     tmp_crystal.vtx = crystal.vtx * tmp_rot_mat';
-    
-    tmp_face_area = crystal.face_area .* (-tmp_crystal.face_norm * ray_in_xyz');
-    tmp_face_area = tmp_face_area(tmp_face_area > 0);
-    face_area_factor(j) = max(tmp_face_area(trace.fid(1)), 0) / sum(max(tmp_face_area, 0));
-
-    tmp_face_norm = tmp_crystal.face_norm(trace.fid(1), :);
-    tmp_refract_ray = refract_with_gradient(ray_in_xyz, tmp_face_norm, 1, trace.n(1));
-    cos_qi = -dot(ray_in_xyz, tmp_face_norm);
-    cos_qt = -dot(tmp_refract_ray, tmp_face_norm);
-    Rs1 = abs((cos_qi - trace.n(1) * cos_qt) / (cos_qi + trace.n(1) * cos_qt))^2;
-    Rp1 = abs((cos_qt - trace.n(1) * cos_qi) / (cos_qt + trace.n(1) * cos_qi))^2;
-    T1 = (1 - (Rs1 + Rp1) / 2) * (cos_qi / cos_qt);
    
-    tmp_face_norm = tmp_crystal.face_norm(trace.fid(end), :);
-    tmp_exit_ray = refract_with_gradient(tmp_refract_ray, tmp_face_norm, trace.n(1), 1);
-    cos_qi = dot(tmp_refract_ray, tmp_face_norm);
-    cos_qt = dot(tmp_exit_ray, tmp_face_norm);
-    Rs2 = abs((trace.n(1) * cos_qi - cos_qt) / (trace.n(1) * cos_qi + cos_qt))^2;
-    Rp2 = abs((trace.n(1) * cos_qt - cos_qi) / (trace.n(1) * cos_qt + cos_qi))^2;
-    T2 = (1 - (Rs2 + Rp2) / 2) * (cos_qi / cos_qt);
+    tmp_face_area = entry_face_factor(tmp_crystal, ray_in_xyz);
+    face_area_factor(i) = tmp_face_area(trace.fid(1));
 
-    t_factor(j) = T2 * T1;
-    
-    tmp_entry_vtx = tmp_crystal.vtx(tmp_crystal.face{trace.fid(1)}, :);
-    tmp_exit_vtx = tmp_crystal.vtx(tmp_crystal.face{trace.fid(end)}, :);
-    uvt = bsxfun(@minus, tmp_entry_vtx, tmp_exit_vtx(1, :)) / ...
-        [tmp_exit_vtx(2, :) - tmp_exit_vtx(1, :);
-        tmp_exit_vtx(4, :) - tmp_exit_vtx(1, :);
-        -tmp_refract_ray];
-    uv0 = [0, 0; 1, 0; 1, 1; 0, 1];
-    quv = poly_mask_clip(uvt(:, 1:2), uv0);
-    if size(quv, 1) > 2
-        tmp_area = polyarea(quv(:, 1), quv(:, 2));
-    else
-        tmp_area = 0;
+    t_factor(i) = 1;
+    trace_n = [1; trace.n];
+    vtx0 = tmp_crystal.vtx(tmp_crystal.face{trace.fid(1)}, :);
+    r = ray_in_xyz;
+    for j = 1:length(trace.fid)
+        [t, r] = transit_factor(r, ...
+            tmp_crystal.face_norm(trace.fid(j), :), trace_n(j), trace_n(j+1));
+        t_factor(i) = t_factor(i) * t;
+        
+        if j < length(trace.fid)
+            vtx1 = tmp_crystal.vtx(tmp_crystal.face{trace.fid(j+1)}, :);
+            [a, tmp_vtx] = face_intersection_factor(vtx0, vtx1, r);
+            face_area_factor(i) = face_area_factor(i) * a;
+            vtx0 = tmp_vtx;
+        end
     end
-    
-    face_area_factor(j) = face_area_factor(j) * tmp_area;
 end
 
 [interp_rot, s, interp_s] = spline_interp_rot(curr_x);
@@ -67,10 +49,34 @@ w = sum((interp_p(1:end-1, 1) + interp_p(2:end, 1)) / 2 .* diff(interp_s));
 end
 
 
-function uv = poly_mask_clip(uvq, uv0)
+function a = entry_face_factor(crystal, ray_in_xyz)
+face_area = crystal.face_area .* (-crystal.face_norm * ray_in_xyz');
+a = max(face_area, 0) / sum(max(face_area, 0));
+end
+
+
+function [t, ray_out] = transit_factor(ray_in, face_normal, n0, n1)
+ray_out = refract_with_gradient(ray_in, face_normal, n0, n1);
+cos_qi = -dot(ray_in, face_normal);
+cos_qt = -dot(ray_out, face_normal);
+Rs1 = abs((n0 * cos_qi - n1 * cos_qt) / (n0 * cos_qi + n1 * cos_qt))^2;
+Rp1 = abs((n0 * cos_qt - n1 * cos_qi) / (n0 * cos_qt + n1 * cos_qi))^2;
+t = (1 - (Rs1 + Rp1) / 2) * (cos_qi / cos_qt);
+end
+
+
+function [area_factor, vtx] = face_intersection_factor(vtx_q, vtx_0, ray_xyz)
 % INPUT
-%   uvq:        polygon to be clipped
-%   uv0:        *CONVEX* polygon mask
+%   vtx_q:      entry face vertex
+%   vtx_0:      exit face vertex. it must be *CONVEX*
+%   ray_xyz:    projection ray
+
+uv0 = [0, 0; 1, 0; 1, 1; 0, 1];
+uvt = bsxfun(@minus, vtx_q, vtx_0(1, :)) / ...
+    [vtx_0(2, :) - vtx_0(1, :);
+    vtx_0(4, :) - vtx_0(1, :);
+    -ray_xyz];
+uvq = uvt(:, 1:2);
 
 mask_vtx_num = size(uv0, 1);
 q_vtx_num = size(uvq, 1);
@@ -107,6 +113,14 @@ for i1 = 1:mask_vtx_num
     uvq = uv(1:q_vtx_num, :);
 end
 uv = uv(1:q_vtx_num, :);
+vtx = uv * [vtx_0(2, :) - vtx_0(1, :); vtx_0(4, :) - vtx_0(1, :)];
+vtx = bsxfun(@plus, vtx, vtx_0(1, :));
+
+if size(uv, 1) > 2
+    area_factor = polyarea(uv(:, 1), uv(:, 2));
+else
+    area_factor = 0;
+end
 end
 
 
