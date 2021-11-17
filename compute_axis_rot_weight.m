@@ -10,7 +10,7 @@ face_area_factor = zeros(length(p), 1);
 t_factor = zeros(length(p), 1);
 
 for i = 1:length(p)
-    curr_det_j(i) = det(curr_jacob(:, :, i) * curr_jacob(:, :, i)');
+    curr_det_j(i) = min(det(curr_jacob(:, :, i) * curr_jacob(:, :, i)'), 1e8);
     tmp_rot_mat = rotz(90 + curr_x(i, 1)) * rotx(90 - curr_x(i, 2)) * rotz(curr_x(i, 3));
     
     tmp_crystal = crystal;
@@ -57,8 +57,10 @@ end
 
 function [t, ray_out] = transit_factor(ray_in, face_normal, n0, n1)
 ray_out = refract_with_gradient(ray_in, face_normal, n0, n1);
-cos_qi = -dot(ray_in, face_normal);
-cos_qt = -dot(ray_out, face_normal);
+n0 = abs(n0);
+n1 = abs(n1);
+cos_qi = abs(dot(ray_in, face_normal));
+cos_qt = abs(dot(ray_out, face_normal));
 Rs1 = abs((n0 * cos_qi - n1 * cos_qt) / (n0 * cos_qi + n1 * cos_qt))^2;
 Rp1 = abs((n0 * cos_qt - n1 * cos_qi) / (n0 * cos_qt + n1 * cos_qi))^2;
 t = (1 - (Rs1 + Rp1) / 2) * (cos_qi / cos_qt);
@@ -81,6 +83,8 @@ uvq = uvt(:, 1:2);
 mask_vtx_num = size(uv0, 1);
 q_vtx_num = size(uvq, 1);
 uv = nan(q_vtx_num * 2, 2);
+
+z_eps = 1e-8;
 for i1 = 1:mask_vtx_num
     i2 = mod(i1, mask_vtx_num) + 1;
     i3 = mod(i2, mask_vtx_num) + 1;
@@ -92,19 +96,22 @@ for i1 = 1:mask_vtx_num
         z1 = det([uv0(i2, :) - uv0(i1, :); uvq(j1, :) - uv0(i1, :)]);
         z2 = det([uv0(i2, :) - uv0(i1, :); uvq(j2, :) - uv0(i1, :)]);
         
-        if z0 * z1 > 0 && z0 * z2 < 0
+        if z0 * z1 > z_eps && z0 * z2 < z_eps
             % From inner to outer: record tow points
             uv(uv_i, :) = uvq(j1, :);
             ab = -(uv0(i1, :) - uvq(j1, :)) / [uv0(i2, :) - uv0(i1, :); uvq(j2, :) - uvq(j1, :)];
             uv(uv_i + 1, :) = uv0(i1, :) + ab(1) * (uv0(i2, :) - uv0(i1, :));
             uv_i = uv_i + 2;
-        elseif z0 * z1 < 0 && z0 * z2 > 0
+        elseif z0 * z1 < -z_eps && z0 * z2 > -z_eps
             % From outer to inner: record one point
             ab = -(uv0(i1, :) - uvq(j1, :)) / [uv0(i2, :) - uv0(i1, :); uvq(j2, :) - uvq(j1, :)];
             uv(uv_i, :) = uv0(i1, :) + ab(1) * (uv0(i2, :) - uv0(i1, :));
             uv_i = uv_i + 1;
-        elseif z0 * z1 > 0 && z0 * z2 > 0
+        elseif z0 * z1 > z_eps && z0 * z2 > z_eps
             % Two inner: record one point
+            uv(uv_i, :) = uvq(j1, :);
+            uv_i = uv_i + 1;
+        elseif abs(z1) < z_eps
             uv(uv_i, :) = uvq(j1, :);
             uv_i = uv_i + 1;
         end

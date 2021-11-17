@@ -27,8 +27,8 @@ crystal.face = {[6; 5; 4; 3; 2; 1];
 crystal.face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal.h * ones(6, 1)];
 
 n = 1.31;
-trace.n = [n; 1];
-trace.fid = [3; 5];
+trace.n = [n; -n; n; 1];
+trace.fid = [1; 3; 2; 1];
 
 crystal_zenith = [90, 0.2];  % mean, std
 tmp_x = linspace(-90, 90, 50000);
@@ -54,9 +54,9 @@ line_color = colormap('lines');
 
 
 %%
-halo_img_res = 0.1;
-halo_img_x = -8:halo_img_res:0;
-halo_img_y = -25:halo_img_res:0;
+halo_img_res = 1;
+halo_img_x = -180:halo_img_res:0;
+halo_img_y = -60:halo_img_res:60;
 
 halo_img = nan(length(halo_img_y), length(halo_img_x));
 computed_img = zeros(size(halo_img));
