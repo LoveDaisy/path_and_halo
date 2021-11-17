@@ -1,5 +1,4 @@
-function [ray_out, bending_angle, g_out, g_angle] = ...
-    trace_ray_xyz_with_gradient(ray_in, crystal, trace)
+function [ray_out, g_out] = trace_ray_xyz_with_gradient(ray_in, crystal, trace)
 % INPUT
 %    ray_in:        n*3, [longitude, latitude] in degree
 %    crystal:       struct
@@ -35,14 +34,5 @@ for i = 1:face_n
 end
 ray_out = curr_ray;
 ray_out(~valid_idx, :) = nan;
-
-% find out bending angle
-cos_angle = sum(curr_ray .* ray_in, 2);
-g_cos = zeros(ray_n, 3);
-for i = 1:ray_n
-    g_cos(i, :) = ray_in(i, :) * g_out(:, :, i) + curr_ray(i, :) * g_norm(:, :, i);
-end
-bending_angle = acosd(cos_angle);
-g_angle = bsxfun(@times, -1 ./ sqrt(1 - cos_angle.^2), g_cos) * 180 / pi;
 end
 

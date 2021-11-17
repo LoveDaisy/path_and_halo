@@ -43,7 +43,7 @@ for i = 1:num
     ray_in_xyz(i, :) = xyz0 * curr_rot_mat;
 end
 
-[ray_out_xyz, ~, g_out, ~] = trace_ray_xyz_with_gradient(ray_in_xyz, crystal, trace);
+[ray_out_xyz, g_out] = trace_ray_xyz_with_gradient(ray_in_xyz, crystal, trace);
 
 g_xyz = zeros(3, 3, num);
 for i = 1:num

@@ -45,13 +45,7 @@ for j = 1:length(p)
         [tmp_exit_vtx(2, :) - tmp_exit_vtx(1, :);
         tmp_exit_vtx(4, :) - tmp_exit_vtx(1, :);
         -tmp_refract_ray];
-    tmp_proj_vtx = tmp_entry_vtx + uvt(:, 3) * tmp_refract_ray;
-    uv0 = [0, 0; 1, 0; 1, 1; 0, 1];
-    [ux, vx] = polyxpoly([uvt(:, 1); uvt(1, 1)], [uvt(:, 2); uvt(1, 2)], ...
-        [uv0(:, 1); uv0(1, 1)], [uv0(:, 2); uv0(1, 2)]);
-    tmp_in0 = inpolygon(uvt(:, 1), uvt(:, 2), uv0(:, 1), uv0(:, 2));
-    tmp_int = inpolygon(uv0(:, 1), uv0(:, 2), uvt(:, 1), uvt(:, 2));
-    quv = unique([uvt(tmp_in0, 1:2); uv0(tmp_int, :); ux, vx], 'rows');
+    quv = poly_x_unit_square(uvt(:, 1:2));
     if size(quv, 1) > 2
         tmp_idx = convhull(quv(:, 1), quv(:, 2));
         tmp_area = polyarea(quv(tmp_idx, 1), quv(tmp_idx, 2));
@@ -70,6 +64,105 @@ interp_p = axis_pdf(interp_rot);
 interp_p = [interp_p ./ tmp_det_j .* tmp_face_factor .* tmp_t_factor, ...
     interp_p, 1 ./ tmp_det_j, tmp_face_factor, tmp_t_factor];
 w = sum((interp_p(1:end-1, 1) + interp_p(2:end, 1)) / 2 .* diff(interp_s));
+end
+
+
+function uv = poly_x_unit_square(uvq)
+uv0 = [0, 0; 1, 0; 1, 1; 0, 1];
+% [ux, vx] = polyxpoly([uvq(:, 1); uvq(1, 1)], [uvq(:, 2); uvq(1, 2)], ...
+%     [uv0(:, 1); uv0(1, 1)], [uv0(:, 2); uv0(1, 2)]);
+% tmp_in0 = inpolygon(uvq(:, 1), uvq(:, 2), uv0(:, 1), uv0(:, 2));
+% tmp_int = inpolygon(uv0(:, 1), uv0(:, 2), uvq(:, 1), uvq(:, 2));
+% uv = unique([uvq(tmp_in0, :); uv0(tmp_int, :); ux, vx], 'rows');
+
+vtx_num = size(uvq, 1);
+uvx = nan(vtx_num * 2, 2);
+uv_i = 1;
+% Top clip
+for i = 1:vtx_num
+    j = mod(i, vtx_num) + 1;
+    if uvq(i, 2) < 1 && uvq(j, 2) > 1
+        % Record two points
+        uvx(uv_i, :) = uvq(i, :);
+        uvx(uv_i + 1, :) = (1 - uvq(i, 2)) / (uvq(j, 2) - uvq(i, 2)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
+        uv_i = uv_i + 2;
+    elseif uvq(i, 2) > 1 && uvq(j, 2) < 1
+        % Record one points
+        uvx(uv_i, :) = (uvq(i, 2) - 1) / (uvq(i, 2) - uvq(j, 2)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
+        uv_i = uv_i + 1;
+    elseif uvq(i, 2) < 1 && uvq(j, 2) < 1
+        uvx(uv_i, :) = uvq(i, :);
+        uv_i = uv_i + 1;
+    end
+end
+
+vtx_num = uv_i - 1;
+uvq = uvx(1:vtx_num, :);
+uvx = nan(vtx_num * 2, 2);
+uv_i = 1;
+% Right clip
+for i = 1:vtx_num
+    j = mod(i, vtx_num) + 1;
+    if uvq(i, 1) < 1 && uvq(j, 1) > 1
+        % Record two points
+        uvx(uv_i, :) = uvq(i, :);
+        uvx(uv_i + 1, :) = (1 - uvq(i, 1)) / (uvq(j, 1) - uvq(i, 1)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
+        uv_i = uv_i + 2;
+    elseif uvq(i, 1) > 1 && uvq(j, 1) < 1
+        % Record one points
+        uvx(uv_i, :) = (uvq(i, 1) - 1) / (uvq(i, 1) - uvq(j, 1)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
+        uv_i = uv_i + 1;
+    elseif uvq(i, 1) < 1 && uvq(j, 1) < 1
+        uvx(uv_i, :) = uvq(i, :);
+        uv_i = uv_i + 1;
+    end
+end
+
+vtx_num = uv_i - 1;
+uvq = uvx(1:vtx_num, :);
+uvx = nan(vtx_num * 2, 2);
+uv_i = 1;
+% Bottom clip
+for i = 1:vtx_num
+    j = mod(i, vtx_num) + 1;
+    if uvq(i, 2) > 0 && uvq(j, 2) < 0
+        % Record two points
+        uvx(uv_i, :) = uvq(i, :);
+        uvx(uv_i + 1, :) = uvq(i, 2) / (uvq(i, 2) - uvq(j, 2)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
+        uv_i = uv_i + 2;
+    elseif uvq(i, 2) < 0 && uvq(j, 2) > 0
+        % Record one points
+        uvx(uv_i, :) = -uvq(i, 2) / (uvq(j, 2) - uvq(i, 2)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
+        uv_i = uv_i + 1;
+    elseif uvq(i, 2) > 0 && uvq(j, 2) > 0
+        uvx(uv_i, :) = uvq(i, :);
+        uv_i = uv_i + 1;
+    end
+end
+
+vtx_num = uv_i - 1;
+uvq = uvx(1:vtx_num, :);
+uvx = nan(vtx_num * 2, 2);
+uv_i = 1;
+% Left clip
+for i = 1:vtx_num
+    j = mod(i, vtx_num) + 1;
+    if uvq(i, 1) > 0 && uvq(j, 1) < 0
+        % Record two points
+        uvx(uv_i, :) = uvq(i, :);
+        uvx(uv_i + 1, :) = uvq(i, 1) / (uvq(i, 1) - uvq(j, 1)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
+        uv_i = uv_i + 2;
+    elseif uvq(i, 1) < 0 && uvq(j, 1) > 0
+        % Record one points
+        uvx(uv_i, :) = -uvq(i, 1) / (uvq(j, 1) - uvq(i, 1)) * (uvq(j, :) - uvq(i, :)) + uvq(i, :);
+        uv_i = uv_i + 1;
+    elseif uvq(i, 1) > 0 && uvq(j, 1) > 0
+        uvx(uv_i, :) = uvq(i, :);
+        uv_i = uv_i + 1;
+    end
+end
+
+uv = uvx(1:uv_i-1, :);
 end
 
 
