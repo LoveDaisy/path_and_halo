@@ -64,7 +64,7 @@ cos_qt = abs(dot(ray_out, face_normal));
 Rs1 = abs((n0 * cos_qi - n1 * cos_qt) / (n0 * cos_qi + n1 * cos_qt))^2;
 Rp1 = abs((n0 * cos_qt - n1 * cos_qi) / (n0 * cos_qt + n1 * cos_qi))^2;
 t = (1 - (Rs1 + Rp1) / 2);
-% t = t * (cos_qi / cos_qt);
+t = t * (cos_qi / cos_qt);
 end
 
 
