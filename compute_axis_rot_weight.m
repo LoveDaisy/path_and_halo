@@ -10,7 +10,7 @@ face_area_factor = zeros(length(p), 1);
 t_factor = zeros(length(p), 1);
 
 for i = 1:length(p)
-    curr_det_j(i) = min(det(curr_jacob(:, :, i) * curr_jacob(:, :, i)'), 1e8);
+    curr_det_j(i) = max(det(curr_jacob(:, :, i) * curr_jacob(:, :, i)'), 1e-8);
     tmp_rot_mat = rotz(90 + curr_x(i, 1)) * rotx(90 - curr_x(i, 2)) * rotz(curr_x(i, 3));
     
     tmp_crystal = crystal;
@@ -41,7 +41,7 @@ end
 [interp_rot, s, interp_s] = spline_interp_rot(curr_x);
 tmp_det_j = exp(interp1(s, log(curr_det_j), interp_s, 'spline'));
 tmp_face_factor = interp1(s, face_area_factor, interp_s, 'linear', 'extrap');
-tmp_t_factor = exp(interp1(s, log(t_factor), interp_s, 'spline'));
+tmp_t_factor = exp(interp1(s, log(t_factor), interp_s, 'linear', 'extrap'));
 interp_p = axis_pdf(interp_rot);
 interp_p = [interp_p ./ tmp_det_j .* tmp_face_factor .* tmp_t_factor, ...
     interp_p, 1 ./ tmp_det_j, tmp_face_factor, tmp_t_factor];
@@ -63,7 +63,8 @@ cos_qi = abs(dot(ray_in, face_normal));
 cos_qt = abs(dot(ray_out, face_normal));
 Rs1 = abs((n0 * cos_qi - n1 * cos_qt) / (n0 * cos_qi + n1 * cos_qt))^2;
 Rp1 = abs((n0 * cos_qt - n1 * cos_qi) / (n0 * cos_qt + n1 * cos_qi))^2;
-t = (1 - (Rs1 + Rp1) / 2) * (cos_qi / cos_qt);
+t = (1 - (Rs1 + Rp1) / 2);
+% t = t * (cos_qi / cos_qt);
 end
 
 
@@ -73,11 +74,13 @@ function [area_factor, vtx] = face_intersection_factor(vtx_q, vtx_0, ray_xyz)
 %   vtx_0:      exit face vertex. it must be *CONVEX*
 %   ray_xyz:    projection ray
 
-uv0 = [0, 0; 1, 0; 1, 1; 0, 1];
-uvt = bsxfun(@minus, vtx_q, vtx_0(1, :)) / ...
-    [vtx_0(2, :) - vtx_0(1, :);
-    vtx_0(4, :) - vtx_0(1, :);
-    -ray_xyz];
+e1 = vtx_0(2, :) - vtx_0(1, :);
+e2 = vtx_0(4, :) - vtx_0(1, :);
+e3 = cross(e1, e2);
+
+uv0 = bsxfun(@minus, vtx_0, vtx_0(1, :)) / [e1; e2; e3];
+uv0 = uv0(:, 1:2);
+uvt = bsxfun(@minus, vtx_q, vtx_0(1, :)) / [e1; e2; -ray_xyz];
 uvq = uvt(:, 1:2);
 
 mask_vtx_num = size(uv0, 1);
@@ -124,7 +127,7 @@ vtx = uv * [vtx_0(2, :) - vtx_0(1, :); vtx_0(4, :) - vtx_0(1, :)];
 vtx = bsxfun(@plus, vtx, vtx_0(1, :));
 
 if size(uv, 1) > 2
-    area_factor = polyarea(uv(:, 1), uv(:, 2));
+    area_factor = polyarea(uv(:, 1), uv(:, 2)) / polyarea(uvt(:, 1), uvt(:, 2));
 else
     area_factor = 0;
 end

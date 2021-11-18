@@ -11,10 +11,10 @@ crystal.face_norm = [0, 0, 1;     % face 1
 crystal.h = 3;
 crystal.vtx = zeros(12, 3);
 for i = 1:6
-    crystal.vtx(i, :) = [cosd((4-i) * 60), sind((4-i)*60), crystal.h/2];
+    crystal.vtx(i, :) = [cosd((4-i) * 60), sind((4-i)*60), crystal.h];
 end
 for i = 7:12
-    crystal.vtx(i, :) = [cosd((4-i) * 60), sind((4-i)*60), -crystal.h/2];
+    crystal.vtx(i, :) = [cosd((4-i) * 60), sind((4-i)*60), -crystal.h];
 end
 crystal.face = {[6; 5; 4; 3; 2; 1];
                 [7; 8; 9; 10; 11; 12];
@@ -24,19 +24,19 @@ crystal.face = {[6; 5; 4; 3; 2; 1];
                 [4; 5; 11; 10];
                 [5; 6; 12; 11];
                 [6; 1; 7; 12]};
-crystal.face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal.h * ones(6, 1)];
+crystal.face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal.h * ones(6, 1) * 2];
 
 n = 1.31;
-trace.n = [n; -n; -1];
-trace.fid = [3; 1; 5];
+trace.n = [n; 1];
+trace.fid = [3; 5];
 
 crystal_zenith = [90, 0.2];  % mean, std
 tmp_x = linspace(-90, 90, 50000);
 tmp_pdf = exp(-(90 - tmp_x - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / crystal_zenith(2);
-tmp_total = (sum(tmp_pdf) * (tmp_x(2) - tmp_x(1)));
+zen_total = (sum(tmp_pdf) * (tmp_x(2) - tmp_x(1)));
 clear tmp_pdf tmp_x
-axis_pdf = @(llq) (exp(-(90 - llq(:, 2) - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / ...
-    crystal_zenith(2) / tmp_total) * (1 / 360) * (1 / 360);
+axis_pdf = @(llq) (exp(-(90 - asind(sind(llq(:, 2))) - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / ...
+    crystal_zenith(2) / zen_total) * (1 / 360) * (1 / 360);
 
 halo_vis_fun_helper = @(x, a, b) log10(x * b ./ (x + b) + a);
 inv_vis_fun_helper = @(x, a, b) 1 ./ (1 ./ (10.^x - a) - 1/b);
@@ -49,24 +49,24 @@ sun_longitude = 0;
 sun_ll = [sun_longitude, sun_altitude];
 ray_in_xyz = ll2xyz_with_gradient(sun_ll);
 
-config = init_config_3d(crystal, trace, sun_ll, 4);
+config = init_config_3d(crystal, trace, sun_ll, 3);
 line_color = colormap('lines');
 close all;
 
 %%
-halo_img_res = .5;
-halo_img_x = -50:halo_img_res:0;
-halo_img_y = -40:halo_img_res:20;
+halo_img_res = .1;
+halo_img_x = -5:halo_img_res:0;
+halo_img_y = -25:halo_img_res:0;
 
 halo_img = nan(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
 progress_bin = 0.001;
 update_progress = false;
-for w = length(halo_img_x):-1:1
-    for h = 1:length(halo_img_y)
-% for w = 99
-%     for h = 76
+% for w = length(halo_img_x):-1:1
+%     for h = 1:length(halo_img_y)
+for w = 35
+    for h = 32
         lon = halo_img_x(w);
         lat = halo_img_y(h);
 
@@ -106,7 +106,7 @@ for w = length(halo_img_x):-1:1
         end
         halo_img(h, w) = weight;
         
-        if weight > 1e-6 && update_progress
+%         if update_progress && weight > 1e-8
             figure(1); clf;
             f1_pos = get(gcf, 'position');
             imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
@@ -155,7 +155,7 @@ for w = length(halo_img_x):-1:1
             set(gca, 'yscale', 'log', 'ylim', [1e-8, 1e4]);
             box on;
             drawnow;
-        end
+%         end
     end
 end
 
@@ -165,7 +165,7 @@ imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
 axis equal; axis tight; axis xy;
 
 %%
-figure(3);
-imagesc([halo_img_x, -wrev(halo_img_x(1:end-1))], halo_img_y, ...
-    halo_vis_fun([halo_img, fliplr(halo_img(:, 1:end-1))]));
-axis xy; axis equal; axis tight;
+% figure(3);
+% imagesc([halo_img_x, -wrev(halo_img_x(1:end-1))], halo_img_y, ...
+%     halo_vis_fun([halo_img, fliplr(halo_img(:, 1:end-1))]));
+% axis xy; axis equal; axis tight;
