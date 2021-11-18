@@ -160,20 +160,30 @@ while sum(seeds_idx & ~checked_idx) > 0
     start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
     
     % filter out identical to other lines up to a period
-    dup = false;
+    dup_idx = false(size(curr_x, 1), 1);
     for j = 1:length(x_contour)
-        tmp_x = curr_x;
-        d1 = distance_to_poly_line(tmp_x, x_contour{j});
-        tmp_x(:, 3) = curr_x(:, 3) + 360;
-        d2 = distance_to_poly_line(tmp_x, x_contour{j});
-        tmp_x(:, 3) = curr_x(:, 3) - 360;
-        d3 = distance_to_poly_line(tmp_x, x_contour{j});
-        if sum(min([d1, d2, d3], [], 2) < dup_dr) > length(d1) * 0.3
-            dup = true;
-            break;
+        lon_offset = [-360, 1; 360, 1; 0, 1];
+        lat_offset = [-180, -1; 180, -1; 0, 1];
+        roll_offset = [-360, 1; 360, 1; 0, 1];
+        comb_offset = zeros(27, 6);
+        comb_i = 1;
+        for lon_i = 1:3
+            for lat_i = 1:3
+                for roll_i = 1:3
+                    comb_offset(comb_i, :) = ...
+                        [lon_offset(lon_i, 1), lat_offset(lat_i, 1), roll_offset(roll_i, 1), ...
+                        lon_offset(lon_i, 2), lat_offset(lat_i, 2), roll_offset(roll_i, 2)];
+                    comb_i = comb_i + 1;
+                end
+            end
+        end
+        for comb_i = 1:27
+            tmp_x = bsxfun(@plus, bsxfun(@times, curr_x, comb_offset(comb_i, 4:6)), comb_offset(comb_i, 1:3));
+            tmp_d = distance_to_poly_line(tmp_x, x_contour{j});
+            dup_idx = dup_idx | tmp_d < dup_dr;
         end
     end
-    if dup
+    if sum(dup_idx) / size(curr_x, 1) > 0.3
         continue;
     end
     
