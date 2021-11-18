@@ -10,7 +10,13 @@ face_area_factor = zeros(length(p), 1);
 t_factor = zeros(length(p), 1);
 
 for i = 1:length(p)
-    curr_det_j(i) = max(det(curr_jacob(:, :, i) * curr_jacob(:, :, i)'), 1e-8);
+    m = curr_jacob(:, :, i) * curr_jacob(:, :, i)';
+    a0 = curr_jacob(1, :, i);
+    a = a0 / norm(a0);
+    b = a * curr_jacob(:, :, i)';
+    b = [b(2), -b(1)];
+    b = b / sqrt(b * m * b');
+    curr_det_j(i) = max(abs(det(m) * det([[1/norm(a0); 0], b'])), 1e-8);
     tmp_rot_mat = rotz(90 + curr_x(i, 1)) * rotx(90 - curr_x(i, 2)) * rotz(curr_x(i, 3));
     
     tmp_crystal = crystal;
