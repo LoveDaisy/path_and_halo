@@ -117,7 +117,11 @@ while sum(seeds_idx & ~checked_idx) > 0
     end
     
     if isempty(curr_x) || size(curr_x, 1) < 2
-        break;
+        tmp_idx = find(seeds_idx & ~checked_idx);
+        [~, min_idx] = min(target_diff(tmp_idx));
+        start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
+        checked_idx(tmp_idx(min_idx)) = true;
+        continue;
     end
     
     % check seeds
