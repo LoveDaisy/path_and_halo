@@ -2,29 +2,79 @@ function [w, interp_s, interp_p, interp_rot] = ...
     compute_axis_rot_weight(curr_x, curr_jacob, axis_pdf, crystal, ...
     trace, sun_ll)
 
+[p0, det_j0, face_factor0, t_factor0] = ...
+    compute_components(curr_x, sun_ll, axis_pdf, crystal, trace);
+interest_idx = face_factor0 >= 1e-10;
+idx1 = find(diff(double(interest_idx)) > 0);
+idx2 = find(diff(double(interest_idx)) < 0) + 1;
+if interest_idx(1)
+    idx1 = [1; idx1];
+end
+if interest_idx(end)
+    idx2 = [idx2; length(p0)];
+end
+
+if sum(~isnan(det_j0)) < 2
+    w = 0;
+    interp_s = [];
+    interp_p = [];
+    interp_rot = [];
+    return;
+end
+
+[interp_rot, s, interp_s] = spline_interp_rot(curr_x);
+interp_p = axis_pdf(interp_rot);
+interp_det_j = exp(interp1(s, log(det_j0), interp_s, 'linear', 'extrap'));
+interp_face_factor = interp1(s, face_factor0, interp_s, 'linear', 'extrap');
+interp_t_factor = exp(interp1(s, log(t_factor0), interp_s, 'linear', 'extrap'));
+for i = 1:length(idx1)
+    i1 = find(interp_s <= s(idx1), 1, 'last');
+    i2 = find(interp_s >= s(idx2), 1, 'first');
+    if isempty(i1)
+        i1 = 1;
+    end
+    if isempty(i2)
+        i2 = length(interp_s);
+    end
+    if mean(face_factor0(idx1:idx2)) > 2e-1 || ...
+            mean(face_factor0(idx1:idx2) .* p0(idx1:idx2)) < 1e-8 || ...
+            abs(interp_s(i1) - interp_s(i2)) > 40
+        continue;
+    end
+    [~, tmp_det_j, tmp_face_factor, tmp_t_factor] = ...
+        compute_components(interp_rot(i1:i2, :), sun_ll, axis_pdf, crystal, trace);
+    interp_det_j(i1:i2) = tmp_det_j;
+    interp_face_factor(i1:i2) = tmp_face_factor;
+    interp_t_factor(i1:i2) = tmp_t_factor;
+end
+
+interp_p = [interp_p ./ interp_det_j .* interp_face_factor .* interp_t_factor, ...
+    interp_p, 1 ./ interp_det_j, interp_face_factor, interp_t_factor];
+w = sum((interp_p(1:end-1, 1) + interp_p(2:end, 1)) / 2 .* diff(interp_s));
+end
+
+
+function [p, det_j, face_factor, t_factor] = compute_components(rot, sun_ll, axis_pdf, crystal, trace)
 ray_in_xyz = ll2xyz_with_gradient(sun_ll);
 
-p = axis_pdf(curr_x);
-curr_det_j = zeros(size(curr_x, 1), 1);
-face_area_factor = zeros(length(p), 1);
-t_factor = zeros(length(p), 1);
+p = axis_pdf(rot);
+
+det_j = zeros(size(p));
+face_factor = zeros(size(p));
+t_factor = zeros(size(p));
 
 for i = 1:length(p)
-    m = curr_jacob(:, :, i) * curr_jacob(:, :, i)';
-    a0 = curr_jacob(1, :, i);
-    a = a0 / norm(a0);
-    b = a * curr_jacob(:, :, i)';
-    b = [b(2), -b(1)];
-    b = b / sqrt(b * m * b');
-    curr_det_j(i) = max(abs(det(m) * det([[1/norm(a0); 0], b'])), 1e-8);
-    tmp_rot_mat = rotz(90 + curr_x(i, 1)) * rotx(90 - curr_x(i, 2)) * rotz(curr_x(i, 3));
+    [~, curr_jacob] = crystal_system_with_gradient(rot(i, :), sun_ll, crystal, trace);
+
+    det_j(i) = jacobian_factor(curr_jacob(:, :, 1));
+    tmp_rot_mat = rotz(90 + rot(i, 1)) * rotx(90 - rot(i, 2)) * rotz(rot(i, 3));
     
     tmp_crystal = crystal;
     tmp_crystal.face_norm = crystal.face_norm * tmp_rot_mat';
     tmp_crystal.vtx = crystal.vtx * tmp_rot_mat';
    
     tmp_face_area = entry_face_factor(tmp_crystal, ray_in_xyz);
-    face_area_factor(i) = tmp_face_area(trace.fid(1));
+    face_factor(i) = tmp_face_area(trace.fid(1));
 
     t_factor(i) = 1;
     trace_n = [1; trace.n];
@@ -38,20 +88,28 @@ for i = 1:length(p)
         if j < length(trace.fid)
             vtx1 = tmp_crystal.vtx(tmp_crystal.face{trace.fid(j+1)}, :);
             [a, tmp_vtx] = face_intersection_factor(vtx0, vtx1, r);
-            face_area_factor(i) = face_area_factor(i) * a;
+            face_factor(i) = face_factor(i) * a;
             vtx0 = tmp_vtx;
         end
     end
 end
+end
 
-[interp_rot, s, interp_s] = spline_interp_rot(curr_x);
-tmp_det_j = exp(interp1(s, log(curr_det_j), interp_s, 'spline'));
-tmp_face_factor = interp1(s, face_area_factor, interp_s, 'linear', 'extrap');
-tmp_t_factor = exp(interp1(s, log(t_factor), interp_s, 'linear', 'extrap'));
-interp_p = axis_pdf(interp_rot);
-interp_p = [interp_p ./ tmp_det_j .* tmp_face_factor .* tmp_t_factor, ...
-    interp_p, 1 ./ tmp_det_j, tmp_face_factor, tmp_t_factor];
-w = sum((interp_p(1:end-1, 1) + interp_p(2:end, 1)) / 2 .* diff(interp_s));
+
+function j = jacobian_factor(j_rot)
+m = j_rot(:, :) * j_rot(:, :)';
+a0 = j_rot(1, :);
+a = a0 / norm(a0);
+
+b = a * j_rot(:, :)';
+b = [b(2), -b(1)];
+b = b / sqrt(b * m * b');
+
+min_det = 1e-4;
+j = abs(det(m) * det([[1 / norm(a0); 0], b'])) + min_det;
+if isnan(j)
+    j = min_det;
+end
 end
 
 
