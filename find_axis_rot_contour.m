@@ -26,10 +26,10 @@ jacobian = {};
 target_xyz = ll2xyz_with_gradient(target_ll);
 target_diff = acosd(config.out_xyz * target_xyz');
 
-seeds_idx = target_diff < config.dr;
-checked_idx = false(size(seeds_idx));
 dup_dr = config.dr;
 seeds_dr = config.dr * 2;
+seeds_idx = target_diff < seeds_dr;
+checked_idx = false(size(seeds_idx));
 
 [~, min_idx] = min(target_diff);
 start_rot = config.axis_rot_store(min_idx, :);
@@ -78,20 +78,24 @@ while sum(seeds_idx & ~checked_idx) > 0
         % filter out those identical to the other line
         num_before = length(valid_idx_bck);
         if ~isempty(valid_idx_bck) && length(valid_idx_fwd) > 1
-            dist = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), x_contour_fwd(valid_idx_fwd, :));
-            valid_idx_bck = valid_idx_bck(dist > dup_dr);
+            [dist, ~, idx_t] = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), ...
+                x_contour_fwd(valid_idx_fwd, :));
+            valid_idx_bck = valid_idx_bck(dist > dup_dr | ...
+                (idx_t(:, 2) <= 1e-8 | idx_t(:, 2) >= 1-1e-8));
         end
         if ~isempty(valid_idx_bck) && length(valid_idx_fwd) > 1
             tmp_x = x_contour_fwd(valid_idx_fwd, :);
             tmp_x(:, 3) = tmp_x(:, 3) + 360;
-            dist = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
-            valid_idx_bck = valid_idx_bck(dist > dup_dr);
+            [dist, ~, idx_t] = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
+            valid_idx_bck = valid_idx_bck(dist > dup_dr | ...
+                (idx_t(:, 2) <= 1e-8 | idx_t(:, 2) >= 1-1e-8));
         end
         if ~isempty(valid_idx_bck) && length(valid_idx_fwd) > 1
             tmp_x = x_contour_fwd(valid_idx_fwd, :);
             tmp_x(:, 3) = tmp_x(:, 3) - 360;
-            dist = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
-            valid_idx_bck = valid_idx_bck(dist > dup_dr);
+            [dist, ~, idx_t] = distance_to_poly_line(x_contour_bck(valid_idx_bck, :), tmp_x);
+            valid_idx_bck = valid_idx_bck(dist > dup_dr | ...
+                (idx_t(:, 2) <= 1e-8 | idx_t(:, 2) >= 1-1e-8));
         end
         num_after = length(valid_idx_bck);
         valid_idx_bck = wrev(valid_idx_bck);
@@ -162,6 +166,7 @@ while sum(seeds_idx & ~checked_idx) > 0
     
     [~, min_idx] = min(target_diff(tmp_idx));
     start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
+    checked_idx(tmp_idx(min_idx)) = true;
     
     % filter out identical to other lines up to a period
     dup_idx = false(size(curr_x, 1), 1);
