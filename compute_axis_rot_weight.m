@@ -77,7 +77,7 @@ for i = 1:length(p)
     face_factor(i) = tmp_face_area(trace.fid(1));
 
     t_factor(i) = 1;
-    trace_n = [1; trace.n];
+    trace_n = generate_trace_n(crystal, trace);
     vtx0 = tmp_crystal.vtx(tmp_crystal.face{trace.fid(1)}, :);
     r = ray_in_xyz;
     for j = 1:length(trace.fid)
@@ -120,7 +120,11 @@ end
 
 
 function [t, ray_out] = transit_factor(ray_in, face_normal, n0, n1)
-ray_out = refract_with_gradient(ray_in, face_normal, n0, n1);
+if n0 * n1 > 0
+    ray_out = refract_with_gradient(ray_in, face_normal, n0, n1);
+else
+    ray_out = reflect_with_gradient(ray_in, face_normal);
+end
 n0 = abs(n0);
 n1 = abs(n1);
 cos_qi = abs(dot(ray_in, face_normal));
