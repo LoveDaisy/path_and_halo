@@ -1,6 +1,5 @@
 function [w, interp_s, interp_p, interp_rot] = ...
-    compute_axis_rot_weight(curr_x, curr_jacob, axis_pdf, crystal, ...
-    trace, sun_ll)
+    compute_axis_rot_weight(curr_x, axis_pdf, crystal, trace, sun_ll)
 
 [p0, det_j0, face_factor0, t_factor0] = ...
     compute_components(curr_x, sun_ll, axis_pdf, crystal, trace);
@@ -76,22 +75,9 @@ for i = 1:length(p)
     tmp_face_area = entry_face_factor(tmp_crystal, ray_in_xyz);
     face_factor(i) = tmp_face_area(trace.fid(1));
 
-    t_factor(i) = 1;
-    trace_n = generate_trace_n(crystal, trace);
-    vtx0 = tmp_crystal.vtx(tmp_crystal.face{trace.fid(1)}, :);
-    r = ray_in_xyz;
-    for j = 1:length(trace.fid)
-        [t, r] = transit_factor(r, ...
-            tmp_crystal.face_norm(trace.fid(j), :), trace_n(j), trace_n(j+1));
-        t_factor(i) = t_factor(i) * t;
-        
-        if j < length(trace.fid)
-            vtx1 = tmp_crystal.vtx(tmp_crystal.face{trace.fid(j+1)}, :);
-            [a, tmp_vtx] = face_intersection_factor(vtx0, vtx1, r);
-            face_factor(i) = face_factor(i) * a;
-            vtx0 = tmp_vtx;
-        end
-    end
+    [t, a] = transit_face_factor(ray_in_xyz, tmp_crystal, trace);
+    t_factor(i) = t;
+    face_factor(i) = face_factor(i) * a;
 end
 end
 
@@ -119,7 +105,48 @@ a = max(face_area, 0) / sum(max(face_area, 0));
 end
 
 
-function [t, ray_out] = transit_factor(ray_in, face_normal, n0, n1)
+function [t_factor, face_factor] = transit_face_factor(ray_in_xyz, crystal, trace)
+trace_n = generate_trace_n(crystal, trace);
+vtx0 = crystal.vtx(crystal.face{trace.fid(1)}, :);
+r = ray_in_xyz;
+
+t_factor = 1;
+face_factor = 1;
+for i = 1:length(trace.fid)
+    n0 = trace_n(i);
+    n1 = trace_n(i+1);
+    fn = crystal.face_norm(trace.fid(i), :);
+%     [t, r, q] = transit_factor(r, fn, n0, n1);
+    if n0 * n1 > 0
+        [t, r, q] = transit_factor(r, fn, n0, n1);
+    elseif abs(n0) >= 1 - 1e-6
+        [t, ~, ~] = transit_factor(r, fn, abs(n0), 1);
+        if isnan(t)
+            t = 1;
+        else
+            t = 1 - t;
+        end
+        r = reflect_with_gradient(r, fn);
+        q = 1;
+    else
+        [t, ~, ~] = transit_factor(r, fn, 1, crystal.n);
+        t = 1 - t;
+        q = 1;
+        r = reflect_with_gradient(r, fn);
+    end
+    t_factor = t_factor * t * q;
+
+    if i < length(trace.fid) && face_factor > 1e-8
+        vtx1 = crystal.vtx(crystal.face{trace.fid(i+1)}, :);
+        [a, tmp_vtx] = face_intersection_factor(vtx0, vtx1, r);
+        face_factor = face_factor * a;
+        vtx0 = tmp_vtx;
+    end
+end
+end
+
+
+function [t, ray_out, q_factor] = transit_factor(ray_in, face_normal, n0, n1)
 if n0 * n1 > 0
     ray_out = refract_with_gradient(ray_in, face_normal, n0, n1);
 else
@@ -132,7 +159,7 @@ cos_qt = abs(dot(ray_out, face_normal));
 Rs1 = abs((n0 * cos_qi - n1 * cos_qt) / (n0 * cos_qi + n1 * cos_qt))^2;
 Rp1 = abs((n0 * cos_qt - n1 * cos_qi) / (n0 * cos_qt + n1 * cos_qi))^2;
 t = (1 - (Rs1 + Rp1) / 2);
-t = t * (cos_qi / cos_qt);
+q_factor = cos_qi / cos_qt;
 end
 
 
@@ -160,12 +187,20 @@ for i1 = 1:mask_vtx_num
     i2 = mod(i1, mask_vtx_num) + 1;
     i3 = mod(i2, mask_vtx_num) + 1;
 
-    z0 = det([uv0(i2, :) - uv0(i1, :); uv0(i3, :) - uv0(i2, :)]);
+    z0 = (uv0(i2, 1) - uv0(i1, 1)) * (uv0(i3, 2) - uv0(i2, 2)) - ...
+        (uv0(i2, 2) - uv0(i1, 2)) * (uv0(i3, 1) - uv0(i2, 1));
+    z2 = nan;
     uv_i = 1;
     for j1 = 1:q_vtx_num
         j2 = mod(j1, q_vtx_num) + 1;
-        z1 = det([uv0(i2, :) - uv0(i1, :); uvq(j1, :) - uv0(i1, :)]);
-        z2 = det([uv0(i2, :) - uv0(i1, :); uvq(j2, :) - uv0(i1, :)]);
+        if ~isnan(z2)
+            z1 = z2;
+        else
+            z1 = (uv0(i2, 1) - uv0(i1, 1)) * (uvq(j1, 2) - uv0(i1, 2)) - ...
+                (uv0(i2, 2) - uv0(i1, 2)) * (uvq(j1, 1) - uv0(i1, 1));
+        end
+        z2 = (uv0(i2, 1) - uv0(i1, 1)) * (uvq(j2, 2) - uv0(i1, 2)) - ...
+            (uv0(i2, 2) - uv0(i1, 2)) * (uvq(j2, 1) - uv0(i1, 1));
         
         if z0 * z1 > z_eps && z0 * z2 < z_eps
             % From inner to outer: record tow points
@@ -195,7 +230,11 @@ vtx = uv * [vtx_0(2, :) - vtx_0(1, :); vtx_0(4, :) - vtx_0(1, :)];
 vtx = bsxfun(@plus, vtx, vtx_0(1, :));
 
 if size(uv, 1) > 2
-    area_factor = polyarea(uv(:, 1), uv(:, 2)) / polyarea(uvt(:, 1), uvt(:, 2));
+    area1 = sum(uv(:, 1) .* [uv(end, 2); uv(1:end-1, 2)]) - ...
+        sum([uv(end, 1); uv(1:end-1, 1)] .* uv(:, 2));
+    area0 = sum(uvt(:, 1) .* [uvt(end, 2); uvt(1:end-1, 2)]) - ...
+        sum([uvt(end, 1); uvt(1:end-1, 1)] .* uvt(:, 2));
+    area_factor = area1 / area0;
 else
     area_factor = 0;
 end
