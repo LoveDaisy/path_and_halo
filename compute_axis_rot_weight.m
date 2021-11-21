@@ -27,8 +27,8 @@ interp_det_j = exp(interp1(s, log(det_j0), interp_s, 'linear', 'extrap'));
 interp_face_factor = interp1(s, face_factor0, interp_s, 'linear', 'extrap');
 interp_t_factor = exp(interp1(s, log(t_factor0), interp_s, 'linear', 'extrap'));
 for i = 1:length(idx1)
-    i1 = find(interp_s <= s(idx1), 1, 'last');
-    i2 = find(interp_s >= s(idx2), 1, 'first');
+    i1 = find(interp_s <= s(idx1(i)), 1, 'last');
+    i2 = find(interp_s >= s(idx2(i)), 1, 'first');
     if isempty(i1)
         i1 = 1;
     end

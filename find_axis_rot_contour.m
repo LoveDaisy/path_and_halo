@@ -121,34 +121,17 @@ while sum(seeds_idx & ~checked_idx) > 0
         tmp_x0 = config.axis_rot_store(tmp_idx(j), :);
         [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, crystal, trace, ...
             'eps', config.dr * 0.25);
-        if any(isnan(tmp_x))
-            checked_idx(target_diff > target_diff(tmp_idx(j))) = true;
+        if any(isnan(tmp_x)) && target_diff(tmp_idx(j)) > seeds_dr
+            checked_idx(target_diff > target_diff(tmp_idx(j)) & seeds_idx) = true;
             continue;
-        elseif tmp_odist(j) < inf
-            checked_idx(tmp_idx(tmp_odist <= tmp_odist(j))) = true;
         end
-        lon_offset = [-360, 1; 360, 1; 0, 1];
-        lat_offset = [-180, -1; 180, -1; 0, 1];
-        roll_offset = [-360, 1; 360, 1; 0, 1];
-        comb_offset = zeros(27, 6);
-        comb_i = 1;
-        for lon_i = 1:3
-            for lat_i = 1:3
-                for roll_i = 1:3
-                    comb_offset(comb_i, :) = ...
-                        [lon_offset(lon_i, 1), lat_offset(lat_i, 1), roll_offset(roll_i, 1), ...
-                        lon_offset(lon_i, 2), lat_offset(lat_i, 2), roll_offset(roll_i, 2)];
-                    comb_i = comb_i + 1;
-                end
-            end
-        end
-        for comb_i = 1:27
-            [tmp_cmb_idist, tmp_cmb_odist] = input_output_distance(tmp_x .* comb_offset(comb_i, 4:6) + ...
-                comb_offset(comb_i, 1:3), curr_x, curr_j);
-            if tmp_cmb_idist <= seeds_dr || tmp_cmb_odist <= seeds_dr
-                checked_idx(tmp_idx(j)) = true;
-                break;
-            end
+
+        [tmp_idist1, tmp_odist1] = input_output_distance(tmp_x, curr_x, curr_j);
+%         if tmp_odist1 < inf
+%             checked_idx(tmp_idx(tmp_odist <= tmp_odist1)) = true;
+%         end
+        if tmp_idist1 <= seeds_dr || tmp_odist1 <= seeds_dr
+            checked_idx(tmp_idx(j)) = true;
         end
     end
     tmp_idx = find(seeds_idx & ~checked_idx);
@@ -390,11 +373,35 @@ end
 
 
 function [input_dist, output_dist] = input_output_distance(qx, curr_x, curr_j)
-[input_dist, tmp_vn, tmp_it] = distance_to_poly_line(qx, curr_x);
-output_dist = nan(size(input_dist));
-for i = 1:size(tmp_vn, 1)
-    tmp_dy = tmp_vn(i, :) * curr_j(:, :, tmp_it(i, 1))';
-    output_dist(i) = norm(tmp_dy);
+lon_offset = [-360, 1; 360, 1; 0, 1];
+lat_offset = [-180, -1; 180, -1; 0, 1];
+roll_offset = [-360, 1; 360, 1; 0, 1];
+comb_offset = zeros(27, 6);  % offset, scale
+comb_i = 1;
+for lon_i = 1:3
+    for lat_i = 1:3
+        for roll_i = 1:3
+            comb_offset(comb_i, :) = ...
+                [lon_offset(lon_i, 1), lat_offset(lat_i, 1), roll_offset(roll_i, 1), ...
+                lon_offset(lon_i, 2), lat_offset(lat_i, 2), roll_offset(roll_i, 2)];
+            comb_i = comb_i + 1;
+        end
+    end
 end
-output_dist(tmp_it(:, 2) <= 1e-4 | tmp_it(:, 2) >= 1-1e-4) = inf;
+
+q_num = size(qx, 1);
+input_dist = inf(q_num, 1);
+output_dist = inf(q_num, 1);
+
+for comb_i = 1:27
+    tmp_qx = bsxfun(@plus, bsxfun(@times, qx, comb_offset(comb_i, 4:6)), comb_offset(comb_i, 1:3));
+    [dist, vn, it] = distance_to_poly_line(tmp_qx, curr_x);
+    input_dist = min(input_dist, dist);
+    for i = 1:size(vn, 1)
+        if it(i, 2) > 1e-4 && it(i, 2) < 1 - 1e-4
+            tmp_dy = vn(i, :) * curr_j(:, :, it(i, 1))';
+            output_dist(i) = min(norm(tmp_dy), output_dist(i));
+        end
+    end
+end
 end
