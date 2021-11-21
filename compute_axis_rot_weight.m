@@ -36,15 +36,19 @@ for i = 1:length(idx1)
         i2 = length(interp_s);
     end
     if mean(face_factor0(idx1:idx2)) > 2e-1 || ...
-            mean(face_factor0(idx1:idx2) .* p0(idx1:idx2)) < 1e-8 || ...
-            abs(interp_s(i1) - interp_s(i2)) > 40
+            mean(interp_face_factor(i1:i2) .* interp_p(i1:i2)) < 1e-8 || ...
+            abs(interp_s(i1) - interp_s(i2)) > 50
         continue;
     end
+
+    tmp_idx = false(size(interp_p));
+    tmp_idx(i1:i2) = true;
+    tmp_idx = tmp_idx & interp_p > 1e-10;
     [~, tmp_det_j, tmp_face_factor, tmp_t_factor] = ...
-        compute_components(interp_rot(i1:i2, :), sun_ll, axis_pdf, crystal, trace);
-    interp_det_j(i1:i2) = tmp_det_j;
-    interp_face_factor(i1:i2) = tmp_face_factor;
-    interp_t_factor(i1:i2) = tmp_t_factor;
+        compute_components(interp_rot(tmp_idx, :), sun_ll, axis_pdf, crystal, trace);
+    interp_det_j(tmp_idx) = tmp_det_j;
+    interp_face_factor(tmp_idx) = tmp_face_factor;
+    interp_t_factor(tmp_idx) = tmp_t_factor;
 end
 
 interp_p = [interp_p ./ interp_det_j .* interp_face_factor .* interp_t_factor, ...

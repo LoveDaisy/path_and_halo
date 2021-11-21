@@ -43,17 +43,6 @@ while sum(seeds_idx & ~checked_idx) > 0
     if length(valid_idx_fwd) < 2
         valid_idx_fwd = [];
     end
-    
-    % check seeds
-    tmp_idx = find(seeds_idx & ~checked_idx);
-    if ~isempty(tmp_idx) && length(valid_idx_fwd) >= 2
-        [tmp_dist, tmp_vn, tmp_it] = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), ...
-            x_contour_fwd(valid_idx_fwd, :));
-        for i = 1:length(tmp_idx)
-            tmp_dy = tmp_vn(i, :) * jacobian_fwd(:, :, tmp_it(i, 1))';
-            checked_idx(tmp_idx(i)) = tmp_dist(i) < seeds_dr || sum(tmp_dy.^2, 2) < seeds_dr^2;
-        end
-    end
 
     if ~closed
         [x_contour_bck, y_val_bck, jacobian_bck, ~] = search_direction(start_rot, sun_ll, target_ll, ...
@@ -62,17 +51,6 @@ while sum(seeds_idx & ~checked_idx) > 0
         valid_idx_bck = find(valid_idx_bck);
         if length(valid_idx_fwd) >= 2
             valid_idx_bck = valid_idx_bck(2:end);
-        end
-
-        % check seeds
-        tmp_idx = find(seeds_idx & ~checked_idx);
-        if ~isempty(tmp_idx) && length(valid_idx_bck) >= 2
-            [tmp_dist, tmp_vn, tmp_it] = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), ...
-                x_contour_bck(valid_idx_bck, :));
-            for i = 1:length(tmp_idx)
-                tmp_dy = tmp_vn(i, :) * jacobian_bck(:, :, tmp_it(i, 1))';
-                checked_idx(tmp_idx(i)) = tmp_dist(i) < seeds_dr || sum(tmp_dy.^2, 2) < seeds_dr^2;
-            end
         end
 
         % filter out those identical to the other line
@@ -130,13 +108,25 @@ while sum(seeds_idx & ~checked_idx) > 0
     
     % check seeds
     tmp_idx = find(seeds_idx & ~checked_idx);
-    dist = distance_to_poly_line(config.axis_rot_store(tmp_idx, :), curr_x);
-    checked_idx(tmp_idx(dist <= seeds_dr)) = true;
+    [tmp_idist, tmp_odist] = input_output_distance(config.axis_rot_store(tmp_idx, :), curr_x, curr_j);
+    tmp_dist_checked = tmp_odist <= seeds_dr | tmp_idist <= seeds_dr;
+    checked_idx(tmp_idx) = tmp_dist_checked;
+    tmp_odist = tmp_odist(~tmp_dist_checked);
     tmp_idx = find(seeds_idx & ~checked_idx);
     for j = 1:length(tmp_idx)
+%         tmp_x = config.axis_rot_store(tmp_idx(j), :);
+        if checked_idx(tmp_idx(j))
+            continue;
+        end
         tmp_x0 = config.axis_rot_store(tmp_idx(j), :);
         [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, crystal, trace, ...
             'eps', config.dr * 0.25);
+        if any(isnan(tmp_x))
+            checked_idx(target_diff > target_diff(tmp_idx(j))) = true;
+            continue;
+        elseif tmp_odist(j) < inf
+            checked_idx(tmp_idx(tmp_odist <= tmp_odist(j))) = true;
+        end
         lon_offset = [-360, 1; 360, 1; 0, 1];
         lat_offset = [-180, -1; 180, -1; 0, 1];
         roll_offset = [-360, 1; 360, 1; 0, 1];
@@ -153,10 +143,9 @@ while sum(seeds_idx & ~checked_idx) > 0
             end
         end
         for comb_i = 1:27
-            [dist, tmp_vn, tmp_it] = distance_to_poly_line(tmp_x .* comb_offset(comb_i, 4:6) + ...
-                comb_offset(comb_i, 1:3), curr_x);
-            tmp_dy = norm(tmp_vn * curr_j(:, :, tmp_it(1))');
-            if dist <= seeds_dr || tmp_dy <= seeds_dr
+            [tmp_cmb_idist, tmp_cmb_odist] = input_output_distance(tmp_x .* comb_offset(comb_i, 4:6) + ...
+                comb_offset(comb_i, 1:3), curr_x, curr_j);
+            if tmp_cmb_idist <= seeds_dr || tmp_cmb_odist <= seeds_dr
                 checked_idx(tmp_idx(j)) = true;
                 break;
             end
@@ -346,6 +335,11 @@ while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
         alpha = alpha / 2;
         [out_ll, j_rot] = crystal_system_with_gradient(x + dx * alpha, sun_ll, crystal, trace);
     end
+    
+    if norm(target_ll - out_ll) > norm(dy)
+        dy = target_ll - out_ll;
+        break;
+    end
 
     x = x + dx * alpha;
     dy = target_ll - out_ll;
@@ -361,35 +355,46 @@ end
 
 
 function [dist, vn, idx_t] = distance_to_poly_line(qxy, xy)
-    % INPUT
-    %   qxy:    n*2
-    %   xy:     m*2
-    
-    n = size(qxy, 1);
-    dim = size(qxy, 2);
-    
-    dist = nan(n, 1);
-    vn = nan(n, dim);
-    idx_t = nan(n, 2);
-    for i = 1:n
-        [tmp_dist, tmp_vn, tmp_t] = p2line_dist(qxy(i, :), xy(1:end-1, :), xy(2:end, :));
-        [dist(i), tmp_idx] = min(tmp_dist);
-        vn(i, :) = tmp_vn(tmp_idx, :);
-        idx_t(i, :) = [tmp_idx, tmp_t(tmp_idx)];
-    end
-    end
-    
-    
-    function [dist, vp_n, t] = p2line_dist(p, xy1, xy2)
-    % INPUT
-    %   p:          1*2
-    %   xy1, xy2:   n*2
-    
-    vp = bsxfun(@minus, p, xy1);
-    v2 = xy2 - xy1;
-    
-    t = min(max(sum(vp .* v2, 2) ./ sum(v2.^2, 2), 0), 1);
-    vp_proj = bsxfun(@times, t, v2);
-    vp_n = bsxfun(@minus, vp, vp_proj);
-    dist = sqrt(sum(vp_n.^2, 2));
-    end
+% INPUT
+%   qxy:    n*2
+%   xy:     m*2
+
+n = size(qxy, 1);
+dim = size(qxy, 2);
+
+dist = nan(n, 1);
+vn = nan(n, dim);
+idx_t = nan(n, 2);
+for i = 1:n
+    [tmp_dist, tmp_vn, tmp_t] = p2line_dist(qxy(i, :), xy(1:end-1, :), xy(2:end, :));
+    [dist(i), tmp_idx] = min(tmp_dist);
+    vn(i, :) = tmp_vn(tmp_idx, :);
+    idx_t(i, :) = [tmp_idx, tmp_t(tmp_idx)];
+end
+end
+
+
+function [dist, vp_n, t] = p2line_dist(p, xy1, xy2)
+% INPUT
+%   p:          1*2
+%   xy1, xy2:   n*2
+
+vp = bsxfun(@minus, p, xy1);
+v2 = xy2 - xy1;
+
+t = min(max(sum(vp .* v2, 2) ./ sum(v2.^2, 2), 0), 1);
+vp_proj = bsxfun(@times, t, v2);
+vp_n = bsxfun(@minus, vp, vp_proj);
+dist = sqrt(sum(vp_n.^2, 2));
+end
+
+
+function [input_dist, output_dist] = input_output_distance(qx, curr_x, curr_j)
+[input_dist, tmp_vn, tmp_it] = distance_to_poly_line(qx, curr_x);
+output_dist = nan(size(input_dist));
+for i = 1:size(tmp_vn, 1)
+    tmp_dy = tmp_vn(i, :) * curr_j(:, :, tmp_it(i, 1))';
+    output_dist(i) = norm(tmp_dy);
+end
+output_dist(tmp_it(:, 2) <= 1e-4 | tmp_it(:, 2) >= 1-1e-4) = inf;
+end
