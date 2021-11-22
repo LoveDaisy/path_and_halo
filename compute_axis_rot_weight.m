@@ -120,7 +120,6 @@ for i = 1:length(trace.fid)
     n0 = trace_n(i);
     n1 = trace_n(i+1);
     fn = crystal.face_norm(trace.fid(i), :);
-%     [t, r, q] = transit_factor(r, fn, n0, n1);
     if n0 * n1 > 0
         [t, r, q] = transit_factor(r, fn, n0, n1);
     elseif abs(n0) >= 1 - 1e-6

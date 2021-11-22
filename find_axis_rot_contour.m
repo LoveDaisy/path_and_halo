@@ -31,7 +31,7 @@ seeds_dr = config.dr * 2;
 seeds_idx = target_diff < seeds_dr;
 checked_idx = false(size(seeds_idx));
 
-[~, min_idx] = min(target_diff);
+[min_diff, min_idx] = min(target_diff);
 start_rot = config.axis_rot_store(min_idx, :);
 checked_idx(min_idx) = true;
 
@@ -99,10 +99,10 @@ while sum(seeds_idx & ~checked_idx) > 0
     end
     
     if isempty(curr_x) || size(curr_x, 1) < 2
+        checked_idx(target_diff >= min_diff & seeds_idx) = true;
         tmp_idx = find(seeds_idx & ~checked_idx);
-        [~, min_idx] = min(target_diff(tmp_idx));
+        [min_diff, min_idx] = min(target_diff(tmp_idx));
         start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
-        checked_idx(tmp_idx(min_idx)) = true;
         continue;
     end
     
@@ -111,10 +111,8 @@ while sum(seeds_idx & ~checked_idx) > 0
     [tmp_idist, tmp_odist] = input_output_distance(config.axis_rot_store(tmp_idx, :), curr_x, curr_j);
     tmp_dist_checked = tmp_odist <= seeds_dr | tmp_idist <= seeds_dr;
     checked_idx(tmp_idx) = tmp_dist_checked;
-    tmp_odist = tmp_odist(~tmp_dist_checked);
     tmp_idx = find(seeds_idx & ~checked_idx);
     for j = 1:length(tmp_idx)
-%         tmp_x = config.axis_rot_store(tmp_idx(j), :);
         if checked_idx(tmp_idx(j))
             continue;
         end
@@ -127,9 +125,6 @@ while sum(seeds_idx & ~checked_idx) > 0
         end
 
         [tmp_idist1, tmp_odist1] = input_output_distance(tmp_x, curr_x, curr_j);
-%         if tmp_odist1 < inf
-%             checked_idx(tmp_idx(tmp_odist <= tmp_odist1)) = true;
-%         end
         if tmp_idist1 <= seeds_dr || tmp_odist1 <= seeds_dr
             checked_idx(tmp_idx(j)) = true;
         end
@@ -190,6 +185,9 @@ ds_store = nan(num, 1);
 closed = false;
 
 [rot, out_ll, j_rot] = find_solution(rot0, sun_ll, target_ll, crystal, trace);
+if any(isnan(out_ll))
+    return;
+end
 co_gradient = cross(j_rot(1, :), j_rot(2, :));
 co_gradient = co_gradient / norm(co_gradient) * direction;
 
