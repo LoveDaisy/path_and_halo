@@ -35,15 +35,16 @@ for i = 1:length(idx1)
     if isempty(i2)
         i2 = length(interp_s);
     end
-    if mean(face_factor0(idx1:idx2)) > 2e-1 || ...
-            mean(interp_face_factor(i1:i2) .* interp_p(i1:i2)) < 1e-8 || ...
-            abs(interp_s(i1) - interp_s(i2)) > 50
-        continue;
-    end
-
+    
     tmp_idx = false(size(interp_p));
     tmp_idx(i1:i2) = true;
     tmp_idx = tmp_idx & interp_p > 1e-10;
+    if sum(tmp_idx) > 100 && (mean(face_factor0(idx1:idx2)) > 2e-1 || ...
+            mean(interp_face_factor(i1:i2) .* interp_p(i1:i2)) < 1e-8 || ...
+            abs(interp_s(i1) - interp_s(i2)) > 50)
+        continue;
+    end
+
     [~, tmp_det_j, tmp_face_factor, tmp_t_factor] = ...
         compute_components(interp_rot(tmp_idx, :), sun_ll, axis_pdf, crystal, trace);
     interp_det_j(tmp_idx) = tmp_det_j;

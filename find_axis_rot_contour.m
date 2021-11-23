@@ -29,11 +29,12 @@ target_diff = acosd(config.out_xyz * target_xyz');
 dup_dr = config.dr;
 seeds_dr = config.dr * 2;
 seeds_idx = target_diff < seeds_dr;
-checked_idx = false(size(seeds_idx));
+checked_idx = false(size(target_diff));
 
-[min_diff, min_idx] = min(target_diff);
-start_rot = config.axis_rot_store(min_idx, :);
-checked_idx(min_idx) = true;
+[min_diff, min_idx] = min(target_diff(seeds_idx));
+tmp_idx = find(seeds_idx);
+start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
+checked_idx(tmp_idx(min_idx)) = true;
 
 contour_i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
@@ -131,7 +132,7 @@ while sum(seeds_idx & ~checked_idx) > 0
     end
     tmp_idx = find(seeds_idx & ~checked_idx);
     
-    [~, min_idx] = min(target_diff(tmp_idx));
+    [min_diff, min_idx] = min(target_diff(tmp_idx));
     start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
     checked_idx(tmp_idx(min_idx)) = true;
     
