@@ -30,17 +30,11 @@ end
 
 sun_xyz = ll2xyz_with_gradient(sun_ll);
 bending_angle = acosd(out_xyz * sun_xyz');
-bending_angle_max = max(bending_angle);
-bending_angle_min = min(bending_angle);
 
 config.bending_angle = bending_angle;
-config.bending_angle_max = bending_angle_max;
-config.bending_angle_min = bending_angle_min;
 config.axis_rot_store = axis_rot_store;
-config.rot0_ll = rot0_ll;
-config.roll0 = roll0;
 config.dr = dr;
 config.out_ll = out_ll;
 config.out_xyz = out_xyz;
-config.mat_store = mat_store;
+config.jacobian = mat_store;
 end
