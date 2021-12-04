@@ -27,24 +27,24 @@ crystal.face = {[6; 5; 4; 3; 2; 1];
 crystal.face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal.h * ones(6, 1) * 2];
 crystal.n = 1.31;
 
-trace.fid = [1; 3; 2; 1];
+trace.fid = [1; 3; 2; 4; 5; 1];
 
 crystal_zenith = [90, 0.2];  % mean, std
 tmp_x = linspace(-90, 90, 50000);
 tmp_pdf = exp(-(90 - tmp_x - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / crystal_zenith(2);
 zen_total = (sum(tmp_pdf) * (tmp_x(2) - tmp_x(1)));
 clear tmp_pdf tmp_x
-axis_pdf = @(llq) (exp(-(90 - asind(sind(llq(:, 2))) - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / ...
+axis_pdf = @(llr) (exp(-(90 - asind(sind(llr(:, 2))) - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / ...
     crystal_zenith(2) / zen_total) * (1 / 360) * (1 / 360);
 
 %%
 halo_vis_fun_helper = @(x, a, b) log10(x * b ./ (x + b) + a);
 inv_vis_fun_helper = @(x, a, b) 1 ./ (1 ./ (10.^x - a) - 1/b);
-halo_vis_fun = @(x) halo_vis_fun_helper(x, 20e-7, 2e-4);
-inv_vis_fun = @(x) inv_vis_fun_helper(x, 20e-7, 2e-4);
+halo_vis_fun = @(x) halo_vis_fun_helper(x, 1e-5, 1e-2);
+inv_vis_fun = @(x) inv_vis_fun_helper(x, 1e-5, 1e-2);
 
 %%
-sun_altitude = 5;
+sun_altitude = 10;
 sun_longitude = 180;
 sun_ll = [sun_longitude, sun_altitude];
 ray_in_xyz = ll2xyz_with_gradient(sun_ll);
@@ -55,9 +55,10 @@ close all;
 
 %%
 halo_img_res = .5;
-halo_img_x = 0:halo_img_res:6;
+halo_img_x = 0:halo_img_res:10;
 halo_img_y = -20:halo_img_res:20;
 
+tic;
 halo_img = nan(length(halo_img_y), length(halo_img_x));
 checked_pix = 0;
 progress_cnt = 0;
@@ -65,8 +66,8 @@ progress_bin = 0.001;
 update_progress = false;
 % for w = 1:length(halo_img_x)
 %     for h = 1:length(halo_img_y)
-for w = 2
-    for h = 27
+for w = 1
+    for h = 21
         lon = halo_img_x(w);
         lat = halo_img_y(h);
 
@@ -157,6 +158,7 @@ for w = 2
 %         end
     end
 end
+toc;
 
 %%
 figure(1); clf;

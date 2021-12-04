@@ -35,7 +35,7 @@ tmp_x = linspace(-90, 90, 50000);
 tmp_pdf = exp(-(90 - tmp_x - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / crystal_zenith(2);
 tmp_total = (sum(tmp_pdf) * (tmp_x(2) - tmp_x(1)));
 clear tmp_pdf tmp_x
-axis_pdf = @(llq) (exp(-(90 - llq(:, 2) - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / ...
+axis_pdf = @(llr) (exp(-(90 - llr(:, 2) - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / ...
     crystal_zenith(2) / tmp_total) * (1 / 360) * (1 / 360);
 
 halo_vis_fun_helper = @(x, a, b) log10(x * b ./ (x + b) + a);
