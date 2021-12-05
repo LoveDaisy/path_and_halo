@@ -47,7 +47,7 @@ inv_vis_fun = @(x) inv_vis_fun_helper(x, 1e-5, 1e-2);
 sun_altitude = 10;
 sun_longitude = 180;
 sun_ll = [sun_longitude, sun_altitude];
-ray_in_xyz = ll2xyz_with_gradient(sun_ll);
+ray_in_xyz = ll2xyz(sun_ll);
 
 config = init_config_3d(crystal, trace, sun_ll, 3);
 line_color = colormap('lines');
@@ -64,14 +64,14 @@ checked_pix = 0;
 progress_cnt = 0;
 progress_bin = 0.001;
 update_progress = false;
-% for w = 1:length(halo_img_x)
+% for w = 2:length(halo_img_x)
 %     for h = 1:length(halo_img_y)
-for w = 1
-    for h = 21
+for w = 2
+    for h = 17
         lon = halo_img_x(w);
         lat = halo_img_y(h);
 
-        ray_out_xyz = ll2xyz_with_gradient([lon, lat]);
+        ray_out_xyz = ll2xyz([lon, lat]);
         curr_bending_angle = acosd(dot(ray_out_xyz, ray_in_xyz));
         curr_target_input_output = [ray_in_xyz, ray_out_xyz];
         

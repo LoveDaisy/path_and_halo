@@ -1,4 +1,4 @@
-function [ll, g] = xyz2ll_with_gradient(xyz)
+function [ll, g] = xyz2ll(xyz)
 ll = [atan2d(xyz(:, 2), xyz(:, 1)), ...
     asind(xyz(:, 3) ./ sqrt(sum(xyz.^2, 2)))];
 

@@ -23,7 +23,7 @@ x_contour = {};
 y_val = {};
 jacobian = {};
 
-target_xyz = ll2xyz_with_gradient(target_ll);
+target_xyz = ll2xyz(target_ll);
 target_diff = acosd(config.out_xyz * target_xyz');
 
 dup_dr = config.dr;
@@ -297,7 +297,7 @@ if any(isnan(rot0)) || any(isinf(rot0))
     return;
 end
 
-[out_ll, j_rot] = crystal_system_with_gradient(rot0, sun_ll, crystal, trace);
+[out_ll, j_rot] = crystal_system(rot0, sun_ll, crystal, trace);
 
 if any(isnan(out_ll))
     return;
@@ -315,7 +315,7 @@ while norm(dy) > p.Results.eps && iter_num < p.Results.MaxIter
     alpha = 2;
     while (any(isnan(out_ll)) || norm(target_ll - out_ll) > norm(dy) * 0.8) && alpha > 0.1
         alpha = alpha / 2;
-        [out_ll, j_rot] = crystal_system_with_gradient(x + dx * alpha, sun_ll, crystal, trace);
+        [out_ll, j_rot] = crystal_system(x + dx * alpha, sun_ll, crystal, trace);
     end
     
     if norm(target_ll - out_ll) > norm(dy)

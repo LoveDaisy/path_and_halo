@@ -47,7 +47,7 @@ inv_vis_fun = @(x) inv_vis_fun_helper(x, 2e-5, 1e-2);
 sun_altitude = 20;
 sun_longitude = 0;
 sun_ll = [sun_longitude, sun_altitude];
-ray_in_xyz = ll2xyz_with_gradient(sun_ll);
+ray_in_xyz = ll2xyz(sun_ll);
 
 config = init_config_3d(crystal, trace, sun_ll, 3);
 line_color = colormap('lines');

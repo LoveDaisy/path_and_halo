@@ -1,4 +1,4 @@
-function [vec, g_vec] = normalize_vector_with_gradient(vec)
+function [vec, g_vec] = normalize_vector(vec)
 % INPUT
 %   vec:        n*d
 % OUTPUT
