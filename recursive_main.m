@@ -205,7 +205,7 @@ while next_stack_idx > 0
             if isnan(halo_img(curr_box(i, 2), curr_box(i, 1)))
                 lon = halo_img_x(curr_box(i, 1));
                 lat = halo_img_y(curr_box(i, 2));
-                [x_contour, y_val, jacobian] = find_axis_rot_contour(sun_ll, ...
+                [x_contour, y_val, jacobian] = find_llr_contour(sun_ll, ...
                     [lon, lat], crystal, trace, 'config', config);
                 rec_fun_call = rec_fun_call + 1;
 
@@ -214,7 +214,7 @@ while next_stack_idx > 0
                     tmp_rot = x_contour{k};
                     tmp_j = jacobian{k};
                     [tmp_w, tmp_s, tmp_p, tmp_rot] = ...
-                        compute_axis_rot_weight(tmp_rot, tmp_j, axis_pdf, crystal, trace, sun_ll);
+                        compute_llr_weight(tmp_rot, tmp_j, axis_pdf, crystal, trace, sun_ll);
                     weight = weight + tmp_w;
                 end
                 halo_img(curr_box(i, 2), curr_box(i, 1)) = weight;
@@ -236,7 +236,7 @@ while next_stack_idx > 0
             if isnan(halo_img(center_y, center_x))
                 lon = halo_img_x(center_x);
                 lat = halo_img_y(center_y);
-                [x_contour, y_val, jacobian] = find_axis_rot_contour(sun_ll, ...
+                [x_contour, y_val, jacobian] = find_llr_contour(sun_ll, ...
                     [lon, lat], crystal, trace, 'config', config);
 
                 weight = 0;
@@ -244,7 +244,7 @@ while next_stack_idx > 0
                     tmp_rot = x_contour{k};
                     tmp_j = jacobian{k};
                     [tmp_w, tmp_s, tmp_p, tmp_rot] = ...
-                        compute_axis_rot_weight(tmp_rot, tmp_j, axis_pdf, crystal, trace, sun_ll);
+                        compute_llr_weight(tmp_rot, tmp_j, axis_pdf, crystal, trace, sun_ll);
                     weight = weight + tmp_w;
                 end
                 halo_img(center_y, center_x) = weight;

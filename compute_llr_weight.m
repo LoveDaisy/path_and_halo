@@ -1,5 +1,5 @@
 function [w, interp_s, interp_p, interp_rot] = ...
-    compute_axis_rot_weight(curr_x, axis_pdf, crystal, trace, sun_ll)
+    compute_llr_weight(curr_x, axis_pdf, crystal, trace, sun_ll)
 
 [p0, det_j0, face_factor0, t_factor0] = ...
     compute_components(curr_x, sun_ll, axis_pdf, crystal, trace);

@@ -87,7 +87,7 @@ for w = 2
             update_progress = false;
         end
 
-        [x_contour, y_val, jacobian] = find_axis_rot_contour(sun_ll, ...
+        [x_contour, y_val, jacobian] = find_llr_contour(sun_ll, ...
             [lon, lat], crystal, trace, 'config', config);
         if isempty(x_contour)
             continue;
@@ -99,7 +99,7 @@ for w = 2
         for k = 1:length(x_contour)
             curr_rot = x_contour{k};
             [tmp_w, tmp_s, tmp_p, tmp_rot] = ...
-                compute_axis_rot_weight(curr_rot, axis_pdf, crystal, trace, sun_ll);
+                compute_llr_weight(curr_rot, axis_pdf, crystal, trace, sun_ll);
             interp_p_store{k} = [tmp_s, tmp_p];
             interp_rot_store{k} = tmp_rot;
             weight = weight + tmp_w;
