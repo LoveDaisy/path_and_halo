@@ -1,5 +1,4 @@
-function [x_contour, y_val, jacobian] = find_llr_contour(sun_ll, target_ll, ...
-    crystal, trace, varargin)
+function [x_contour, y_val, jacobian] = find_llr_contour(sun_ll, target_ll, crystal, trace, varargin)
 % INPUT
 %   sun_ll:             2-vector, [longitude, latitude] in degree
 %   target_ll:          2-vector, [longitude, latitude] in degree
@@ -11,6 +10,7 @@ p.addParameter('eps', 1e-8);
 p.addParameter('MaxIter', 100);
 p.addParameter('GridLevel', 5);
 p.addParameter('config', []);
+p.addParameter('OutputSpace', 'llr');
 p.parse(varargin{:});
 
 if isempty(p.Results.config)
@@ -33,12 +33,12 @@ checked_idx = false(size(target_diff));
 
 [min_diff, min_idx] = min(target_diff(seeds_idx));
 tmp_idx = find(seeds_idx);
-start_rot = config.axis_llr_store(tmp_idx(min_idx), :);
+start_x = config.axis_llr_store(tmp_idx(min_idx), :);
 checked_idx(tmp_idx(min_idx)) = true;
 
 contour_i = 1;
 while sum(seeds_idx & ~checked_idx) > 0
-    [x_contour_fwd, y_val_fwd, jacobian_fwd, closed] = search_direction(start_rot, sun_ll, target_ll, ...
+    [x_contour_fwd, y_val_fwd, jacobian_fwd, closed] = search_direction(start_x, sun_ll, target_ll, ...
         crystal, trace, 1, p.Results.MaxIter);
     valid_idx_fwd = find(~isnan(x_contour_fwd(:, 1)));
     if length(valid_idx_fwd) < 2
@@ -46,7 +46,7 @@ while sum(seeds_idx & ~checked_idx) > 0
     end
 
     if ~closed
-        [x_contour_bck, y_val_bck, jacobian_bck, ~] = search_direction(start_rot, sun_ll, target_ll, ...
+        [x_contour_bck, y_val_bck, jacobian_bck, ~] = search_direction(start_x, sun_ll, target_ll, ...
             crystal, trace, -1, p.Results.MaxIter);
         valid_idx_bck = ~isnan(x_contour_bck(:, 1));
         valid_idx_bck = find(valid_idx_bck);
@@ -103,7 +103,7 @@ while sum(seeds_idx & ~checked_idx) > 0
         checked_idx(target_diff >= min_diff & seeds_idx) = true;
         tmp_idx = find(seeds_idx & ~checked_idx);
         [min_diff, min_idx] = min(target_diff(tmp_idx));
-        start_rot = config.axis_llr_store(tmp_idx(min_idx), :);
+        start_x = config.axis_llr_store(tmp_idx(min_idx), :);
         continue;
     end
     
@@ -133,7 +133,7 @@ while sum(seeds_idx & ~checked_idx) > 0
     tmp_idx = find(seeds_idx & ~checked_idx);
     
     [min_diff, min_idx] = min(target_diff(tmp_idx));
-    start_rot = config.axis_llr_store(tmp_idx(min_idx), :);
+    start_x = config.axis_llr_store(tmp_idx(min_idx), :);
     checked_idx(tmp_idx(min_idx)) = true;
     
     % filter out identical to other lines up to a period

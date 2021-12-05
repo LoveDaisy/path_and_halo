@@ -87,8 +87,8 @@ for w = 2
             update_progress = false;
         end
 
-        [x_contour, y_val, jacobian] = find_llr_contour(sun_ll, ...
-            [lon, lat], crystal, trace, 'config', config);
+        [x_contour, y_val, jacobian] = find_llr_contour(sun_ll, [lon, lat], crystal, trace, ...
+            'config', config);
         if isempty(x_contour)
             continue;
         end
