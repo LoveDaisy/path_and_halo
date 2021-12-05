@@ -1,6 +1,6 @@
 function plot_input_space(config, target_diff, seeds_idx, checked_idx, curr_x, curr_j)
 hold on;
-axis_rot = config.axis_rot_store;
+axis_rot = config.axis_llr_store;
 curr_j = curr_j * 5;
 scatter3(axis_rot(seeds_idx, 1), axis_rot(seeds_idx, 2), axis_rot(seeds_idx,3), 50, ...
     target_diff(seeds_idx), 'fill');

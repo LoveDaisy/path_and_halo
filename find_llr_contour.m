@@ -33,7 +33,7 @@ checked_idx = false(size(target_diff));
 
 [min_diff, min_idx] = min(target_diff(seeds_idx));
 tmp_idx = find(seeds_idx);
-start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
+start_rot = config.axis_llr_store(tmp_idx(min_idx), :);
 checked_idx(tmp_idx(min_idx)) = true;
 
 contour_i = 1;
@@ -103,13 +103,13 @@ while sum(seeds_idx & ~checked_idx) > 0
         checked_idx(target_diff >= min_diff & seeds_idx) = true;
         tmp_idx = find(seeds_idx & ~checked_idx);
         [min_diff, min_idx] = min(target_diff(tmp_idx));
-        start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
+        start_rot = config.axis_llr_store(tmp_idx(min_idx), :);
         continue;
     end
     
     % check seeds
     tmp_idx = find(seeds_idx & ~checked_idx);
-    [tmp_idist, tmp_odist] = input_output_distance(config.axis_rot_store(tmp_idx, :), curr_x, curr_j);
+    [tmp_idist, tmp_odist] = input_output_distance(config.axis_llr_store(tmp_idx, :), curr_x, curr_j);
     tmp_dist_checked = tmp_odist <= seeds_dr | tmp_idist <= seeds_dr;
     checked_idx(tmp_idx) = tmp_dist_checked;
     tmp_idx = find(seeds_idx & ~checked_idx);
@@ -117,7 +117,7 @@ while sum(seeds_idx & ~checked_idx) > 0
         if checked_idx(tmp_idx(j))
             continue;
         end
-        tmp_x0 = config.axis_rot_store(tmp_idx(j), :);
+        tmp_x0 = config.axis_llr_store(tmp_idx(j), :);
         [tmp_x, ~, ~] = find_solution(tmp_x0, sun_ll, target_ll, crystal, trace, ...
             'eps', config.dr * 0.25);
         if any(isnan(tmp_x)) && target_diff(tmp_idx(j)) > seeds_dr
@@ -133,7 +133,7 @@ while sum(seeds_idx & ~checked_idx) > 0
     tmp_idx = find(seeds_idx & ~checked_idx);
     
     [min_diff, min_idx] = min(target_diff(tmp_idx));
-    start_rot = config.axis_rot_store(tmp_idx(min_idx), :);
+    start_rot = config.axis_llr_store(tmp_idx(min_idx), :);
     checked_idx(tmp_idx(min_idx)) = true;
     
     % filter out identical to other lines up to a period
