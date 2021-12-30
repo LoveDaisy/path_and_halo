@@ -23,7 +23,7 @@ total_num = u_num * roll_num;
 
 sun_altitude = 20;
 sun_longitude = 0;
-ray_in = ll2xyz([sun_longitude, sun_altitude]);
+ray_in = geo.ll2xyz([sun_longitude, sun_altitude]);
 ray_out_ll = zeros(total_num, 2);
 jacob_store = zeros(2, 3, total_num);
 axis_rot = nan(total_num, 3);
@@ -41,12 +41,12 @@ for i = 1:total_num
     curr_rot = [axis_u_ll(ll_idx, :), roll(roll_idx)];
     axis_rot(i, :) = curr_rot;
     
-    [tmp_ll, tmp_jcb] = crystal_system(curr_rot, [sun_longitude, sun_altitude], ...
+    [tmp_ll, tmp_jcb] = opt.crystal_system(curr_rot, [sun_longitude, sun_altitude], ...
         crystal, trace);
     ray_out_ll(i, :) = tmp_ll;
     jacob_store(:, :, i) = tmp_jcb;
 end
-ray_out = ll2xyz(ray_out_ll);
+ray_out = geo.ll2xyz(ray_out_ll);
 bending_angle = acosd(ray_out * ray_in');
 
 %%

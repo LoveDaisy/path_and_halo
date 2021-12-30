@@ -8,7 +8,7 @@ q2 = [cosd(45 - llr(:, 2) / 2), -sind(45 - llr(:, 2) / 2) * [1, 0, 0]];
 q3 = [cosd(45 + llr(:, 1) / 2), -sind(45 + llr(:, 1) / 2) * [0, 0, 1]];
 qm = quatmultiply(q1, q2);
 q = quatmultiply(qm, q3);
-[q, grad_norm] = normalize_vector(q);
+[q, grad_norm] = geo.normalize_vector(q);
 
 num = size(llr, 1);
 grad_q = nan(4, 3, num);

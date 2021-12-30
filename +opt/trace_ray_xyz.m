@@ -8,12 +8,12 @@ function [ray_out, g_out] = trace_ray_xyz(ray_in, crystal, trace)
 %       .fid        k-vector, face id
 
 face_norm = crystal.face_norm(trace.fid, :);
-refract_n = generate_trace_n(crystal, trace);
+refract_n = opt.generate_trace_n(crystal, trace);
 face_n = size(face_norm, 1);
 ray_n = size(ray_in, 1);
 
 % normalize
-[ray_in, g_norm] = normalize_vector(ray_in);
+[ray_in, g_norm] = geo.normalize_vector(ray_in);
 
 valid_idx = ray_in * face_norm(1, :)' < 0;
 
@@ -27,9 +27,9 @@ for i = 1:face_n
     n0 = refract_n(i);
     n1 = refract_n(i + 1);
     if n0 * n1 > 0
-        [curr_ray, g_curr] = refract(curr_ray, face_norm(i, :), abs(n0), abs(n1));
+        [curr_ray, g_curr] = opt.refract(curr_ray, face_norm(i, :), abs(n0), abs(n1));
     else
-        [curr_ray, g_curr] = reflect(curr_ray, face_norm(i, :));
+        [curr_ray, g_curr] = opt.reflect(curr_ray, face_norm(i, :));
     end
     
     valid_idx = valid_idx & (~isnan(curr_ray(:, 1)));

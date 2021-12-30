@@ -59,7 +59,7 @@ end
 
 
 function [p, det_j, face_factor, t_factor] = compute_components(rot, sun_ll, axis_pdf, crystal, trace)
-ray_in_xyz = ll2xyz(sun_ll);
+ray_in_xyz = geo.ll2xyz(sun_ll);
 
 p = axis_pdf(rot);
 
@@ -68,7 +68,7 @@ face_factor = zeros(size(p));
 t_factor = zeros(size(p));
 
 for i = 1:length(p)
-    [~, curr_jacob] = crystal_system(rot(i, :), sun_ll, crystal, trace);
+    [~, curr_jacob] = opt.crystal_system(rot(i, :), sun_ll, crystal, trace);
 
     det_j(i) = jacobian_factor(curr_jacob(:, :, 1));
     tmp_rot_mat = rotz(90 + rot(i, 1)) * rotx(90 - rot(i, 2)) * rotz(rot(i, 3));
@@ -111,7 +111,7 @@ end
 
 
 function [t_factor, face_factor] = transit_face_factor(ray_in_xyz, crystal, trace)
-trace_n = generate_trace_n(crystal, trace);
+trace_n = opt.generate_trace_n(crystal, trace);
 vtx0 = crystal.vtx(crystal.face{trace.fid(1)}, :);
 r = ray_in_xyz;
 
@@ -130,13 +130,13 @@ for i = 1:length(trace.fid)
         else
             t = 1 - t;
         end
-        r = reflect(r, fn);
+        r = opt.reflect(r, fn);
         q = 1;
     else
         [t, ~, ~] = transit_factor(r, fn, 1, crystal.n);
         t = 1 - t;
         q = 1;
-        r = reflect(r, fn);
+        r = opt.reflect(r, fn);
     end
     t_factor = t_factor * t * q;
 
@@ -152,9 +152,9 @@ end
 
 function [t, ray_out, q_factor] = transit_factor(ray_in, face_normal, n0, n1)
 if n0 * n1 > 0
-    ray_out = refract(ray_in, face_normal, n0, n1);
+    ray_out = opt.refract(ray_in, face_normal, n0, n1);
 else
-    ray_out = reflect(ray_in, face_normal);
+    ray_out = opt.reflect(ray_in, face_normal);
 end
 n0 = abs(n0);
 n1 = abs(n1);

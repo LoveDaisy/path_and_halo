@@ -10,7 +10,7 @@ function [ray_out_ll, g_rot] = crystal_system(rot_llr, ray_in_ll, crystal, trace
 
 num = size(rot_llr, 1);
 
-xyz0 = ll2xyz(ray_in_ll);
+xyz0 = geo.ll2xyz(ray_in_ll);
 q1 = rot_llr(:, 1);
 q2 = rot_llr(:, 2);
 q3 = rot_llr(:, 3);
@@ -43,7 +43,7 @@ for i = 1:num
     ray_in_xyz(i, :) = xyz0 * curr_rot_mat;
 end
 
-[ray_out_xyz, g_out] = trace_ray_xyz(ray_in_xyz, crystal, trace);
+[ray_out_xyz, g_out] = opt.trace_ray_xyz(ray_in_xyz, crystal, trace);
 
 g_xyz = zeros(3, 3, num);
 for i = 1:num
@@ -53,7 +53,7 @@ for i = 1:num
     ray_out_xyz(i, :) = ray_out_xyz(i, :) * rot_mat_store(:, :, i)';
 end
 
-[ray_out_ll, g_ll] = xyz2ll(ray_out_xyz);
+[ray_out_ll, g_ll] = geo.xyz2ll(ray_out_xyz);
 g_rot = zeros(2, 3, num);
 for i = 1:num
     g_rot(:, :, i) = g_ll(:, :, i) * g_xyz(:, :, i);
