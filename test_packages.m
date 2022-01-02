@@ -12,6 +12,7 @@ for pi = 1:length(package_list)
         filename = file_list(i).name;
         idx = regexp(filename, '^test_');
         if ~isempty(idx)
+            fprintf('---- ');
             cmd = sprintf('%s.%s()', package_name(2:end), filename(1:end - 2));
             eval(cmd);
         end
