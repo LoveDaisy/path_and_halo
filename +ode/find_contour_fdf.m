@@ -41,7 +41,7 @@ if isempty(x_b)
 end
 
 x = [flipud(x_b(2:end, :)); x_f];
-[status.closed, x] = geo.check_curve_loop(x, 'eps', h * 0.05);
+[status.closed, x] = geo.check_curve_loop(x, 'eps', p.Results.h * 0.05);
 status.fun_eval_cnt = status_f.fun_eval_cnt + status_b.fun_eval_cnt;
 if ~status.closed
     status.completed = status_f.completed && status_b.completed;
@@ -68,6 +68,8 @@ if strcmpi(p.Results.method, 'euler')
     method = @euler;
 elseif strcmpi(p.Results.method, 'rk4')
     method = @rk4;
+elseif strcmpi(p.Results.method, 'midpoint')
+    method = @midpoint;
 else
     error('Method name cannot be recognized!');
 end
@@ -104,7 +106,7 @@ while idx < p.Results.MaxPts
         else
             bending = 0;
         end
-        if bending > 30
+        if bending > 20
             h = h * 0.5;
             continue;
         end
@@ -187,4 +189,16 @@ function [x1, s1] = rk4(fdx, x0, direction, h)
 x1 = x0 + (k1 + 2 * k2 + 2 * k3 + k4) * direction * h / 6;
 s1.error = nan;
 s1.fun_eval_cnt = 4;
+end
+
+% ================================================================================
+function [x1, s1] = midpoint(fdx, x0, direction, h)
+% Midpoint method
+% This method do NOT estimate error
+
+[~, k1] = fdx(x0);
+[~, k2] = fdx(x0 + direction * h / 2 * k1);
+x1 = x0 + k2 * direction * h;
+s1.error = nan;
+s1.fun_eval_cnt = 2;
 end
