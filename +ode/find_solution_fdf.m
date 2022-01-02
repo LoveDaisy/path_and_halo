@@ -34,6 +34,7 @@ validateattributes(y0, {'numeric'}, {'2d', 'size', [num, dim2]});
 validateattributes(jac, {'numeric'}, {'3d', 'size', [dim2, dim1, num]});
 
 dy = yq - y0;
+x = x0;
 fun_eval_cnt = 1;
 while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval
     % Find deepest gradient

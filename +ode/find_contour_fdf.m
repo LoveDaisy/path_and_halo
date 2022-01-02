@@ -30,7 +30,7 @@ search_options = {'method', 'euler', 'eps', p.Results.eps, 'MaxPts', p.Results.M
 [x_f, status_f] = search_direction(fdf, x0, 1, search_options{:});
 status = status_f;
 if status_f.closed
-    x = xf;
+    x = x_f;
     return;
 end
 
