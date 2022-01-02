@@ -3,7 +3,7 @@ function [xyz, jac] = ll2xyz(lon_lat)
 % Clearly [x, y, z] lies on the unit sphere.
 %
 % INPUT
-%   lon_lat:        n*2, [longitude, latitude]
+%   lon_lat:        n*2, [longitude, latitude], in degree
 %
 % OUTPUT
 %   xyz:            n*3, [x, y, z]
