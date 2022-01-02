@@ -22,10 +22,10 @@ p.addRequired('fdf', @(x) validateattributes(x, {'function_handle'}, {'scalar'})
 p.addRequired('x0', @(x) validateattributes(x, {'numeric'}, {'nrows', 1}));
 p.addParameter('eps', 1e-8, @(x) validateattributes(x, {'double'}, {'scalar', 'positive'}));
 p.addParameter('MaxPts', 100, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive', 'integer'}));
+p.addParameter('h', 0.05, @(x) validateattributes(x, {'double'}, {'scalar', 'positive'}));
 p.parse(fdf, x0, varargin{:});
 
-h = 0.05;
-search_options = {'method', 'euler', 'eps', p.Results.eps, 'MaxPts', p.Results.MaxPts, 'h', h};
+search_options = {'method', 'rk4', 'eps', p.Results.eps, 'MaxPts', p.Results.MaxPts, 'h', p.Results.h};
 % Search forward direction
 [x_f, status_f] = search_direction(fdf, x0, 1, search_options{:});
 status = status_f;
@@ -66,6 +66,8 @@ p.parse(varargin{:});
 fdx = @(x) wrap_to_fdx(fdf, x);
 if strcmpi(p.Results.method, 'euler')
     method = @euler;
+elseif strcmpi(p.Results.method, 'rk4')
+    method = @rk4;
 else
     error('Method name cannot be recognized!');
 end
@@ -95,28 +97,49 @@ while idx < p.Results.MaxPts
             x1_status.error = norm(y1 - y0);
         end
 
+        if idx > 1
+            tmp_dx = [x1 - x(idx, :); x(idx, :) - x(idx - 1, :)];
+            bending = dot(tmp_dx(1, :), tmp_dx(2, :)) / norm(tmp_dx(1, :)) / norm(tmp_dx(2, :));
+            bending = acosd(bending);
+        else
+            bending = 0;
+        end
+        if bending > 30
+            h = h * 0.5;
+            continue;
+        end
+
         [x2, x2_status] = ode.find_solution_fdf(fdf, x1, y0, 'eps', p.Results.eps);
         x2_flag = x2_status.finish;
         fun_eval_cnt = fun_eval_cnt + x2_status.fun_eval_cnt;
 
         % Then apply a simple adaptive scheme
         dx1 = norm(x2 - x1);
-        if ~x2_flag || (dx1 > h * 0.05 || x1_status.error > max(p.Results.eps * 1e3, h * 0.3))
+        if ~x2_flag || ...
+                (dx1 > h * 0.05 || x1_status.error > max(p.Results.eps * 5e3, h * 0.1))
             h = h * 0.5;
-        elseif dx1 < h * 0.01 && h < h_max * 0.5
+        elseif h < h_max * 0.5 && ...
+                (dx1 < h * 0.01 || x1_status.error < max(p.Results.eps * 100, h * 0.002))
             h = h * 2;
         end
     end
 
     if ~x2_flag
         break;
-    else
-        x(idx + 1, :) = x2;
-        idx = idx + 1;
+    end
+    x(idx + 1, :) = x2;
+    idx = idx + 1;
+    [tmp_closed, tmp_x] = geo.check_curve_loop(x(1:idx, :), 'eps', p.Results.h * 0.05);
+    if tmp_closed
+        break;
     end
 end
+x = tmp_x;
+if tmp_closed
+    x = [x; x(1, :)];
+end
 
-[status.closed, x] = geo.check_curve_loop(x, 'eps', p.Results.h * 0.05);
+status.closed = tmp_closed;
 status.completed = status.closed;
 status.fun_eval_cnt = fun_eval_cnt;
 if idx <= 1
@@ -150,4 +173,18 @@ function [x1, s1] = euler(fdx, x0, direction, h)
 x1 = x0 + direction * h * dx;
 s1.error = nan;
 s1.fun_eval_cnt = 1;
+end
+
+% ================================================================================
+function [x1, s1] = rk4(fdx, x0, direction, h)
+% RK4 method
+% This method do NOT estimate error
+
+[~, k1] = fdx(x0);
+[~, k2] = fdx(x0 + direction * h / 2 * k1);
+[~, k3] = fdx(x0 + direction * h / 2 * k2);
+[~, k4] = fdx(x0 + direction * h * k3);
+x1 = x0 + (k1 + 2 * k2 + 2 * k3 + k4) * direction * h / 6;
+s1.error = nan;
+s1.fun_eval_cnt = 4;
 end
