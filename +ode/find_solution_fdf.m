@@ -1,4 +1,4 @@
-function [x, flag, fun_eval_num] = find_solution_fdf(fun, x0, yq, varargin)
+function [x, status] = find_solution_fdf(fun, x0, yq, varargin)
 % Find the exact solution for a fdf function.
 % An fdf function is a function that gives both value and gradient (Jacobian)
 %
@@ -13,8 +13,9 @@ function [x, flag, fun_eval_num] = find_solution_fdf(fun, x0, yq, varargin)
 %
 % OUTPUT
 %  x:               n*d1, exact solution
-%  flag:            bool, whether find a solution within given tolerance.
-%  fun_eval_num:    how many times the function is called.
+%  status:          struct, contains some information as following:
+%    .finish:       bool, whether find a solution within given tolerance.
+%    .fun_eval_cnt: how many times the function is called.
 
 num = size(x0, 1);
 dim1 = size(x0, 2);
@@ -33,8 +34,8 @@ validateattributes(y0, {'numeric'}, {'2d', 'size', [num, dim2]});
 validateattributes(jac, {'numeric'}, {'3d', 'size', [dim2, dim1, num]});
 
 dy = yq - y0;
-fun_eval_num = 1;
-while norm(dy) > p.Results.eps && fun_eval_num < p.Results.MaxEval
+fun_eval_cnt = 1;
+while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval
     % Find deepest gradient
     dx = jac \ dy;
 
@@ -42,21 +43,22 @@ while norm(dy) > p.Results.eps && fun_eval_num < p.Results.MaxEval
     h = 1;
     x = x0 + dx' * h;
     [y, jac] = fun(x);
-    fun_eval_num = fun_eval_num + 1;
+    fun_eval_cnt = fun_eval_cnt + 1;
 
     a = 0.25;
     b = 0.6;
-    while norm(yq - y) > p.Results.eps && fun_eval_num < p.Results.MaxEval && ...
+    while norm(yq - y) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && ...
             h > 0.01 && any(y - y0 > a * h * jac * dx)
         h = h * b;
         x = x0 + dx' * h;
         [y, jac] = fun(x);
-        fun_eval_num = fun_eval_num + 1;
+        fun_eval_cnt = fun_eval_cnt + 1;
     end
 
     x0 = x;
     y0 = y;
     dy = yq - y;
 end
-flag = norm(dy) < p.Results.eps;
+status.finish = norm(dy) < p.Results.eps;
+status.fun_eval_cnt = fun_eval_cnt;
 end

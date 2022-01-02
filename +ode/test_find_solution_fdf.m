@@ -13,10 +13,10 @@ for i = 1:case_num
     x0 = test_cases(i).x0;
     yq = test_cases(i).yq;
     fdf = test_cases(i).fdf;
-    [x, ~, num] = ode.find_solution_fdf(fdf, x0, yq, 'eps', tol_eps);
+    [x, status] = ode.find_solution_fdf(fdf, x0, yq, 'eps', tol_eps);
     y = fdf(x);
     assert(norm(y - yq) < tol_eps, 'Test case %d failed!', i);
-    fprintf(' passed! Function calls: %d\n', num);
+    fprintf(' passed! Function calls: %d\n', status.fun_eval_cnt);
 end
 end
 
