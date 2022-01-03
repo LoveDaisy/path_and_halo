@@ -1,5 +1,5 @@
 function [mat, jac] = llr2mat(llr)
-% Rotate vector with llr-representation, i.e. [longitude, latitude, roll]
+% Rotate matrix corresponding to llr-representation, i.e. [longitude, latitude, roll]
 % A rotation can be represented by an axis direction and a roll around the axis.
 % Specially in this project, we use a direction of crystal main axis and a roll around it, which
 % is a little different from nomal axis-angle representation
