@@ -1,21 +1,40 @@
-function [ray_out_ll, jac] = crystal_system(rot_llr, ray_in_ll, crystal, trace)
+function [ray_out_ll, jac] = crystal_system(rot, ray_in_ll, crystal, trace, varargin)
 % Find output ray of a crystal system with given input ray and crystal rotation.
 %
 % INPUT
-%   rot_llr:            n*3, [longitude, latitude, roll], in degree. A representation of crystal rotation.
-%                       see help of geo.llr2quat(llr) for detail.
+%   rot:                n*3, it has either of the tow form (can be specified explicitly):
+%                       1. [longitude, latitude, roll], in degree. A representation of crystal rotation.
+%                          see help of geo.llr2quat(llr) for detail. This form is default.
+%                       2. [x, y, z] for imaginary part of a unit quaternion [w, xi, yj, zk].
 %   ray_in_ll:          1*2, [longitude, latitude], in degree. Input ray direction.
 %   crystal:            struct
 %   trace:              struct
+%
+% OPTION
+%   'RotSpace':         'llr' (default) or 'quat3'
 %
 % OUTPUT
 %   ray_out_ll:         n*2, [longitude, latitude], in degree. Output ray direction.
 %   jac:                2*3*n, Jacobian. Input is rotation llr and output is ray_out_ll
 
-num = size(rot_llr, 1);
+p = inputParser;
+p.addRequired('rot', @(x) validateattributes(x, {'numeric'}, {'2d', 'ncols', 3}));
+p.addRequired('ray_in_ll', @(x) validateattributes(x, {'numeric'}, {'size', [1, 2]}));
+p.addRequired('crystal', @(x) validateattributes(x, {'struct'}, {'scalar'}));
+p.addRequired('trace', @(x) validateattributes(x, {'struct'}, {'scalar'}));
+p.addParameter('RotSpace', 'llr', @(x) ischar(x));
+p.parse(rot, ray_in_ll, crystal, trace, varargin{:});
+
+num = size(rot, 1);
 
 xyz0 = geo.ll2xyz(ray_in_ll);
-[rot_mat, jac_rot_mat] = geo.llr2mat(rot_llr);
+if strcmpi(p.Results.RotSpace, 'llr')
+    [rot_mat, jac_rot_mat] = geo.llr2mat(rot);
+elseif strcmpi(p.Results.RotSpace, 'quat3')
+    [rot_mat, jac_rot_mat] = geo.quat32mat(rot);
+else
+    error('RotSpace cannot be recognized!');
+end
 
 ray_in_xyz = zeros(num, 3);
 for i = 1:num
