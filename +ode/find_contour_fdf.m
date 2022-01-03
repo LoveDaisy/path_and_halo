@@ -84,6 +84,7 @@ h_max = h * 2^4;
 idx = 1;
 fun_eval_cnt = 1;
 
+h_extend_cnd = 0;
 while idx < p.Results.MaxPts
     x0 = x(idx, :);
 
@@ -106,8 +107,9 @@ while idx < p.Results.MaxPts
         else
             bending = 0;
         end
-        if bending > 20
+        if bending > 30
             h = h * 0.5;
+            h_extend_cnd = 0;
             continue;
         end
 
@@ -120,9 +122,13 @@ while idx < p.Results.MaxPts
         if ~x2_flag || ...
                 (dx1 > h * 0.05 || x1_status.error > max(p.Results.eps * 5e3, h * 0.1))
             h = h * 0.5;
+            h_extend_cnd = 0;
         elseif h < h_max * 0.5 && ...
                 (dx1 < h * 0.01 || x1_status.error < max(p.Results.eps * 100, h * 0.002))
-            h = h * 2;
+            h_extend_cnd = h_extend_cnd + 1;
+            if h_extend_cnd > 2 || idx < 3
+                h = h * 2;
+            end
         end
     end
 
