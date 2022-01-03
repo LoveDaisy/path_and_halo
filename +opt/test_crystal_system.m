@@ -44,10 +44,14 @@ trace.fid = [3; 5];
 rot_llr = [-90, 90, 0];
 ray_in_ll = [-40 + 180, 0];
 ray_out_ll0 = [161.846476470779, 0];
-g_rot0 = [-0.0156722514735974, 0, -0.0156722514735974;
-    0, 0.331223380243738, 0];
 
 [ray_out_ll, g_rot] = opt.crystal_system(rot_llr, ray_in_ll, crystal, trace);
 assert(all(abs(ray_out_ll(:) - ray_out_ll0(:)) < 1e-8));
-assert(all(abs(g_rot(:) - g_rot0(:)) < 1e-8));
+
+dq = 1e-3;
+ray_out_ll1 = opt.crystal_system(rot_llr + [dq, 0, 0], ray_in_ll, crystal, trace);
+ray_out_ll2 = opt.crystal_system(rot_llr + [0, dq, 0], ray_in_ll, crystal, trace);
+ray_out_ll3 = opt.crystal_system(rot_llr + [0, 0, dq], ray_in_ll, crystal, trace);
+g_rot0 = [ray_out_ll1 - ray_out_ll; ray_out_ll2 - ray_out_ll; ray_out_ll3 - ray_out_ll]' / dq;
+assert(all(abs(g_rot(:) - g_rot0(:)) < 1e-5));
 end
