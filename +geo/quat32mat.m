@@ -15,14 +15,13 @@ p.addRequired('quat3', @(x) validateattributes(x, {'numeric'}, {'2d', 'ncols', 3
 p.parse(quat3);
 
 num = size(quat3, 1);
+
 n2 = sum(quat3.^2, 2);
-invalid_idx = n2 > 1;
-quat3(invalid_idx, :) = nan;
-n2(invalid_idx) = nan;
+
+w = sqrt(max(1 - n2, 1e-10));
 x = quat3(:, 1);
 y = quat3(:, 2);
 z = quat3(:, 3);
-w = sqrt(1 - n2);
 
 % The rotation matrix is (it is from MATLAB documants, seems different from wiki):
 %   1 - 2*y^2 - 2*z^2,  2*x*y + 2*z*w,      2*x*z - 2*y*w
