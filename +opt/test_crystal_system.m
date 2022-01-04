@@ -12,33 +12,7 @@ end
 
 % ================================================================================
 function suite1()
-crystal.face_norm = [0, 0, 1; % face 1
-                0, 0, -1; % face 2
-                1, 0, 0; % face 3
-                1/2, sqrt(3) / 2, 0; % face 4
-                -1/2, sqrt(3) / 2, 0; % face 5
-                -1, 0, 0; % face 6
-                -1/2, -sqrt(3) / 2, 0; % face 7
-                1/2, -sqrt(3) / 2, 0]; % face 8
-crystal.h = 1;
-crystal.vtx = zeros(12, 3);
-for i = 1:6
-    crystal.vtx(i, :) = [cosd(i * 60 - 30), sind(i * 60 - 30), crystal.h];
-end
-for i = 7:12
-    crystal.vtx(i, :) = [cosd(i * 60 - 30), sind(i * 60 - 30), -crystal.h];
-end
-crystal.face = {[6; 5; 4; 3; 2; 1];
-            [7; 8; 9; 10; 11; 12];
-            [1; 2; 8; 7];
-            [2; 3; 9; 8];
-            [3; 4; 10; 9];
-            [4; 5; 11; 10];
-            [5; 6; 12; 11];
-            [6; 1; 7; 12]};
-crystal.face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal.h * ones(6, 1) * 2];
-crystal.n = 1.31;
-
+crystal = opt.make_prism_crystal(1);
 trace.fid = [3; 5];
 
 rot_llr = [-90, 90, 0];
@@ -58,33 +32,7 @@ end
 
 % ================================================================================
 function suite2()
-crystal.face_norm = [0, 0, 1; % face 1
-                0, 0, -1; % face 2
-                1, 0, 0; % face 3
-                1/2, sqrt(3) / 2, 0; % face 4
-                -1/2, sqrt(3) / 2, 0; % face 5
-                -1, 0, 0; % face 6
-                -1/2, -sqrt(3) / 2, 0; % face 7
-                1/2, -sqrt(3) / 2, 0]; % face 8
-crystal.h = 1;
-crystal.vtx = zeros(12, 3);
-for i = 1:6
-    crystal.vtx(i, :) = [cosd(i * 60 - 30), sind(i * 60 - 30), crystal.h];
-end
-for i = 7:12
-    crystal.vtx(i, :) = [cosd(i * 60 - 30), sind(i * 60 - 30), -crystal.h];
-end
-crystal.face = {[6; 5; 4; 3; 2; 1];
-            [7; 8; 9; 10; 11; 12];
-            [1; 2; 8; 7];
-            [2; 3; 9; 8];
-            [3; 4; 10; 9];
-            [4; 5; 11; 10];
-            [5; 6; 12; 11];
-            [6; 1; 7; 12]};
-crystal.face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal.h * ones(6, 1) * 2];
-crystal.n = 1.31;
-
+crystal = opt.make_prism_crystal(1);
 trace.fid = [3; 5];
 
 quat3 = [0, 0, 0];
