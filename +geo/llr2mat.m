@@ -18,10 +18,6 @@ function [mat, jac] = llr2mat(llr)
 %   mat:        3*3*n, rotation matrix. It is for column vector, i.e. new_v = mat * v.
 %   jac:        (3*3)*3*n, Jacobian, reshape first dimesion as matrix form
 
-p = inputParser;
-p.addRequired('llr', @(x) validateattributes(x, {'numeric'}, {'2d', 'ncols', 3}));
-p.parse(llr);
-
 num = size(llr, 1);
 c1 = cosd(llr(:, 1));
 s1 = sind(llr(:, 1));

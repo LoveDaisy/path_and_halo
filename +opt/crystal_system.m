@@ -17,20 +17,19 @@ function [ray_out_ll, jac] = crystal_system(rot, ray_in_ll, crystal, trace, vara
 %   ray_out_ll:         n*2, [longitude, latitude], in degree. Output ray direction.
 %   jac:                2*3*n, Jacobian. Input is rotation llr and output is ray_out_ll
 
-p = inputParser;
-p.addRequired('rot', @(x) validateattributes(x, {'numeric'}, {'2d', 'ncols', 3}));
-p.addRequired('ray_in_ll', @(x) validateattributes(x, {'numeric'}, {'size', [1, 2]}));
-p.addRequired('crystal', @(x) validateattributes(x, {'struct'}, {'scalar'}));
-p.addRequired('trace', @(x) validateattributes(x, {'struct'}, {'scalar'}));
-p.addParameter('RotSpace', 'llr', @(x) ischar(x));
-p.parse(rot, ray_in_ll, crystal, trace, varargin{:});
-
+if isempty(varargin)
+    rot_space = 'llr';
+elseif ~ischar(varargin{1})
+    error('RotSpace should be a string from {llr, quat3}');
+else
+    rot_space = varargin{1};
+end
 num = size(rot, 1);
 
 xyz0 = geo.ll2xyz(ray_in_ll);
-if strcmpi(p.Results.RotSpace, 'llr')
+if strcmpi(rot_space, 'llr')
     [rot_mat, jac_rot_mat] = geo.llr2mat(rot);
-elseif strcmpi(p.Results.RotSpace, 'quat3')
+elseif strcmpi(rot_space, 'quat3')
     [rot_mat, jac_rot_mat] = geo.quat32mat(rot);
 else
     error('RotSpace cannot be recognized!');

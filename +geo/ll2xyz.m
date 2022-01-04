@@ -9,10 +9,6 @@ function [xyz, jac] = ll2xyz(lon_lat)
 %   xyz:            n*3, [x, y, z]
 %   jac:            3*2*n, Jacobian of this transformation
 
-p = inputParser;
-p.addRequired('xyz', @(x) validateattributes(x, {'numeric'}, {'2d', 'ncols', 2}));
-p.parse(lon_lat);
-
 xyz = [cosd(lon_lat(:, 2)) .* cosd(lon_lat(:, 1)), ...
         cosd(lon_lat(:, 2)) .* sind(lon_lat(:, 1)), ...
         sind(lon_lat(:, 2))];
