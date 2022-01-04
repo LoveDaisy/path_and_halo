@@ -38,27 +38,31 @@ x = x0;
 fun_eval_cnt = 1;
 while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval
     % Find deepest gradient
-    dx = jac \ dy;
+    dx = jac \ dy';
 
     % Linear search
     h = 1;
     x = x0 + dx' * h;
-    [y, jac] = fun(x);
+    [y, jac1] = fun(x);
     fun_eval_cnt = fun_eval_cnt + 1;
 
-    a = 0.25;
+    convexity = ((y - y0)' > h * jac * dx) * 2 - 1;
+    k_direction = (jac * dx > 0) * 2 - 1;
+
+    a = 4.^(convexity .* k_direction);
     b = 0.6;
     while norm(yq - y) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && ...
-            h > 0.01 && any(y - y0 > a * h * jac * dx)
+            h > 0.01 && any((y - y0)' .* convexity > (h * a .* convexity) .* (jac * dx))
         h = h * b;
         x = x0 + dx' * h;
-        [y, jac] = fun(x);
+        [y, jac1] = fun(x);
         fun_eval_cnt = fun_eval_cnt + 1;
     end
 
     x0 = x;
     y0 = y;
     dy = yq - y;
+    jac = jac1;
 end
 status.finish = norm(dy) < p.Results.eps;
 status.fun_eval_cnt = fun_eval_cnt;

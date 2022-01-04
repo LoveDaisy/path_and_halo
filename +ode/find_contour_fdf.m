@@ -89,6 +89,7 @@ while idx < p.Results.MaxPts
     x0 = x(idx, :);
 
     x2_flag = false;
+    retry = false;
     while ~x2_flag && h > h_min
         [x1, x1_status] = method(fdx, x0, direction, h);
         fun_eval_cnt = fun_eval_cnt + x1_status.fun_eval_cnt;
@@ -100,17 +101,19 @@ while idx < p.Results.MaxPts
             x1_status.error = norm(y1 - y0);
         end
 
-        if idx > 1
+        if idx > 3
             tmp_dx = [x1 - x(idx, :); x(idx, :) - x(idx - 1, :)];
             bending = dot(tmp_dx(1, :), tmp_dx(2, :)) / norm(tmp_dx(1, :)) / norm(tmp_dx(2, :));
             bending = acosd(bending);
         else
             bending = 0;
         end
-        if bending > 30
+        if bending > 35
             h = h * 0.5;
             h_extend_cnd = 0;
-            continue;
+            idx = idx - 1;
+            retry = true;
+            break;
         end
 
         [x2, x2_status] = ode.find_solution_fdf(fdf, x1, y0, 'eps', p.Results.eps);
@@ -130,6 +133,9 @@ while idx < p.Results.MaxPts
                 h = h * 2;
             end
         end
+    end
+    if retry
+        continue;
     end
 
     if ~x2_flag
@@ -181,6 +187,7 @@ function [x1, s1] = euler(fdx, x0, direction, h)
 x1 = x0 + direction * h * dx;
 s1.error = nan;
 s1.fun_eval_cnt = 1;
+s1.dx = dx;
 end
 
 % ================================================================================
@@ -195,6 +202,7 @@ function [x1, s1] = rk4(fdx, x0, direction, h)
 x1 = x0 + (k1 + 2 * k2 + 2 * k3 + k4) * direction * h / 6;
 s1.error = nan;
 s1.fun_eval_cnt = 4;
+s1.dx = (k1 + 2 * k2 + 2 * k3 + k4) / 6;
 end
 
 % ================================================================================
@@ -207,4 +215,5 @@ function [x1, s1] = midpoint(fdx, x0, direction, h)
 x1 = x0 + k2 * direction * h;
 s1.error = nan;
 s1.fun_eval_cnt = 2;
+s1.dx = k2;
 end

@@ -15,7 +15,7 @@ function [ray_out_ll, jac] = crystal_system(rot, ray_in_ll, crystal, trace, vara
 %
 % OUTPUT
 %   ray_out_ll:         n*2, [longitude, latitude], in degree. Output ray direction.
-%   jac:                2*3*n, Jacobian. Input is rotation llr and output is ray_out_ll
+%   jac:                2*3*n, Jacobian. Input is rotation (llr or quat3) and output is ray_out_ll
 
 if isempty(varargin)
     rot_space = 'llr';
