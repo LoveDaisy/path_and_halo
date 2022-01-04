@@ -1,9 +1,9 @@
 clear; close all; clc;
 
 package_list = {'+geo', '+ode', '+opt'};
-for pi = 1:length(package_list)
-    package_name = package_list{pi};
-    file_list = dir(package_list{pi});
+for p_i = 1:length(package_list)
+    package_name = package_list{p_i};
+    file_list = dir(package_list{p_i});
     for i = 1:length(file_list)
         if file_list(i).isdir
             continue;

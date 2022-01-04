@@ -57,7 +57,13 @@ trace.fid = [3; 5];
 sun_ll = [180, 25];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 
-config = opt.init_config(crystal, trace, sun_ll, 3);
+if ~exist('test_config_1_180_25_3.mat', 'file');
+    config = opt.init_config(crystal, trace, sun_ll, 3);
+    save('test_config_1_180_25_3.mat', 'config');
+else
+    fprintf(' load config from file <test_config_1_180_25_3.mat>\n');
+    load test_config_1_180_25_3.mat
+end
 
 fprintf(' case 1 ... ');
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
