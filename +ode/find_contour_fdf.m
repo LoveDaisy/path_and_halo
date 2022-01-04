@@ -36,11 +36,12 @@ end
 
 % Search backward direction
 [x_b, status_b] = search_direction(fdf, x0, -1, search_options{:});
-if isempty(x_b)
-    return;
+if size(x_b, 1) < 2
+    x = x_f;
+else
+    x = [flipud(x_b(2:end, :)); x_f];
 end
 
-x = [flipud(x_b(2:end, :)); x_f];
 [status.closed, x] = geo.check_curve_loop(x, 'eps', p.Results.h * 0.05);
 status.fun_eval_cnt = status_f.fun_eval_cnt + status_b.fun_eval_cnt;
 if ~status.closed
@@ -85,6 +86,8 @@ idx = 1;
 fun_eval_cnt = 1;
 
 h_extend_cnd = 0;
+reduced_x = [];
+tmp_closed = false;
 while idx < p.Results.MaxPts
     x0 = x(idx, :);
 
@@ -99,6 +102,11 @@ while idx < p.Results.MaxPts
             y1 = fdf(x1);
             fun_eval_cnt = fun_eval_cnt + 1;
             x1_status.error = norm(y1 - y0);
+        end
+        if any(isnan(y1))
+            h = h * 0.5;
+            h_extend_cnd = 0;
+            continue;
         end
 
         if idx > 3
@@ -143,12 +151,12 @@ while idx < p.Results.MaxPts
     end
     x(idx + 1, :) = x2;
     idx = idx + 1;
-    [tmp_closed, tmp_x] = geo.check_curve_loop(x(1:idx, :), 'eps', p.Results.h * 0.05);
+    [tmp_closed, reduced_x] = geo.check_curve_loop(x(1:idx, :), 'eps', p.Results.h * 0.05);
     if tmp_closed
         break;
     end
 end
-x = tmp_x;
+x = reduced_x;
 if tmp_closed
     x = [x; x(1, :)];
 end
@@ -158,6 +166,7 @@ status.completed = status.closed;
 status.fun_eval_cnt = fun_eval_cnt;
 if idx <= 1
     x = [];
+    status.completed = true;
 elseif idx < p.Results.MaxPts
     status.completed = true;
 end
@@ -170,6 +179,12 @@ function [y, dx] = wrap_to_fdx(fdf, x)
 % outputs value (y) and a contour tangent direction (dx)
 
 [y, jac] = fdf(x);
+if any(isnan(y(:)))
+    y = nan(size(y));
+    dx = nan(size(x));
+    return;
+end
+
 dx = null(jac);
 
 if det([jac', dx]) < 0

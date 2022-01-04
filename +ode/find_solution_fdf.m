@@ -57,6 +57,9 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval
         x = x0 + dx' * h;
         [y, jac1] = fun(x);
         fun_eval_cnt = fun_eval_cnt + 1;
+        
+        convexity = ((y - y0)' > h * jac * dx) * 2 - 1;
+        a = 4.^(convexity .* k_direction);
     end
 
     x0 = x;
