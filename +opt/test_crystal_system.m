@@ -35,17 +35,19 @@ function suite2()
 crystal = opt.make_prism_crystal(1);
 trace.fid = [3; 5];
 
-quat3 = [0, 0, 0];
+quat = [1, 0, 0, 0];
 ray_in_ll = [-40 + 180, 0];
 ray_out_ll0 = [161.846476470779, 0];
 
-[ray_out_ll, g_rot] = opt.crystal_system(quat3, ray_in_ll, crystal, trace, 'quat3');
+[ray_out_ll, g_rot] = opt.crystal_system(quat, ray_in_ll, crystal, trace);
 assert(all(abs(ray_out_ll(:) - ray_out_ll0(:)) < 1e-8));
 
 dq = 1e-8;
-ray_out_ll1 = opt.crystal_system(quat3 + [dq, 0, 0], ray_in_ll, crystal, trace, 'quat3');
-ray_out_ll2 = opt.crystal_system(quat3 + [0, dq, 0], ray_in_ll, crystal, trace, 'quat3');
-ray_out_ll3 = opt.crystal_system(quat3 + [0, 0, dq], ray_in_ll, crystal, trace, 'quat3');
-g_rot0 = [ray_out_ll1 - ray_out_ll; ray_out_ll2 - ray_out_ll; ray_out_ll3 - ray_out_ll]' / dq;
+ray_out_ll1 = opt.crystal_system(quat + [dq, 0, 0, 0], ray_in_ll, crystal, trace);
+ray_out_ll2 = opt.crystal_system(quat + [0, dq, 0, 0], ray_in_ll, crystal, trace);
+ray_out_ll3 = opt.crystal_system(quat + [0, 0, dq, 0], ray_in_ll, crystal, trace);
+ray_out_ll4 = opt.crystal_system(quat + [0, 0, 0, dq], ray_in_ll, crystal, trace);
+g_rot0 = [ray_out_ll1 - ray_out_ll; ray_out_ll2 - ray_out_ll; ray_out_ll3 - ray_out_ll;
+    ray_out_ll4 - ray_out_ll]' / dq;
 assert(all(abs(g_rot(:) - g_rot0(:)) < 1e-5));
 end

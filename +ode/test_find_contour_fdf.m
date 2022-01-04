@@ -60,7 +60,7 @@ ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 config = opt.init_config(crystal, trace, sun_ll, 3);
 
 fprintf(' case 1 ... ');
-fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace, 'llr');
+fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
 ray_out_ll = [0, -1];
 ray_out_xyz = geo.ll2xyz(ray_out_ll);
@@ -76,7 +76,7 @@ end
 fprintf('passed!\n');
 
 % fprintf(' case 2 ... ');
-% fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace, 'quat3');
+% fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 % 
 % ray_out_ll = [0, -1];
 % ray_out_xyz = geo.ll2xyz(ray_out_ll);
