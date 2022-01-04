@@ -49,5 +49,7 @@ ray_out_ll3 = opt.crystal_system(quat + [0, 0, dq, 0], ray_in_ll, crystal, trace
 ray_out_ll4 = opt.crystal_system(quat + [0, 0, 0, dq], ray_in_ll, crystal, trace);
 g_rot0 = [ray_out_ll1 - ray_out_ll; ray_out_ll2 - ray_out_ll; ray_out_ll3 - ray_out_ll;
     ray_out_ll4 - ray_out_ll]' / dq;
+
+g_rot = g_rot(1:end-1, :);
 assert(all(abs(g_rot(:) - g_rot0(:)) < 1e-5));
 end

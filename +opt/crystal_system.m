@@ -53,8 +53,12 @@ for i = 1:num
 end
 
 [ray_out_ll, jac_out_ll] = geo.xyz2ll(ray_out_xyz);
-jac = zeros(2, dim_rot, num);
+jac = zeros(dim_rot - 1, dim_rot, num);
 for i = 1:num
-    jac(:, :, i) = jac_out_ll(:, :, i) * jac_xyz(:, :, i);
+    if dim_rot == 3
+        jac(:, :, i) = jac_out_ll(:, :, i) * jac_xyz(:, :, i);
+    else
+        jac(:, :, i) = [jac_out_ll(:, :, i) * jac_xyz(:, :, i); rot / norm(rot)];
+    end
 end
 end
