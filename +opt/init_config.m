@@ -11,7 +11,6 @@ axis_llr_store = [repmat(rot0_ll, [r_num, 1]), kron(roll0, ones(a_num, 1))];
 
 out_xyz = zeros(total_num, 3);
 out_ll = zeros(total_num, 2);
-jac_store = zeros(2, 3, total_num);
 
 progress_cnt = 0;
 progress_bin = 0.1;
@@ -23,10 +22,9 @@ for i = 1:total_num
     end
     progress_cnt = progress_cnt + 1 / total_num;
 
-    [tmp_out_ll, tmp_jacob] = opt.crystal_system(axis_llr_store(i, :), ray_in_ll, crystal, trace);
+    tmp_out_ll = opt.crystal_system(axis_llr_store(i, :), ray_in_ll, crystal, trace);
     out_ll(i, :) = tmp_out_ll;
     out_xyz(i, :) = geo.ll2xyz(tmp_out_ll);
-    jac_store(:, :, i) = tmp_jacob;
 end
 
 in_xyz = geo.ll2xyz(ray_in_ll);
@@ -38,5 +36,4 @@ config.axis_quat_store = geo.llr2quat(axis_llr_store);
 config.dr = dr;
 config.out_ll = out_ll;
 config.out_xyz = out_xyz;
-config.jacobian = jac_store;
 end
