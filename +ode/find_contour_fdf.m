@@ -112,7 +112,7 @@ while idx < p.Results.MaxPts
         if idx > 3
             tmp_dx = [x1 - x(idx, :); x(idx, :) - x(idx - 1, :)];
             bending = dot(tmp_dx(1, :), tmp_dx(2, :)) / norm(tmp_dx(1, :)) / norm(tmp_dx(2, :));
-            bending = acosd(bending);
+            bending = acosd(max(min(bending, 1), -1));
         else
             bending = 0;
         end
