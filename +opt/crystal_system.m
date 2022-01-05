@@ -31,7 +31,7 @@ for i = 1:num
     ray_in_xyz(i, :) = xyz0 * rot_mat(:, :, i)';
 end
 
-[ray_out_xyz, jac_out_xyz] = opt.trace_ray_xyz(ray_in_xyz, crystal, trace);
+[ray_out_xyz, jac_out_xyz] = opt.trace_ray_direction(ray_in_xyz, crystal, trace);
 
 jac_xyz = zeros(3, dim_rot, num);
 for i = 1:num
