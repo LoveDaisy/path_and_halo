@@ -1,6 +1,6 @@
 function config = init_config_3d(crystal, trace, sun_ll, level)
 % initial grid
-[~, rot0_ll, dr] = generate_healpix_grids(level);
+[~, rot0_ll, dr] = geo.generate_healpix_grids(level);
 roll0 = (0:dr*2:360)';
 
 a_num = size(rot0_ll, 1);

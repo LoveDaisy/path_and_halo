@@ -15,7 +15,7 @@ trace.fid = [3; 5];
 trace.n = [n; 1];
 
 % initial grid
-[axis_u, axis_u_ll, dr] = generate_healpix_grids(3);
+[axis_u, axis_u_ll, dr] = geo.generate_healpix_grids(3);
 u_num = size(axis_u, 1);
 roll = (0:(2*dr):360)';
 roll_num = length(roll);
