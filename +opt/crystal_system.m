@@ -11,11 +11,12 @@ function [ray_out_ll, jac] = crystal_system(rot, ray_in_ll, crystal, trace)
 %   trace:              struct
 %
 % OUTPUT
-%   ray_out_ll:         n*2, [longitude, latitude], in degree. Output ray direction.
-%   jac:                2*3*n, Jacobian. Input is rotation (llr or quat3) and output is ray_out_ll
+%   ray_out_ll:         n*2 or n*3, [longitude, latitude, (quat_norm)], in degree. Output ray direction.
+%   jac:                2*3*n or 3*4*n, Jacobian. Input is rotation (llr or quat3) and output is ray_out_ll
 
 num = size(rot, 1);
 dim_rot = size(rot, 2);
+rot_norm = sqrt(sum(rot.^2, 2));
 
 xyz0 = geo.ll2xyz(ray_in_ll);
 if dim_rot == 3
@@ -36,19 +37,12 @@ end
 jac_xyz = zeros(3, dim_rot, num);
 for i = 1:num
     tmp_xyz = ray_out_xyz(i, :)';
-    if dim_rot == 3
-        g_xyz1 = [jac_rot_mat(:, :, 1, i) * xyz0', jac_rot_mat(:, :, 2, i) * xyz0', ...
-                jac_rot_mat(:, :, 3, i) * xyz0'];
-        jac_xyz(:, :, i) = [jac_rot_mat(:, :, 1, i)' * tmp_xyz, jac_rot_mat(:, :, 2, i)' * tmp_xyz, ...
-                            jac_rot_mat(:, :, 3, i)' * tmp_xyz] + ...
-            rot_mat(:, :, i)' * jac_out_xyz(:, :, i) * g_xyz1;
-    else
-        g_xyz1 = [jac_rot_mat(:, :, 1, i) * xyz0', jac_rot_mat(:, :, 2, i) * xyz0', ...
-                jac_rot_mat(:, :, 3, i) * xyz0', jac_rot_mat(:, :, 4, i) * xyz0'];
-        jac_xyz(:, :, i) = [jac_rot_mat(:, :, 1, i)' * tmp_xyz, jac_rot_mat(:, :, 2, i)' * tmp_xyz, ...
-                            jac_rot_mat(:, :, 3, i)' * tmp_xyz, jac_rot_mat(:, :, 4, i)' * tmp_xyz] + ...
-            rot_mat(:, :, i)' * jac_out_xyz(:, :, i) * g_xyz1;
+    g_xyz1 = zeros(3, dim_rot);
+    for j = 1:dim_rot
+        g_xyz1(:, j) = jac_rot_mat(:, :, j, i) * xyz0';
+        jac_xyz(:, j, i) = jac_rot_mat(:, :, j, i)' * tmp_xyz;
     end
+    jac_xyz(:, :, i) = jac_xyz(:, :, i) + rot_mat(:, :, i)' * jac_out_xyz(:, :, i) * g_xyz1;
     ray_out_xyz(i, :) = ray_out_xyz(i, :) * rot_mat(:, :, i);
 end
 
@@ -58,7 +52,10 @@ for i = 1:num
     if dim_rot == 3
         jac(:, :, i) = jac_out_ll(:, :, i) * jac_xyz(:, :, i);
     else
-        jac(:, :, i) = [jac_out_ll(:, :, i) * jac_xyz(:, :, i); rot / norm(rot)];
+        jac(:, :, i) = [jac_out_ll(:, :, i) * jac_xyz(:, :, i); rot(i, :) / rot_norm(i)];
     end
+end
+if dim_rot == 4
+    ray_out_ll = [ray_out_ll, rot_norm];
 end
 end
