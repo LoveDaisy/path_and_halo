@@ -10,6 +10,10 @@ ray_out = nan(ray_n, 3);
 g = nan(3, 3, ray_n);
 valid_ind = sum(abs(ray_in), 2) > 1e-4;
 
+if all(~valid_ind)
+    return;
+end
+
 [ray_in, g_norm] = geo.normalize_vector(ray_in);
 
 r = ray_in(valid_ind, :) - 2 * (ray_in(valid_ind, :) * face_normal') * face_normal;

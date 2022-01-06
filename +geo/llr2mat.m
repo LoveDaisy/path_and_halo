@@ -31,8 +31,11 @@ s3 = sind(llr(:, 3));
 %    c1 * c3 - s1 * s2 * s3, -c1 * s3 - s1 * s2 * c3, s1 * c2
 %    c2 * s3,                 c2 * c3,                s2
 
-mat = zeros(3, 3, num);
+mat = nan(3, 3, num);
 for i = 1:num
+    if any(isnan(llr(i, :)))
+        continue;
+    end
     mat(:, :, i) = rotz(90 + llr(i, 1)) * rotx(90 - llr(i, 2)) * rotz(llr(i, 3));
 end
 
