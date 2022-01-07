@@ -36,4 +36,8 @@ config.axis_quat_store = geo.llr2quat(axis_llr_store);
 config.dr = dr;
 config.out_ll = out_ll;
 config.out_xyz = out_xyz;
+config.sun_ll = sun_ll;
+config.ray_in_ll = ray_in_ll;
+config.crystal = crystal;
+config.trace = trace;
 end
