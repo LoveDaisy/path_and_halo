@@ -11,8 +11,22 @@ function [d, v, it, p] = distance_to_polyline(line_pts, p0)
 %   it:             m*2, line segment index and normalized length parameter t
 %   v:              m*d, projected point on lines
 
+n = size(line_pts, 1);
 m = size(p0, 1);
 dim = size(p0, 2);
+if n < 1
+    d = [];
+    v = [];
+    it = [];
+    p = [];
+    return;
+elseif n == 1
+    p = repmat(line_pts, m);
+    v = p - p0;
+    d = sqrt(sum(v.^2, 2));
+    it = [ones(m, 1), zeros(m, 1)];
+    return;
+end
 
 p = inputParser;
 p.addRequired('pts', @(x) validateattributes(x, {'numeric'}, {'2d', 'ncols', dim}));

@@ -34,13 +34,21 @@ while d < p.Results.eps
     [d, ~, ~] = geo.distance_to_polyline(x(1:end - 1, :), x(end, :));
 end
 
+num = size(x, 1);
+if num < 3
+    closed = false;
+    return;
+end
+
 if isempty(last_x)
     d0 = norm(x(end, :) - x(1, :));
     d1 = norm(x(1, :) - x(2, :));
     dn = norm(x(end - 1, :) - x(end, :));
     closed = d0 < d1 || d0 < dn;
 else
-    closed = true;
+    v1 = x(1, :) - last_x;
+    v2 = x(2, :) - x(1, :);
+    closed = dot(v1, v2) / norm(v1) / norm(v2) > 0.3;
 end
 
 end

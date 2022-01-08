@@ -10,15 +10,18 @@ if interest_idx(end)
     idx2 = [idx2; length(p0)];
 end
 
+w = 0;
+interp_s = [];
+interp_p = [];
+interp_rot = [];
 if sum(~isnan(det_j0)) < 2
-    w = 0;
-    interp_s = [];
-    interp_p = [];
-    interp_rot = [];
     return;
 end
 
 [interp_rot, s, interp_s] = spline_interp_rot(rot_contour);
+if isempty(interp_s)
+    return;
+end
 interp_p = axis_pdf(interp_rot);
 interp_det_j = exp(interp1(s, log(det_j0), interp_s, 'linear', 'extrap'));
 interp_face_factor = interp1(s, face_factor0, interp_s, 'linear', 'extrap');
@@ -240,10 +243,16 @@ function [interp_rot, s, interp_s] = spline_interp_rot(rot_contour)
 ds = sqrt(sum(diff(rot_contour).^2, 2));
 s = [0; cumsum(ds)];
 num = size(rot_contour, 1);
+ss = 0.05;
+
+if max(s) < ss
+    interp_rot = [];
+    interp_s = [];
+    return;
+end
 
 is_period = norm(rot_contour(1, :) - rot_contour(end, :)) < 1e-8;
 
-ss = 0.05;
 s_diff = inf;
 iter_num = 1;
 while s_diff > 1e-3 && iter_num < 3

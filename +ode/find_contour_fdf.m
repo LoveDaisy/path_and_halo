@@ -36,14 +36,20 @@ end
 
 % Search backward direction
 [x_b, status_b] = search_direction(fdf, x0, -1, search_options{:});
+status.fun_eval_cnt = status_f.fun_eval_cnt + status_b.fun_eval_cnt;
 if size(x_b, 1) < 2
     x = x_f;
 else
     x = [flipud(x_b(2:end, :)); x_f];
 end
+if size(x, 1) < 2
+    status.closed = false;
+    status.completed = true;
+    x = [];
+    return;
+end
 
 [status.closed, x] = geo.check_curve_loop(x, 'eps', p.Results.h * 0.05);
-status.fun_eval_cnt = status_f.fun_eval_cnt + status_b.fun_eval_cnt;
 if ~status.closed
     status.completed = status_f.completed && status_b.completed;
 else
@@ -64,7 +70,6 @@ p.addParameter('h', 0.05, @(x) validateattributes(x, {'double'}, {'scalar', 'pos
 p.addParameter('MaxPts', 100, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive', 'integer'}));
 p.parse(varargin{:});
 
-fdx = @(x) wrap_to_fdx(fdf, x);
 if strcmpi(p.Results.method, 'euler')
     method = @euler;
 elseif strcmpi(p.Results.method, 'rk4')
@@ -75,7 +80,8 @@ else
     error('Method name cannot be recognized!');
 end
 
-y0 = fdf(x0);
+[y0, ref_dx] = wrap_to_fdx(fdf, x0, []);
+fdx = @(x) wrap_to_fdx(fdf, x, ref_dx);
 
 x = nan(p.Results.MaxPts, dim);
 x(1, :) = x0;
@@ -173,7 +179,7 @@ end
 end
 
 % ================================================================================
-function [y, dx] = wrap_to_fdx(fdf, x)
+function [y, dx] = wrap_to_fdx(fdf, x, ref_dx)
 % Wrapper function. Convert fdf function to fdx function.
 % An fdf function outputs value (y) and jacobian (jac), and an fdx function
 % outputs value (y) and a contour tangent direction (dx)
@@ -186,11 +192,11 @@ if any(isnan(y(:)))
 end
 
 dx = null(jac);
+dx = dx(:, 1)';
 
-if det([jac', dx]) < 0
+if ~isempty(ref_dx) && dot(dx, ref_dx) < 0
     dx = -dx;
 end
-dx = dx(:, 1)';
 end
 
 % ================================================================================
