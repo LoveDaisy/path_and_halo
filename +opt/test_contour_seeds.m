@@ -1,7 +1,7 @@
 function test_contour_seeds()
 % Test a real case for contour seeds.
 
-test_cases = {@suite1};
+test_cases = {@suite1, @suite2};
 num = length(test_cases);
 debug = false;
 
@@ -15,6 +15,51 @@ end
 
 % ================================================================================
 function suite1(debug)
+crystal = opt.make_prism_crystal(1);
+trace.fid = [3; 5];
+sun_ll = [180, 10];
+ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
+ray_out_ll = [-5, 13.8];
+
+config_cache_file = 'test_config_1_35_180+10_3.mat';
+if exist(config_cache_file, 'file')
+    load(config_cache_file);
+else
+    config = opt.init_config(crystal, trace, sun_ll, 3);
+    save(config_cache_file, 'config');
+end
+
+fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
+
+% Find seed rotation
+[~, seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll);
+
+seed_rot = seed_quat;
+contour_h = 0.05;
+reduce_eps = 0.03;
+
+% Find contour
+[rot_contour, ~] = ode.find_contour_fdf(fdf, seed_rot(1, :), 'h', contour_h);
+
+% Reduce seed points
+[seed_rot, ~] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
+
+if debug
+    space_idx = [2, 3, 4];
+    figure(1); clf;
+    hold on;
+    plot_rot_space(seed_quat, space_idx, 'o');
+    plot_rot_space(seed_rot, space_idx, 's');
+    plot_rot_space(rot_contour, space_idx, '-o');
+    plot_rot_tan_space(fdf, rot_contour, space_idx, 'm');
+    axis equal;
+end
+
+assert(isempty(seed_rot));
+end
+
+% ================================================================================
+function suite2(debug)
 crystal = opt.make_prism_crystal(1);
 trace.fid = [1; 3; 2; 4; 5; 1];
 sun_ll = [0, 10];
@@ -43,12 +88,13 @@ rot0 = [-0.516278096307973, 0.170107948397147, -0.254138559784028, -0.7999586274
 [rot_contour, ~] = ode.find_contour_fdf(fdf, rot0, 'h', contour_h);
 [seed_rot, ~] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
 if debug
+    space_idx = [2, 3, 4];
     figure(1); clf;
     hold on;
-    plot_rot_space(seed_quat, [2, 3, 4], 'o');
-    plot_rot_space(seed_rot, [2, 3, 4], 's');
-    plot_rot_space(rot_contour, [2, 3, 4], '-o');
-    plot_rot_tan_space(fdf, rot_contour, [2, 3, 4], 'm');
+    plot_rot_space(seed_quat, space_idx, 'o');
+    plot_rot_space(seed_rot, space_idx, 's');
+    plot_rot_space(rot_contour, space_idx, '-o');
+    plot_rot_tan_space(fdf, rot_contour, space_idx, 'm');
     axis equal;
 end
 fprintf('passed!\n');
@@ -58,12 +104,13 @@ rot0 = [0.588369809379402, -0.347408255513868, 0.683166656311173, -0.25770485272
 [rot_contour, ~] = ode.find_contour_fdf(fdf, rot0, 'h', contour_h);
 [seed_rot, ~] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
 if debug
+    space_idx = [2, 3, 4];
     figure(2); clf;
     hold on;
-    plot_rot_space(seed_quat, [2, 3, 4], 'o');
-    plot_rot_space(seed_rot, [2, 3, 4], 's');
-    plot_rot_space(rot_contour, [2, 3, 4], '-o');
-    plot_rot_tan_space(fdf, rot_contour, [2, 3, 4], 'm');
+    plot_rot_space(seed_quat, space_idx, 'o');
+    plot_rot_space(seed_rot, space_idx, 's');
+    plot_rot_space(rot_contour, space_idx, '-o');
+    plot_rot_tan_space(fdf, rot_contour, space_idx, 'm');
     axis equal;
 end
 fprintf('passed!\n');
