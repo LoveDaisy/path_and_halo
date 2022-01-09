@@ -1,7 +1,7 @@
 function test_find_contour_fdf()
 % Test function find_contour_fdf
 
-test_cases = {@suite1, @suite2, @suite3};
+test_cases = {@suite1, @suite2, @suite3 @suite4};
 num = length(test_cases);
 
 fprintf('Start testing for find_contour_fdf...\n');
@@ -57,12 +57,13 @@ trace.fid = [3; 5];
 sun_ll = [180, 25];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 
-if ~exist('test_config_1_180_25_3.mat', 'file');
+config_cache_file = 'test_config_1_35_180+25_3.mat';
+if ~exist(config_cache_file, 'file');
     config = opt.init_config(crystal, trace, sun_ll, 3);
-    save('test_config_1_180_25_3.mat', 'config');
+    save(config_cache_file, 'config');
 else
-    fprintf(' load config from file <test_config_1_180_25_3.mat>\n');
-    load test_config_1_180_25_3.mat
+    fprintf(' load config from file <%s>\n', config_cache_file);
+    load(config_cache_file);
 end
 
 fprintf(' case 1 ... ');
@@ -96,6 +97,36 @@ for i = 1:size(rot_quat, 1)
     assert(norm(fdf(rot_quat(i, :)) - [ray_out_ll, 1]) < 1e-4);
 end
 fprintf('passed!\n');
+end
+
+% ================================================================================
+function suite4()
+crystal = opt.make_prism_crystal(1);
+trace.fid = [3; 5];
+sun_ll = [180, 10];
+ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
+ray_out_ll = [-5, 13.8];
+
+config_cache_file = 'test_config_1_35_180+10_3.mat';
+if exist(config_cache_file, 'file')
+    load(config_cache_file);
+else
+    config = opt.init_config(crystal, trace, sun_ll, 3);
+    save(config_cache_file, 'config');
+end
+
+fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
+
+% Find seed rotation
+[~, seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll);
+
+% Find contour
+[rot_contour, status] = ode.find_contour_fdf(fdf, seed_quat(1, :), 'h', 0.05);
+assert(status.closed);
+assert(size(rot_contour, 1) > 10);
+for i = 1:size(rot_contour, 1)
+    assert(norm(fdf(rot_contour(i, :)) - [ray_out_ll, 1]) < 1e-4);
+end
 end
 
 % ================================================================================

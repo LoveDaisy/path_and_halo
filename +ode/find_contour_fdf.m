@@ -81,7 +81,6 @@ else
 end
 
 [y0, ref_dx] = wrap_to_fdx(fdf, x0, []);
-fdx = @(x) wrap_to_fdx(fdf, x, ref_dx);
 
 x = nan(p.Results.MaxPts, dim);
 x(1, :) = x0;
@@ -100,7 +99,7 @@ while idx < p.Results.MaxPts
     x2_flag = false;
     retry = false;
     while ~x2_flag && h > h_min
-        [x1, x1_status] = method(fdx, x0, direction, h);
+        [x1, x1_status] = method(@(x) wrap_to_fdx(fdf, x, ref_dx), x0, direction, h);
         fun_eval_cnt = fun_eval_cnt + x1_status.fun_eval_cnt;
         if isnan(x1_status.error)
             % Estimate the value error. Either from ODE method itself (like adaptive methods)
@@ -122,7 +121,7 @@ while idx < p.Results.MaxPts
         else
             bending = 0;
         end
-        if bending > 35
+        if bending > 30
             h = h * 0.5;
             h_extend_cnd = 0;
             idx = idx - 1;
@@ -130,6 +129,7 @@ while idx < p.Results.MaxPts
             break;
         end
 
+        ref_dx = x1_status.dx;
         [x2, x2_status] = ode.find_solution_fdf(fdf, x1, y0, 'eps', p.Results.eps);
         x2_flag = x2_status.finish;
         fun_eval_cnt = fun_eval_cnt + x2_status.fun_eval_cnt;

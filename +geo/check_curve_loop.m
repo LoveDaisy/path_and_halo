@@ -46,7 +46,7 @@ if isempty(last_x)
     dn = norm(x(end - 1, :) - x(end, :));
     closed = d0 < d1 || d0 < dn;
 else
-    v1 = x(1, :) - last_x;
+    v1 = x(1, :) - x(end, :);
     v2 = x(2, :) - x(1, :);
     closed = dot(v1, v2) / norm(v1) / norm(v2) > 0.3;
 end

@@ -18,7 +18,14 @@ target_ll = [0.5, -12];
 crystal = opt.make_prism_crystal(1);
 trace.fid = [1; 3; 2; 4; 5; 1];
 
-config = opt.init_config(crystal, trace, sun_ll, 3);
+config_cache_file = 'test_config_1_132451_0+10_3.mat';
+if exist(config_cache_file, 'file')
+    load(config_cache_file);
+else
+    config = opt.init_config(crystal, trace, sun_ll, 3);
+    save(config_cache_file, 'config');
+end
+
 [seed_llr, seed_quat, status] = opt.find_seed_rot(config, target_ll);
 
 assert(status.fun_eval_cnt < 300);
