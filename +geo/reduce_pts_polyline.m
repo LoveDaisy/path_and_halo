@@ -31,14 +31,8 @@ p.parse(varargin{:});
 num = size(pts, 1);
 dim1 = size(pts, 2);
 if dim1 == 3
-    pts0 = pts;
-    pts0(:, 1) = mod(pts(:, 1), 360);
-    pts0(:, 2) = mod(pts(:, 2), 180);
-    pts0(:, 3) = mod(pts(:, 3), 360);
-
-    polyline(:, 1) = mod(polyline(:, 1), 360);
-    polyline(:, 2) = mod(polyline(:, 2), 180);
-    polyline(:, 3) = mod(polyline(:, 3), 360);
+    pts0 = geo.normalize_llr(pts);
+    polyline = geo.normalize_llr(polyline);
 else
     pts0 = pts;
 end
