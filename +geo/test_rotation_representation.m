@@ -32,8 +32,8 @@ assert(all(abs(jac(:) - jac0(:)) < 3e-4));
 end
 
 % ================================================================================
-% Quaternion to matrix
 function suite2()
+% Quaternion to matrix
 num = 100;
 rng(1357);
 q = randn(num, 4);
@@ -59,6 +59,7 @@ end
 % ================================================================================
 function suite3()
 % LLR to quaternion
+fprintf(' case 1 ... ');
 lon = 10;
 lat = 35;
 roll = 60;
@@ -79,6 +80,13 @@ d = 1e-4;
 
 jac0 = [q1 - q; q2 - q; q3 - q]' / d;
 assert(all(abs(jac0(:) - jac(:)) < 1e-8));
+fprintf(' passed!\n');
+
+% Quaternion back to LLR
+fprintf(' case 2 ... ');
+llr = geo.quat2llr(q);
+assert(norm(llr - [lon, lat, roll]) < 1e-8);
+fprintf(' passed!\n');
 end
 
 % ================================================================================
