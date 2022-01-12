@@ -18,8 +18,8 @@ sun_ll = [0, 25];
 
 config = opt.init_config(crystal, trace, sun_ll, 2);
 
-hist_n0 = [13, 126, 120, 103, 78, 68, 59, 54, 48, 40, 34, 29, 1];
-hist_edge0 = [20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46];
+hist_n0 = [8, 130, 118, 98, 68, 72, 72, 54, 28, 42, 44, 22];
+hist_edge0 = [20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44];
 [n, edge] = histcounts(config.bending_angle);
 
 assert(all(abs(hist_n0(:) - n(:)) < 1e-8));

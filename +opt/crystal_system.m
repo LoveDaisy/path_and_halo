@@ -29,7 +29,7 @@ end
 
 ray_in_xyz = zeros(num, 3);
 for i = 1:num
-    ray_in_xyz(i, :) = xyz0 * rot_mat(:, :, i)';
+    ray_in_xyz(i, :) = xyz0 * rot_mat(:, :, i);
 end
 
 [ray_out_xyz, jac_out_xyz] = opt.trace_ray_direction(ray_in_xyz, crystal, trace);
@@ -39,11 +39,11 @@ for i = 1:num
     tmp_xyz = ray_out_xyz(i, :)';
     g_xyz1 = zeros(3, dim_rot);
     for j = 1:dim_rot
-        g_xyz1(:, j) = jac_rot_mat(:, :, j, i) * xyz0';
-        jac_xyz(:, j, i) = jac_rot_mat(:, :, j, i)' * tmp_xyz;
+        g_xyz1(:, j) = jac_rot_mat(:, :, j, i)' * xyz0';
+        jac_xyz(:, j, i) = jac_rot_mat(:, :, j, i) * tmp_xyz;
     end
-    jac_xyz(:, :, i) = jac_xyz(:, :, i) + rot_mat(:, :, i)' * jac_out_xyz(:, :, i) * g_xyz1;
-    ray_out_xyz(i, :) = ray_out_xyz(i, :) * rot_mat(:, :, i);
+    jac_xyz(:, :, i) = jac_xyz(:, :, i) + rot_mat(:, :, i) * jac_out_xyz(:, :, i) * g_xyz1;
+    ray_out_xyz(i, :) = ray_out_xyz(i, :) * rot_mat(:, :, i)';
 end
 
 [ray_out_ll, jac_out_ll] = geo.xyz2ll(ray_out_xyz);

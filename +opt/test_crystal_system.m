@@ -15,6 +15,7 @@ function suite1()
 crystal = opt.make_prism_crystal(1);
 trace.fid = [3; 5];
 
+fprintf(' case 1 ... ');
 rot_llr = [-90, 90, 0];
 ray_in_ll = [-40 + 180, 0];
 ray_out_ll0 = [161.846476470779, 0];
@@ -28,6 +29,7 @@ ray_out_ll2 = opt.crystal_system(rot_llr + [0, dq, 0], ray_in_ll, crystal, trace
 ray_out_ll3 = opt.crystal_system(rot_llr + [0, 0, dq], ray_in_ll, crystal, trace);
 g_rot0 = [ray_out_ll1 - ray_out_ll; ray_out_ll2 - ray_out_ll; ray_out_ll3 - ray_out_ll]' / dq;
 assert(all(abs(g_rot(:) - g_rot0(:)) < 1e-5));
+fprintf('passed!\n');
 end
 
 % ================================================================================
