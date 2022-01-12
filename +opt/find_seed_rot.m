@@ -1,7 +1,9 @@
 function [seed_llr, seed_quat, status] = find_seed_rot(config, target_ll)
 out_ll_diff = acosd(geo.ll2xyz(config.out_ll) * geo.ll2xyz(target_ll)');
-cand_idx = out_ll_diff < config.dr;
-cand_cnt = sum(cand_idx);
+[out_ll_diff, sort_idx] = sort(out_ll_diff);
+
+cand_idx = sort_idx(out_ll_diff < config.dr);
+cand_cnt = length(cand_idx);
 cand_llr = config.axis_llr_store(cand_idx, :);
 cand_quat = config.axis_quat_store(cand_idx, :);
 
