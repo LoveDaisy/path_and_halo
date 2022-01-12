@@ -114,14 +114,14 @@ while idx < p.Results.MaxPts
             continue;
         end
 
-        if idx > 3
+        if idx > 1
             tmp_dx = [x1 - x(idx, :); x(idx, :) - x(idx - 1, :)];
             bending = dot(tmp_dx(1, :), tmp_dx(2, :)) / norm(tmp_dx(1, :)) / norm(tmp_dx(2, :));
             bending = acosd(max(min(bending, 1), -1));
         else
             bending = 0;
         end
-        if bending > 30
+        if bending > 20
             h = h * 0.5;
             h_extend_cnd = 0;
             idx = idx - 1;
@@ -133,6 +133,21 @@ while idx < p.Results.MaxPts
         [x2, x2_status] = ode.find_solution_fdf(fdf, x1, y0, 'eps', p.Results.eps);
         x2_flag = x2_status.finish;
         fun_eval_cnt = fun_eval_cnt + x2_status.fun_eval_cnt;
+        
+        if idx > 1
+            tmp_dx = [x2 - x(idx, :); x(idx, :) - x(idx - 1, :)];
+            bending = dot(tmp_dx(1, :), tmp_dx(2, :)) / norm(tmp_dx(1, :)) / norm(tmp_dx(2, :));
+            bending = acosd(max(min(bending, 1), -1));
+        else
+            bending = 0;
+        end
+        if bending > 20
+            h = h * 0.5;
+            h_extend_cnd = 0;
+            idx = idx - 1;
+            retry = true;
+            break;
+        end
 
         % Then apply a simple adaptive scheme
         dx1 = norm(x2 - x1);
@@ -143,7 +158,7 @@ while idx < p.Results.MaxPts
         elseif h < h_max * 0.5 && ...
                 (dx1 < h * 0.01 || x1_status.error < max(p.Results.eps * 100, h * 0.002))
             h_extend_cnd = h_extend_cnd + 1;
-            if h_extend_cnd > 2 || idx < 3
+            if h_extend_cnd > 2
                 h = h * 2;
             end
         end
