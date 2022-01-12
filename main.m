@@ -62,7 +62,7 @@ for w = 1:halo_img.x_length
         if isempty(seed_rot) || size(seed_rot, 1) > 100
             continue;
         end
-        
+
         weight = 0;
         cmp_store = {};
         rot_store = {};
@@ -82,14 +82,14 @@ for w = 1:halo_img.x_length
             else
                 contour_store{k} = rot_contour;
             end
-            
+
             % Reduce seeds
             [seed_rot, reduce_status] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
             fun_eval_cnt = fun_eval_cnt + reduce_status.fun_eval_cnt;
             if size(rot_contour, 1) < 2
                 continue;
             end
-            
+
             % Compute weight
             [curr_w, curr_cmp, curr_rot] = opt.compute_contour_weight(rot_contour, axis_pdf, config);
             weight = weight + curr_w;
@@ -101,7 +101,7 @@ for w = 1:halo_img.x_length
         if k <= 1
             continue;
         end
-        
+
         if update_progress && weight > 1e-8
             figure(1); clf;
             vis_range = [5e-4, 1];
@@ -109,7 +109,7 @@ for w = 1:halo_img.x_length
             show_halo_img(halo_img, vis_range);
             title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
             drawnow;
-            
+
             figure(2); clf;
             set(gcf, 'position', f1_pos + [f1_pos(3), 0, f1_pos(3), 0]);
             show_contour_info(contour_store, rot_store, cmp_store);

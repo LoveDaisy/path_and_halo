@@ -8,7 +8,6 @@ imagesc(halo_img.img_x, halo_img.img_y, halo_vis_fun(halo_img.img, vis_range));
 axis equal; axis tight; axis xy;
 end
 
-
 function y = halo_vis_fun(x, lim)
 % Convert linear intensity x into visual intensity y
 

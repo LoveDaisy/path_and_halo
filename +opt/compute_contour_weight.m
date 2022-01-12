@@ -55,7 +55,7 @@ for i = 1:length(prob_idx1)
         % To save computation, skip those too long segments
         continue;
     end
-    
+
     cmp_interp(i1:i2, 3:6) = compute_weight_components(rot_interp(i1:i2, :), axis_pdf, config);
 end
 cmp_interp(:, 2) = cmp_interp(:, 3) .* cmp_interp(:, 4) .* cmp_interp(:, 5) .* cmp_interp(:, 6);
@@ -97,7 +97,6 @@ entry_factor = entry_face_factor(llr, config);
 cmp = [axis_prob, 1 ./ det_jac, entry_factor .* geo_factor, transit_factor];
 end
 
-
 % ================================================================================
 function det_jac = compute_jacobian_deternimant(llr, config)
 % Compute deteminant of Jacobian. For LLR representation, Jacobian is 2*2 matrix.
@@ -114,15 +113,15 @@ fdf = @(rot) opt.crystal_system(rot, ray_in_ll, config.crystal, config.trace);
 det_jac = nan(size(llr, 1), 1);
 for i = 1:rot_num
     curr_jac = jac(:, :, i);
-    
+
     m = curr_jac(:, :) * curr_jac(:, :)';
     a0 = curr_jac(1, :);
     a = a0 / norm(a0);
-    
+
     b = a * curr_jac(:, :)';
     b = [b(2), -b(1)];
     b = b / sqrt(b * m * b');
-    
+
     min_det = 1e-4;
     j = abs(det(m) * det([[1 / norm(a0); 0], b'])) + min_det;
     if isnan(j)
@@ -171,7 +170,7 @@ for i = 1:num
     face_norm = crystal.face_norm * rot_mat(:, :, i)';
     crystal_vtx = crystal.vtx * rot_mat(:, :, i)';
     vtx0 = crystal_vtx(crystal.face{trace.fid(1)}, :);
-    
+
     for k = 1:face_cnt
         n0 = trace_n(k);
         n1 = trace_n(k + 1);
@@ -197,7 +196,7 @@ for i = 1:num
             r = opt.reflect(r, fn);
         end
         transit_factor(i) = transit_factor(i) * t * q;
-        
+
         if k < length(trace.fid) && geo_factor(i) > 1e-8
             vtx1 = crystal_vtx(crystal.face{trace.fid(k + 1)}, :);
             [a, tmp_vtx] = face_intersection_factor(vtx0, vtx1, r);

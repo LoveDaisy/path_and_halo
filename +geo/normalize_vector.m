@@ -20,7 +20,7 @@ for i = 1:num
         tmp_g(j, j) = tmp_g(j, j) + rcp_vec_norm(i);
     end
     g_vec(:, :, i) = tmp_g;
-    
+
     vec(i, :) = vec(i, :) * rcp_vec_norm(i);
 end
 end

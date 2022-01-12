@@ -8,7 +8,7 @@ for p_i = 1:length(package_list)
         if file_list(i).isdir
             continue;
         end
-        
+
         filename = file_list(i).name;
         idx = regexp(filename, '^test_');
         if ~isempty(idx)

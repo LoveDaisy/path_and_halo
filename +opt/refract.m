@@ -18,7 +18,7 @@ for i = 1:ray_n
     g_cos_alpha(i, :) = g_norm(:, :, i) * face_normal';
 end
 
-delta = cos_alpha .^ 2 - 1 + (n1 / n0) ^ 2;
+delta = cos_alpha.^2 - 1 + (n1 / n0)^2;
 g_delta = g_cos_alpha;
 for i = 1:ray_n
     g_delta(i, :) = g_delta(i, :) * cos_alpha(i) * 2;

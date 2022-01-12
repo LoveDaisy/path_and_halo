@@ -24,7 +24,7 @@ while len_diff > 0.1 * ds
     tmp_d = pdist2(pts0, pts);
     [~, tmp_idx] = min(tmp_d, [], 2);
     len_diff = abs(tmp_s(end) - s(end));
-    
+
     s0 = tmp_s(tmp_idx);
     if closed
         s0(end) = tmp_s(end);
