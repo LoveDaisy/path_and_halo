@@ -26,17 +26,21 @@ else
     save(config_cache_file, 'config');
 end
 
-[seed_llr, seed_quat, status] = opt.find_seed_rot(config, target_ll);
-
-assert(status.fun_eval_cnt < 300);
-
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, config.crystal, config.trace);
+
+[seed_llr, status] = opt.find_seed_rot(config, target_ll, 'llr');
 for i = 1:size(seed_llr, 1)
+    assert(status.fun_eval_cnt < 300);
+
     tmp_ll = fdf(seed_llr(i, :));
     assert(norm(tmp_ll - target_ll) < 1e-8);
 end
+
+[seed_quat, status] = opt.find_seed_rot(config, target_ll, 'quat');
 for i = 1:size(seed_quat, 1)
+    assert(status.fun_eval_cnt < 300);
+
     tmp_ll = fdf(seed_quat(i, :));
     assert(norm(tmp_ll - [target_ll, 1]) < 1e-8);
 end

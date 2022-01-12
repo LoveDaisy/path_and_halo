@@ -32,7 +32,7 @@ end
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
 % Find seed rotation
-[~, seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll);
+[seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
 
 seed_rot = seed_quat;
 contour_h = 0.05;
@@ -77,7 +77,7 @@ end
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
 % Start
-[~, seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll);
+[seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
 
 seed_rot = seed_quat;
 contour_h = 0.05;
