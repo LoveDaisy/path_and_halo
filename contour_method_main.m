@@ -1,45 +1,19 @@
 clear; close all; clc;
 
-crystal.face_norm = [0, 0, 1;     % face 1
-            0, 0, -1;             % face 2
-            -sqrt(3)/2, 1/2, 0;   % face 3
-            0, 1, 0;              % face 4
-            sqrt(3)/2, 1/2, 0;    % face 5
-            sqrt(3)/2, -1/2, 0;   % face 6
-            0, -1, 0;             % face 7
-            -sqrt(3)/2, -1/2, 0]; % face 8
-crystal.h = 1;
-crystal.vtx = zeros(12, 3);
-for i = 1:6
-    crystal.vtx(i, :) = [cosd((4-i) * 60), sind((4-i)*60), crystal.h];
-end
-for i = 7:12
-    crystal.vtx(i, :) = [cosd((4-i) * 60), sind((4-i)*60), -crystal.h];
-end
-crystal.face = {[6; 5; 4; 3; 2; 1];
-                [7; 8; 9; 10; 11; 12];
-                [1; 2; 8; 7];
-                [2; 3; 9; 8];
-                [3; 4; 10; 9];
-                [4; 5; 11; 10];
-                [5; 6; 12; 11];
-                [6; 1; 7; 12]};
-crystal.face_area = [3 * sqrt(3) / 2; 3 * sqrt(3) / 2; crystal.h * ones(6, 1) * 2];
-crystal.n = 1.31;
+crystal = opt.make_prism_crystal(1);
+% trace.fid = [1; 3; 2; 4; 5; 1];
+trace.fid = [3; 5];
 
-trace.fid = [1; 3; 2; 4; 5; 1];
-
-crystal_zenith = [90, 0.2];  % mean, std
+crystal_zenith = [90, 0.2]; % mean, std
 tmp_x = linspace(-90, 90, 50000);
-tmp_pdf = exp(-(90 - tmp_x - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / crystal_zenith(2);
+tmp_pdf = exp(- (90 - tmp_x - crystal_zenith(1)).^2/2 / crystal_zenith(2)^2) / crystal_zenith(2);
 zen_total = (sum(tmp_pdf) * (tmp_x(2) - tmp_x(1)));
 clear tmp_pdf tmp_x
-axis_pdf = @(llr) (exp(-(90 - asind(sind(llr(:, 2))) - crystal_zenith(1)).^2 / 2 / crystal_zenith(2)^2) / ...
-    crystal_zenith(2) / zen_total) * (1 / 360) * (1 / 360);
+axis_pdf = @(llr) (exp(- (90 - asind(sind(llr(:, 2))) - crystal_zenith(1)).^2/2 / crystal_zenith(2)^2) / ...
+    crystal_zenith(2) / zen_total) * (1/360) * (1/360);
 
-%%
 halo_vis_fun_helper = @(x, a, b) log10(x * b ./ (x + b) + a);
-inv_vis_fun_helper = @(x, a, b) 1 ./ (1 ./ (10.^x - a) - 1/b);
+inv_vis_fun_helper = @(x, a, b) 1 ./ (1 ./ (10.^x - a) - 1 / b);
 halo_vis_fun = @(x) halo_vis_fun_helper(x, 1e-5, 1e-2);
 inv_vis_fun = @(x) inv_vis_fun_helper(x, 1e-5, 1e-2);
 
@@ -47,37 +21,40 @@ inv_vis_fun = @(x) inv_vis_fun_helper(x, 1e-5, 1e-2);
 sun_altitude = 10;
 sun_longitude = 180;
 sun_ll = [sun_longitude, sun_altitude];
-ray_in_xyz = geo.ll2xyz(sun_ll);
+ray_in_ll = [sun_longitude + 180, -sun_altitude];
+ray_in_xyz = geo.ll2xyz(ray_in_ll);
 
-config = init_config_3d(crystal, trace, sun_ll, 3);
+fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
+
+config = opt.init_config(crystal, trace, sun_ll, 3);
 line_color = colormap('lines');
 close all;
 
 %%
 halo_img_res = .5;
 halo_img_x = 0:halo_img_res:10;
-halo_img_y = -20:halo_img_res:20;
+halo_img_y = 0:halo_img_res:30;
+
+use_rot_quat = true;
 
 tic;
 halo_img = nan(length(halo_img_y), length(halo_img_x));
+fun_eval_cnt = 0;
 checked_pix = 0;
 progress_cnt = 0;
-progress_bin = 0.001;
+progress_bin = 0.005;
 update_progress = false;
-% for w = 2:length(halo_img_x)
-%     for h = 1:length(halo_img_y)
-for w = 2
-    for h = 17
+for w = 1:length(halo_img_x)
+    for h = 1:length(halo_img_y)
+% for w = 8
+%     for h = 36
         lon = halo_img_x(w);
         lat = halo_img_y(h);
+        ray_out_ll = [lon, lat];
 
-        ray_out_xyz = geo.ll2xyz([lon, lat]);
-        curr_bending_angle = acosd(dot(ray_out_xyz, ray_in_xyz));
-        curr_target_input_output = [ray_in_xyz, ray_out_xyz];
-        
         checked_pix = checked_pix + 1;
         progress_cnt = progress_cnt + 1 / numel(halo_img);
-        
+
         if progress_cnt > progress_bin
             fprintf('process (%d,%d) = (%.3f,%.3f), %05.2f%%\n', w, h, lon, lat, ...
                 checked_pix / numel(halo_img) * 100);
@@ -87,26 +64,60 @@ for w = 2
             update_progress = false;
         end
 
-        [x_contour, y_val, jacobian] = find_llr_contour(sun_ll, [lon, lat], crystal, trace, ...
-            'config', config);
-        if isempty(x_contour)
+        % Find seed rotation
+        if use_rot_quat
+            [seed_rot, seed_status] = opt.find_seed_rot(config, ray_out_ll, 'quat');
+            contour_h = 0.05;
+            reduce_eps = 0.05;
+        else
+            [seed_rot, seed_status] = opt.find_seed_rot(config, ray_out_ll, 'llr');
+            contour_h = 1;
+            reduce_eps = 0.5;
+        end
+        fun_eval_cnt = fun_eval_cnt + seed_status.fun_eval_cnt;
+        if isempty(seed_rot) || size(seed_rot, 1) > 100
             continue;
         end
         
         weight = 0;
-        interp_p_store = cell(size(x_contour));
-        interp_rot_store = cell(size(x_contour));
-        for k = 1:length(x_contour)
-            curr_rot = x_contour{k};
-            [tmp_w, tmp_s, tmp_p, tmp_rot] = ...
-                compute_llr_weight(curr_rot, axis_pdf, crystal, trace, sun_ll);
-            interp_p_store{k} = [tmp_s, tmp_p];
-            interp_rot_store{k} = tmp_rot;
-            weight = weight + tmp_w;
+        interp_p_store = {};
+        interp_rot_store = {};
+        x_contour = {};
+        k = 1;
+        while ~isempty(seed_rot)
+            % Find contour
+            [rot_contour, contour_status] = ode.find_contour_fdf(fdf, seed_rot(1, :), 'h', contour_h);
+            seed_rot = seed_rot(2:end, :);
+            fun_eval_cnt = fun_eval_cnt + contour_status.fun_eval_cnt;
+            if isempty(rot_contour)
+                continue;
+            end
+
+            if use_rot_quat
+                x_contour{k} = geo.quat2llr(rot_contour);
+            else
+                x_contour{k} = rot_contour;
+            end
+            
+            % Reduce seeds
+            [seed_rot, reduce_status] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
+            fun_eval_cnt = fun_eval_cnt + reduce_status.fun_eval_cnt;
+            if size(rot_contour, 1) < 2
+                continue;
+            end
+            
+            [curr_w, curr_cmp, curr_rot] = opt.compute_contour_weight(rot_contour, axis_pdf, config);
+            weight = weight + curr_w;
+            interp_p_store{k} = curr_cmp;
+            interp_rot_store{k} = curr_rot;
+            k = k + 1;
         end
         halo_img(h, w) = weight;
+        if isempty(x_contour)
+            continue;
+        end
         
-%         if update_progress && weight > 1e-8
+        if update_progress && weight > 1e-8
             figure(1); clf;
             f1_pos = get(gcf, 'position');
             imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
@@ -155,15 +166,15 @@ for w = 2
             set(gca, 'yscale', 'log', 'ylim', [1e-8, 1e4]);
             box on;
             drawnow;
-%         end
+        end
     end
 end
 toc;
 
 %%
-figure(1); clf;
-imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
-axis equal; axis tight; axis xy;
+% figure(1); clf;
+% imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
+% axis equal; axis tight; axis xy;
 
 %%
 % figure(3);
