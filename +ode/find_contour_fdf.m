@@ -157,7 +157,8 @@ while idx < p.Results.MaxPts
     end
     x(idx + 1, :) = x2;
     idx = idx + 1;
-    [tmp_closed, reduced_x] = geo.check_curve_loop(x(1:idx, :), 'eps', p.Results.h * 0.05);
+    [tmp_closed, reduced_x] = geo.check_curve_loop(x(1:idx, :), 'eps', p.Results.h * 0.05, ...
+        'IntStep', p.Results.h * 0.25);
     if tmp_closed
         break;
     end

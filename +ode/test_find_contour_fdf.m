@@ -105,7 +105,6 @@ crystal = opt.make_prism_crystal(1);
 trace.fid = [3; 5];
 sun_ll = [180, 10];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
-ray_out_ll = [-5, 13.8];
 
 config_cache_file = 'test_config_1_35_180+10_3.mat';
 if exist(config_cache_file, 'file')
@@ -117,16 +116,27 @@ end
 
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
-% Find seed rotation
+fprintf(' case 1 ... ');
+ray_out_ll = [-5, 13.8];
 [~, seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll);
-
-% Find contour
 [rot_contour, status] = ode.find_contour_fdf(fdf, seed_quat(1, :), 'h', 0.05);
 assert(status.closed);
 assert(size(rot_contour, 1) > 10);
 for i = 1:size(rot_contour, 1)
     assert(norm(fdf(rot_contour(i, :)) - [ray_out_ll, 1]) < 1e-4);
 end
+fprintf('pass!\n');
+
+fprintf(' case 2 ... ');
+ray_out_ll = [0, 15.5];
+[~, seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll);
+[rot_contour, status] = ode.find_contour_fdf(fdf, seed_quat(1, :), 'h', 0.05);
+assert(status.closed);
+assert(size(rot_contour, 1) > 10);
+for i = 1:size(rot_contour, 1)
+    assert(norm(fdf(rot_contour(i, :)) - [ray_out_ll, 1]) < 1e-4);
+end
+fprintf('pass!\n');
 end
 
 % ================================================================================

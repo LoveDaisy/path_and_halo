@@ -9,7 +9,9 @@ function [closed, x] = check_curve_loop(x, varargin)
 %   x:          n*d, curve points
 %
 % OPTION
-%   'eps':      scalar, point-to-line distance tolerance
+%   'eps':      scalar, point-to-line distance tolerance. Default is 1e-3.
+%   'IntStep':  scalar, step used in interpolation. If greater than 0, input polyline will be
+%               interpolated by this step. Ignore when it is less than 0. Default is -1;
 %
 % OUTPUT
 %   closed:     bool
@@ -24,14 +26,25 @@ end
 p = inputParser;
 p.addRequired('x', @(x) validateattributes(x, {'numeric'}, {'2d'}));
 p.addParameter('eps', 1e-3, @(x) validateattributes(x, {'double'}, {'positive'}));
+p.addParameter('IntStep', -1, @(x) validateattributes(x, {'double'}, {'real'}));
 p.parse(x, varargin{:});
 
-[d, ~, ~] = geo.distance_to_polyline(x(1:end - 1, :), x(end, :));
+if p.Results.IntStep > 0 && size(x, 1) > 2
+    polyline = geo.interp_curve(x(1:end - 1, :), p.Results.IntStep);
+else
+    polyline = x(1:end - 1, :);
+end
+[d, ~, ~] = geo.distance_to_polyline(polyline, x(end, :));
 last_x = [];
 while d < p.Results.eps
     last_x = x(end, :);
     x = x(1:end - 1, :);
-    [d, ~, ~] = geo.distance_to_polyline(x(1:end - 1, :), x(end, :));
+    if p.Results.IntStep > 0 && size(x, 1) > 2
+        polyline = geo.interp_curve(x(1:end - 1, :), p.Results.IntStep);
+    else
+        polyline = x(1:end - 1, :);
+    end
+    [d, ~, ~] = geo.distance_to_polyline(polyline, x(end, :));
 end
 
 num = size(x, 1);
