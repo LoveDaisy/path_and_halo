@@ -4,18 +4,7 @@ crystal = opt.make_prism_crystal(1);
 % trace.fid = [1; 3; 2; 4; 5; 1];
 trace.fid = [3; 5];
 
-crystal_zenith = [90, 0.2]; % mean, std
-tmp_x = linspace(-90, 90, 50000);
-tmp_pdf = exp(- (90 - tmp_x - crystal_zenith(1)).^2/2 / crystal_zenith(2)^2) / crystal_zenith(2);
-zen_total = (sum(tmp_pdf) * (tmp_x(2) - tmp_x(1)));
-clear tmp_pdf tmp_x
-axis_pdf = @(llr) (exp(- (90 - asind(sind(llr(:, 2))) - crystal_zenith(1)).^2/2 / crystal_zenith(2)^2) / ...
-    crystal_zenith(2) / zen_total) * (1/360) * (1/360);
-
-halo_vis_fun_helper = @(x, a, b) log10(x * b ./ (x + b) + a);
-inv_vis_fun_helper = @(x, a, b) 1 ./ (1 ./ (10.^x - a) - 1 / b);
-halo_vis_fun = @(x) halo_vis_fun_helper(x, 1e-5, 1e-2);
-inv_vis_fun = @(x) inv_vis_fun_helper(x, 1e-5, 1e-2);
+axis_pdf = geo.make_axis_pdf([1, 90, 0.2], []);
 
 %%
 sun_altitude = 10;
@@ -119,8 +108,9 @@ for w = 1:length(halo_img_x)
         
         if update_progress && weight > 1e-8
             figure(1); clf;
+            vis_range = [5e-4, 1];
             f1_pos = get(gcf, 'position');
-            imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
+            imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img, vis_range));
             axis equal; axis tight; axis xy;
             title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
             drawnow;
