@@ -130,9 +130,14 @@ while idx < p.Results.MaxPts
         end
 
         ref_dx = x1_status.dx;
-        [x2, x2_status] = ode.find_solution_fdf(fdf, x1, y0, 'eps', p.Results.eps);
-        x2_flag = x2_status.finish;
-        fun_eval_cnt = fun_eval_cnt + x2_status.fun_eval_cnt;
+        if x1_status.error > p.Results.eps
+            [x2, x2_status] = ode.find_solution_fdf(fdf, x1, y0, 'eps', p.Results.eps);
+            x2_flag = x2_status.finish;
+            fun_eval_cnt = fun_eval_cnt + x2_status.fun_eval_cnt;
+        else
+            x2 = x1;
+            x2_flag = true;
+        end
         
         if idx > 1
             tmp_dx = [x2 - x(idx, :); x(idx, :) - x(idx - 1, :)];
@@ -173,7 +178,7 @@ while idx < p.Results.MaxPts
     x(idx + 1, :) = x2;
     idx = idx + 1;
     [tmp_closed, reduced_x] = geo.check_curve_loop(x(1:idx, :), 'eps', p.Results.h * 0.05, ...
-        'IntStep', p.Results.h * 0.25);
+        'IntStep', p.Results.h * 0.5);
     if tmp_closed
         break;
     end

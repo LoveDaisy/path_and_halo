@@ -42,6 +42,8 @@ elseif strcmpi(type, 'quat')
         end
     end
     seed_rot = seed_rot(1:idx, :);
+else
+    error('unknown rotation type!');
 end
 
 status.fun_eval_cnt = fun_eval_cnt;
