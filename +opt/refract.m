@@ -42,13 +42,13 @@ for i = 1:length(valid_ind)
 end
 
 r = ray_in(valid_ind, :) - a * face_normal;
-g_r = nan(3, 3, sum(valid_ind));
-for i = 1:sum(valid_ind)
+g_r = nan(3, 3, length(valid_ind));
+for i = 1:length(valid_ind)
     g_r(:, :, i) = g_norm(:, :, i) - face_normal' * g_a(i, :);
 end
 
 [r, g_norm_r] = geo.normalize_vector(r);
-for i = 1:sum(valid_ind)
+for i = 1:length(valid_ind)
     g_r(:, :, i) = g_norm_r(:, :, i) * g_r(:, :, i);
 end
 
