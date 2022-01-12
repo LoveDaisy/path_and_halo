@@ -1,4 +1,4 @@
-function test_find_solution_fdf()
+function test_find_solution()
 test_fdf = {@case1, @case2};
 test_x0 = {[1.2, 1.1], [0.5, 0.5]};
 test_yq = {2, 4.5};
@@ -6,14 +6,14 @@ test_yq = {2, 4.5};
 test_cases = struct('fdf', test_fdf, 'x0', test_x0, 'yq', test_yq);
 case_num = length(test_cases);
 
-fprintf('Start tesing find_solution_fdf...\n');
+fprintf('Start tesing find_solution...\n');
 tol_eps = 1e-8;
 for i = 1:case_num
     fprintf('Testing case %d/%d...', i, case_num);
     x0 = test_cases(i).x0;
     yq = test_cases(i).yq;
     fdf = test_cases(i).fdf;
-    [x, status] = ode.find_solution_fdf(fdf, x0, yq, 'eps', tol_eps);
+    [x, status] = ode.find_solution(fdf, x0, yq, 'eps', tol_eps);
     y = fdf(x);
     assert(norm(y - yq) < tol_eps, 'Test case %d failed!', i);
     fprintf(' passed! Function calls: %d\n', status.fun_eval_cnt);

@@ -1,4 +1,4 @@
-function [x, status] = find_contour_fdf(fdf, x0, varargin)
+function [x, status] = find_contour(fdf, x0, varargin)
 % Find a contour for an ODE with given target value.
 % For every point xi of output x, fdf(xi) == fdf(x0).
 %
@@ -131,7 +131,7 @@ while idx < p.Results.MaxPts
 
         ref_dx = x1_status.dx;
         if x1_status.error > p.Results.eps
-            [x2, x2_status] = ode.find_solution_fdf(fdf, x1, y0, 'eps', p.Results.eps);
+            [x2, x2_status] = ode.find_solution(fdf, x1, y0, 'eps', p.Results.eps);
             x2_flag = x2_status.finish;
             fun_eval_cnt = fun_eval_cnt + x2_status.fun_eval_cnt;
         else

@@ -4,13 +4,11 @@ crystal = opt.make_prism_crystal(1);
 % trace.fid = [1; 3; 2; 4; 5; 1];
 trace.fid = [3; 5];
 
-axis_pdf = geo.make_axis_pdf([0, 0, 0], []);
+axis_pdf = geo.make_axis_pdf([1, 90, 0.2], []);
 
 %%
-sun_altitude = 10;
-sun_longitude = 180;
-sun_ll = [sun_longitude, sun_altitude];
-ray_in_ll = [sun_longitude + 180, -sun_altitude];
+sun_ll = [180, 10];
+ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 ray_in_xyz = geo.ll2xyz(ray_in_ll);
 
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
@@ -28,7 +26,7 @@ halo_img = generate_halo_image([0, 10], [0, 30], 0.5);
 fun_eval_cnt = 0;
 checked_pix = 0;
 progress_cnt = 0;
-progress_bin = 0.001;
+progress_bin = 0.005;
 update_progress = false;
 for w = 1:halo_img.x_length
     for h = 1:halo_img.y_length
@@ -70,7 +68,7 @@ for w = 1:halo_img.x_length
         k = 1;
         while ~isempty(seed_rot)
             % Find contour
-            [rot_contour, contour_status] = ode.find_contour_fdf(fdf, seed_rot(1, :), 'h', contour_h);
+            [rot_contour, contour_status] = ode.find_contour(fdf, seed_rot(1, :), 'h', contour_h);
             seed_rot = seed_rot(2:end, :);
             fun_eval_cnt = fun_eval_cnt + contour_status.fun_eval_cnt;
             if isempty(rot_contour)
@@ -120,12 +118,7 @@ end
 toc;
 
 %%
-% figure(1); clf;
-% imagesc(halo_img_x, halo_img_y, halo_vis_fun(halo_img));
-% axis equal; axis tight; axis xy;
+figure(1); clf;
+vis_range = [5e-4, 1];
+show_halo_img(halo_img, vis_range);
 
-%%
-% figure(3);
-% imagesc([halo_img_x, -wrev(halo_img_x(1:end-1))], halo_img_y, ...
-%     halo_vis_fun([halo_img, fliplr(halo_img(:, 1:end-1))]));
-% axis xy; axis equal; axis tight;

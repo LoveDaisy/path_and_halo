@@ -1,10 +1,10 @@
-function test_find_contour_fdf()
-% Test function find_contour_fdf
+function test_find_contour()
+% Test function find_contour
 
 test_cases = {@suite1, @suite2, @suite3 @suite4};
 num = length(test_cases);
 
-fprintf('Start testing for find_contour_fdf...\n');
+fprintf('Start testing for find_contour...\n');
 for i = 1:num
     fprintf('Testing suite %d/%d...\n', i, num);
     test_cases{i}();
@@ -16,7 +16,7 @@ end
 function suite1()
 x0 = [0.5, 0.5];
 y0 = fdf1(x0);
-[x, status] = ode.find_contour_fdf(@fdf1, x0);
+[x, status] = ode.find_contour(@fdf1, x0);
 
 assert(status.closed);
 assert(status.completed);
@@ -28,7 +28,7 @@ function suite2()
 fprintf(' case 1 ... ');
 x0 = [0.6, -1];
 y0 = fdf2(x0);
-[x, status] = ode.find_contour_fdf(@fdf2, x0);
+[x, status] = ode.find_contour(@fdf2, x0);
 
 assert(~status.closed);
 assert(status.completed);
@@ -40,7 +40,7 @@ fprintf('passed!\n');
 fprintf(' case 2 ... ');
 x0 = [0.5, 0];
 y0 = fdf2(x0);
-[x, status] = ode.find_contour_fdf(@fdf2, x0);
+[x, status] = ode.find_contour(@fdf2, x0);
 
 assert(~status.closed);
 assert(status.completed);
@@ -74,8 +74,8 @@ ray_out_xyz = geo.ll2xyz(ray_out_ll);
 
 init_angle_diff = acosd(config.out_xyz * ray_out_xyz');
 [~, idx] = min(init_angle_diff);
-init_llr = ode.find_solution_fdf(fdf, config.axis_llr_store(idx, :), ray_out_ll);
-[rot_llr, status] = ode.find_contour_fdf(fdf, init_llr, 'eps', 1e-4, 'h', 0.5);
+init_llr = ode.find_solution(fdf, config.axis_llr_store(idx, :), ray_out_ll);
+[rot_llr, status] = ode.find_contour(fdf, init_llr, 'eps', 1e-4, 'h', 0.5);
 assert(status.closed);
 for i = 1:size(rot_llr, 1)
     assert(norm(fdf(rot_llr(i, :)) - ray_out_ll) < 1e-4);
@@ -90,8 +90,8 @@ ray_out_xyz = geo.ll2xyz(ray_out_ll);
 
 init_angle_diff = acosd(config.out_xyz * ray_out_xyz');
 [~, idx] = min(init_angle_diff);
-init_quat = ode.find_solution_fdf(fdf, config.axis_quat_store(idx, :), [ray_out_ll, 1]);
-[rot_quat, status] = ode.find_contour_fdf(fdf, init_quat, 'eps', 1e-4, 'h', 0.01);
+init_quat = ode.find_solution(fdf, config.axis_quat_store(idx, :), [ray_out_ll, 1]);
+[rot_quat, status] = ode.find_contour(fdf, init_quat, 'eps', 1e-4, 'h', 0.01);
 assert(status.closed);
 for i = 1:size(rot_quat, 1)
     assert(norm(fdf(rot_quat(i, :)) - [ray_out_ll, 1]) < 1e-4);
@@ -119,7 +119,7 @@ fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 fprintf(' case 1 ... ');
 ray_out_ll = [-5, 13.8];
 [seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
-[rot_contour, status] = ode.find_contour_fdf(fdf, seed_quat(1, :), 'h', 0.05);
+[rot_contour, status] = ode.find_contour(fdf, seed_quat(1, :), 'h', 0.05);
 assert(status.closed);
 assert(size(rot_contour, 1) > 10);
 for i = 1:size(rot_contour, 1)
@@ -130,7 +130,7 @@ fprintf('pass!\n');
 fprintf(' case 2 ... ');
 ray_out_ll = [0, 15.5];
 [seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
-[rot_contour, status] = ode.find_contour_fdf(fdf, seed_quat(1, :), 'h', 0.05);
+[rot_contour, status] = ode.find_contour(fdf, seed_quat(1, :), 'h', 0.05);
 assert(status.closed);
 assert(size(rot_contour, 1) > 10);
 for i = 1:size(rot_contour, 1)

@@ -1,4 +1,4 @@
-function [x, status] = find_solution_fdf(fun, x0, yq, varargin)
+function [x, status] = find_solution(fun, x0, yq, varargin)
 % Find the exact solution for a fdf function.
 % An fdf function is a function that gives both value and gradient (Jacobian)
 %

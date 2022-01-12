@@ -39,7 +39,7 @@ contour_h = 0.05;
 reduce_eps = 0.03;
 
 % Find contour
-[rot_contour, ~] = ode.find_contour_fdf(fdf, seed_rot(1, :), 'h', contour_h);
+[rot_contour, ~] = ode.find_contour(fdf, seed_rot(1, :), 'h', contour_h);
 
 % Reduce seed points
 [seed_rot, ~] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
@@ -85,7 +85,7 @@ reduce_eps = 0.03;
 
 fprintf(' case 1 ... ');
 rot0 = [-0.516278096307973, 0.170107948397147, -0.254138559784028, -0.799958627442999];
-[rot_contour, ~] = ode.find_contour_fdf(fdf, rot0, 'h', contour_h);
+[rot_contour, ~] = ode.find_contour(fdf, rot0, 'h', contour_h);
 [seed_rot, ~] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
 if debug
     space_idx = [2, 3, 4];
@@ -101,7 +101,7 @@ fprintf('passed!\n');
 
 fprintf(' case 2 ... ');
 rot0 = [0.588369809379402, -0.347408255513868, 0.683166656311173, -0.257704852721616];
-[rot_contour, ~] = ode.find_contour_fdf(fdf, rot0, 'h', contour_h);
+[rot_contour, ~] = ode.find_contour(fdf, rot0, 'h', contour_h);
 [seed_rot, ~] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
 if debug
     space_idx = [2, 3, 4];

@@ -33,7 +33,7 @@ fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 [seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
 
 % Find contour
-[rot_contour, contour_status] = ode.find_contour_fdf(fdf, seed_quat(1, :), 'h', 0.05);
+[rot_contour, contour_status] = ode.find_contour(fdf, seed_quat(1, :), 'h', 0.05);
 assert(contour_status.closed && contour_status.completed);
 
 rot_llr = geo.quat2llr(rot_contour);

@@ -18,7 +18,7 @@ if strcmpi(type, 'llr')
     seed_rot = nan(size(cand_llr));
     idx = 0;
     for i = 1:cand_cnt
-        [tmp_llr, tmp_status] = ode.find_solution_fdf(fdf, cand_llr(i, :), target_ll, 'eps', out_eps);
+        [tmp_llr, tmp_status] = ode.find_solution(fdf, cand_llr(i, :), target_ll, 'eps', out_eps);
         fun_eval_cnt = fun_eval_cnt + tmp_status.fun_eval_cnt;
         tmp_seed_diff = sqrt(sum(bsxfun(@minus, seed_rot, tmp_llr).^2, 2));
         if tmp_status.finish && (min(tmp_seed_diff) > in_eps || all(isnan(tmp_seed_diff)))
@@ -33,7 +33,7 @@ elseif strcmpi(type, 'quat')
     seed_rot = nan(size(cand_quat));
     idx = 0;
     for i = 1:cand_cnt
-        [tmp_quat, tmp_status] = ode.find_solution_fdf(fdf, cand_quat(i, :), [target_ll, 1], 'eps', out_eps);
+        [tmp_quat, tmp_status] = ode.find_solution(fdf, cand_quat(i, :), [target_ll, 1], 'eps', out_eps);
         fun_eval_cnt = fun_eval_cnt + tmp_status.fun_eval_cnt;
         tmp_seed_diff = sqrt(sum(bsxfun(@minus, seed_rot, tmp_quat).^2, 2));
         if tmp_status.finish && (min(tmp_seed_diff) > in_eps || all(isnan(tmp_seed_diff)))
