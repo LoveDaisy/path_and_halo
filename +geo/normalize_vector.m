@@ -16,8 +16,11 @@ g_vec = nan(d, d, num);
 for i = 1:num
     tmp_g = -vec(i, :)' * vec(i, :);
     tmp_g = tmp_g * rcp_vec_norm(i)^3;
-    tmp_g = tmp_g + diag(rcp_vec_norm(i) * ones(1, d));
+    for j = 1:d
+        tmp_g(j, j) = tmp_g(j, j) + rcp_vec_norm(i);
+    end
     g_vec(:, :, i) = tmp_g;
+    
     vec(i, :) = vec(i, :) * rcp_vec_norm(i);
 end
 end

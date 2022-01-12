@@ -1,4 +1,4 @@
-function [pts, s] = interp_curve(pts0, ds)
+function [pts, s, s0] = interp_curve(pts0, ds)
 % Interpolate a curve with gievn interval ds
 %
 % INPUT
@@ -8,9 +8,11 @@ function [pts, s] = interp_curve(pts0, ds)
 % OUTPUT
 %   pts:        m*d, interpolated curve points
 %   s:          m*1, length parameter for every interpolated point
+%   s0:         n*1, length parameter for input points
 
 len = sqrt(sum((pts0(1:end - 1, :) - pts0(2:end, :)).^2, 2));
 s0 = cumsum([0; len]);
+closed = norm(pts0(1, :) - pts0(end, :)) < 1e-16;
 
 len_diff = inf;
 while len_diff > 0.1 * ds
@@ -24,6 +26,9 @@ while len_diff > 0.1 * ds
     len_diff = abs(tmp_s(end) - s(end));
     
     s0 = tmp_s(tmp_idx);
+    if closed
+        s0(end) = tmp_s(end);
+    end
 end
 s = tmp_s;
 end
