@@ -9,18 +9,22 @@ ray_n = size(ray_in, 1);
 ray_out = nan(ray_n, 3);
 g = nan(3, 3, ray_n);
 valid_ind = sum(abs(ray_in), 2) > 1e-4;
+valid_cnt = sum(valid_ind);
 
-if all(~valid_ind)
+if valid_cnt <= 0
     return;
 end
 
 [ray_in, g_norm] = geo.normalize_vector(ray_in);
 
 r = ray_in(valid_ind, :) - 2 * (ray_in(valid_ind, :) * face_normal') * face_normal;
-g_r = (eye(3) - 2 * (face_normal' * face_normal)) * g_norm;
+g_r = nan(3, 3, valid_cnt);
+for i = 1:valid_cnt
+    g_r(:, :, i) = (eye(3) - 2 * (face_normal' * face_normal)) * g_norm(:, :, i);
+end
 
 [r, g_norm_r] = geo.normalize_vector(r);
-for i = 1:sum(valid_ind)
+for i = 1:valid_cnt
     g_r(:, :, i) = g_norm_r(:, :, i) * g_r(:, :, i);
 end
 
