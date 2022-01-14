@@ -48,9 +48,9 @@ if debug
     space_idx = [2, 3, 4];
     figure(1); clf;
     hold on;
-    plot_rot_space(seed_quat, space_idx, 'o');
-    plot_rot_space(seed_rot, space_idx, 's');
-    plot_rot_space(rot_contour, space_idx, '-o');
+    plot_data_3d(seed_quat, space_idx, 'o');
+    plot_data_3d(seed_rot, space_idx, 's');
+    plot_data_3d(rot_contour, space_idx, '-o');
     plot_rot_tan_space(fdf, rot_contour, space_idx, 'm');
     axis equal;
 end
@@ -76,7 +76,6 @@ end
 
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
-% Start
 [seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
 
 seed_rot = seed_quat;
@@ -84,44 +83,36 @@ contour_h = 0.05;
 reduce_eps = 0.03;
 
 fprintf(' case 1 ... ');
-rot0 = [-0.516278096307973, 0.170107948397147, -0.254138559784028, -0.799958627442999];
+rot0 = [-0.625137188553982,-0.0773308939540198,0.607468716849977,0.483947503748253];
 [rot_contour, ~] = ode.find_contour(fdf, rot0, 'h', contour_h);
 [seed_rot, ~] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
 if debug
     space_idx = [2, 3, 4];
     figure(1); clf;
     hold on;
-    plot_rot_space(seed_quat, space_idx, 'o');
-    plot_rot_space(seed_rot, space_idx, 's');
-    plot_rot_space(rot_contour, space_idx, '-o');
+    plot_data_3d(seed_quat, space_idx, 'o');
+    plot_data_3d(seed_rot, space_idx, 's');
+    plot_data_3d(rot_contour, space_idx, '-o');
     plot_rot_tan_space(fdf, rot_contour, space_idx, 'm');
     axis equal;
 end
 fprintf('passed!\n');
 
 fprintf(' case 2 ... ');
-rot0 = [0.588369809379402, -0.347408255513868, 0.683166656311173, -0.257704852721616];
+rot0 = [-0.203879731194181,-0.489429488302747,0.847848784604723,0.00665354525130694];
 [rot_contour, ~] = ode.find_contour(fdf, rot0, 'h', contour_h);
 [seed_rot, ~] = geo.reduce_pts_polyline(rot_contour, seed_rot, 'eps', reduce_eps);
 if debug
     space_idx = [2, 3, 4];
     figure(2); clf;
     hold on;
-    plot_rot_space(seed_quat, space_idx, 'o');
-    plot_rot_space(seed_rot, space_idx, 's');
-    plot_rot_space(rot_contour, space_idx, '-o');
+    plot_data_3d(seed_quat, space_idx, 'o');
+    plot_data_3d(seed_rot, space_idx, 's');
+    plot_data_3d(rot_contour, space_idx, '-o');
     plot_rot_tan_space(fdf, rot_contour, space_idx, 'm');
     axis equal;
 end
 fprintf('passed!\n');
-end
-
-% ================================================================================
-function plot_rot_space(rot, space_idx, varargin)
-if isempty(space_idx)
-    space_idx = [1, 2, 3];
-end
-plot3(rot(:, space_idx(1)), rot(:, space_idx(2)), rot(:, space_idx(3)), varargin{:});
 end
 
 % ================================================================================
