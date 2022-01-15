@@ -19,14 +19,29 @@ dim = size(rot_contour, 2);
 
 cmp0 = compute_weight_components(rot_contour, axis_pdf, config);
 
+% Calculate length of polyline as initial value
+len = sum(sqrt(sum(diff(rot_contour).^2, 2)));
+
+% Interpolate rotations
+[rot_interp, s_interp, s0, interp_idx] = geo.interp_curve(rot_contour, len * 0.005);
+interp_num = size(rot_interp, 1);
+
+% Convert to LLR space
 if dim == 4
-    rot_contour = geo.quat2llr(rot_contour);
+    rot_interp = geo.quat2llr(rot_interp);
+    diff_s = sqrt(sum(diff(rot_interp).^2, 2));
+    s_interp = [0; cumsum(diff_s)];
+    discontinuity_idx = find(diff_s > 30);
+    discontinuity_idx = [0; discontinuity_idx; interp_num];
+    for i = 2:length(discontinuity_idx)-1
+        idx1 = discontinuity_idx(i)+1;
+        idx2 = discontinuity_idx(i+1);
+        s_interp(idx1:idx2) = s_interp(idx1:idx2) - diff_s(idx1 - 1) + diff_s(idx1 - 2);
+    end
+    s0 = s_interp(interp_idx);
 elseif dim ~= 3
     error('Input rotation must have dimesion of 3 or 4!');
 end
-ds = 0.2;
-[rot_interp, s_interp, s0] = geo.interp_curve(rot_contour, ds);
-interp_num = length(s_interp);
 
 % Interpolate components as initial value
 cmp_interp = nan(length(s_interp), 6);
