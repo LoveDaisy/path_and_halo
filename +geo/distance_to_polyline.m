@@ -1,4 +1,4 @@
-function [d, v, it, p] = distance_to_polyline(line_pts, p0)
+function [d, v, itp] = distance_to_polyline(line_pts, p0)
 % Find the distance between given point(s) to a polyline
 %
 % INPUT
@@ -6,10 +6,10 @@ function [d, v, it, p] = distance_to_polyline(line_pts, p0)
 %   p0:             m*d, the query points
 %
 % OUTPUT
-%   d:              m*1, distance
+%   d:              m*1, distance.
 %   v:              m*d, vector from query point to the nerest point on polyline
-%   it:             m*2, line segment index and normalized length parameter t
-%   v:              m*d, projected point on lines
+%   itp:            m*(2+d), line segment index (i), normalized length parameter t, and projected (nearest)
+%                   point on line (p).
 
 n = size(line_pts, 1);
 m = size(p0, 1);
@@ -35,14 +35,12 @@ p.parse(line_pts, p0);
 
 d = nan(m, 1);
 v = nan(m, dim);
-it = nan(m, 2);
-p = nan(m, dim);
+itp = nan(m, 2 + dim);
 for i = 1:m
     [tmp_dist, tmp_vn, tmp_t, tmp_p0] = p2line_dist(p0(i, :), line_pts(1:end - 1, :), line_pts(2:end, :));
     [d(i), tmp_idx] = min(tmp_dist);
     v(i, :) = tmp_vn(tmp_idx, :);
-    it(i, :) = [tmp_idx, tmp_t(tmp_idx)];
-    p(i, :) = tmp_p0(tmp_idx, :);
+    itp(i, :) = [tmp_idx, tmp_t(tmp_idx), tmp_p0(tmp_idx, :)];
 end
 end
 
@@ -66,4 +64,5 @@ t = min(max(sum(v1 .* v2, 2) ./ sum(v2.^2, 2), 0), 1);
 p0 = bsxfun(@times, t, v2);
 v = bsxfun(@minus, p0, v1);
 d = sqrt(sum(v.^2, 2));
+p0 = bsxfun(@plus, p0, xy1);
 end

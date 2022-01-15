@@ -34,7 +34,7 @@ if p.Results.IntStep > 0 && size(x, 1) > 2
 else
     polyline = x(1:end - 1, :);
 end
-[d, ~, ~] = geo.distance_to_polyline(polyline, x(end, :));
+d = geo.distance_to_polyline(polyline, x(end, :));
 last_x = [];
 while d < p.Results.eps
     last_x = x(end, :);
@@ -44,7 +44,7 @@ while d < p.Results.eps
     else
         polyline = x(1:end - 1, :);
     end
-    [d, ~, ~] = geo.distance_to_polyline(polyline, x(end, :));
+    d = geo.distance_to_polyline(polyline, x(end, :));
 end
 
 num = size(x, 1);

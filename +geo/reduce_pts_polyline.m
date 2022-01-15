@@ -37,12 +37,12 @@ else
     pts0 = pts;
 end
 
-[d, v, ~, p0] = geo.distance_to_polyline(polyline, pts0);
+[d, v, itp] = geo.distance_to_polyline(polyline, pts0);
 if ~isempty(p.Results.jac_fun)
-    jac = p.Results.jac_fun(p0);
-    status.fun_eval_cnt = status.fun_eval_cnt + 1;
+    [~, jac] = p.Results.jac_fun(itp(:, 3:end));
+    status.fun_eval_cnt = status.fun_eval_cnt + num;
     for i = 1:num
-        d(i) = norm(jac * v(i, :)');
+        d(i) = norm(jac(:, :, i) * v(i, :)');
     end
 end
 
