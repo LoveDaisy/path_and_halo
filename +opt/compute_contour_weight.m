@@ -19,43 +19,38 @@ dim = size(rot_contour, 2);
 
 cmp0 = compute_weight_components(rot_contour, axis_pdf, config);
 
-ds = 0.1;
 if dim == 4
     rot_contour = geo.quat2llr(rot_contour);
 elseif dim ~= 3
     error('Input rotation must have dimesion of 3 or 4!');
 end
+ds = 0.2;
 [rot_interp, s_interp, s0] = geo.interp_curve(rot_contour, ds);
-axis_prob = axis_pdf(rot_interp);
-
-% Find out those with large probability
-interest_idx = axis_prob >= 1e-18;
-prob_idx1 = find(diff(double(interest_idx)) > 0);
-prob_idx2 = find(diff(double(interest_idx)) < 0) + 1;
-if interest_idx(1)
-    prob_idx1 = [1; prob_idx1];
-end
-if interest_idx(end)
-    prob_idx2 = [prob_idx2; length(axis_prob)];
-end
+interp_num = length(s_interp);
 
 % Interpolate components as initial value
 cmp_interp = nan(length(s_interp), 6);
 cmp_interp(:, 1) = s_interp;
-cmp_interp(:, 3) = axis_prob;
+cmp_interp(:, 3) = axis_pdf(rot_interp);
 cmp_interp(:, 4) = exp(interp1(s0, log(cmp0(:, 2)), s_interp, 'linear', 'extrap'));
 cmp_interp(:, 5) = interp1(s0, cmp0(:, 3), s_interp, 'linear', 'extrap');
 cmp_interp(:, 6) = exp(interp1(s0, log(cmp0(:, 4)), s_interp, 'linear', 'extrap'));
 
-% Compute components only on interested segments
-for i = 1:length(prob_idx1)
-    i1 = prob_idx1(i);
-    i2 = prob_idx2(i);
-    if i2 - i1 > 30
-        % To save computation, skip those too long segments
-        continue;
-    end
+% Find out those with large probability && small geometry factor && small transit_factor
+interest_idx = cmp_interp(:, 3) >= 1e-12 & (cmp_interp(:, 5) <= 1e-2 | cmp_interp(:, 6) <= 1e-2);
+idx1 = find(diff(double(interest_idx)) > 0);
+idx2 = find(diff(double(interest_idx)) < 0) + 1;
+if interest_idx(1)
+    idx1 = [1; idx1];
+end
+if interest_idx(end)
+    idx2 = [idx2; interp_num];
+end
 
+% Compute components only on interested segments
+for i = 1:length(idx1)
+    i1 = idx1(i);
+    i2 = idx2(i);
     cmp_interp(i1:i2, 3:6) = compute_weight_components(rot_interp(i1:i2, :), axis_pdf, config);
 end
 cmp_interp(:, 2) = cmp_interp(:, 3) .* cmp_interp(:, 4) .* cmp_interp(:, 5) .* cmp_interp(:, 6);
