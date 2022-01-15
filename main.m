@@ -1,13 +1,13 @@
 clear; close all; clc;
 
 crystal = opt.make_prism_crystal(1);
-% trace.fid = [1; 3; 2; 4; 5; 1];
-trace.fid = [3; 5];
+trace.fid = [1; 3; 2; 4; 5; 1];
+% trace.fid = [3; 5];
 
 axis_pdf = geo.make_axis_pdf([1, 90, 0.2], []);
 % axis_pdf = geo.make_axis_pdf([0, 0, 0], []);
 
-sun_ll = [180, 10];
+sun_ll = [0, 10];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 ray_in_xyz = geo.ll2xyz(ray_in_ll);
 
@@ -21,7 +21,7 @@ close all;
 use_rot_quat = true;
 
 tic;
-halo_img = generate_halo_image([0, 10], [-60, -20], 0.5);
+halo_img = generate_halo_image([0, 4], [-20, 20], 0.2);
 
 fun_eval_cnt = 0;
 checked_pix = 0;
@@ -30,8 +30,8 @@ progress_bin = 0.001;
 update_progress = false;
 for w = 1:halo_img.x_length
     for h = 1:halo_img.y_length
-% for w = 16
-%     for h = 17
+% for w = 1
+%     for h = 7
         ray_out_ll = [halo_img.img_x(w), halo_img.img_y(h)];
 
         checked_pix = checked_pix + 1;
