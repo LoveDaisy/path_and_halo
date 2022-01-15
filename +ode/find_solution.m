@@ -19,7 +19,7 @@ function [x, status] = find_solution(fun, x0, yq, varargin)
 
 p = inputParser;
 p.addParameter('eps', 1e-8, @(x) validateattributes(x, {'double'}, {'scalar', 'positive'}));
-p.addParameter('MaxEval', 10, @(x) validateattributes(x, {'double'}, {'scalar', 'integer', 'positive'}));
+p.addParameter('MaxEval', 30, @(x) validateattributes(x, {'double'}, {'scalar', 'integer', 'positive'}));
 p.parse(varargin{:});
 
 [y0, jac] = fun(x0);
@@ -30,27 +30,36 @@ fun_eval_cnt = 1;
 while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval
     % Find deepest gradient
     dx = jac \ dy';
+    jn = null(jac);
+    dx = dx - dot(dx, jn(:, 1)) * jn;
 
     % Linear search
     h = 1;
-    x = x0 + dx' * h;
+    x = x0 + (dx .* h)';
     [y, jac1] = fun(x);
     fun_eval_cnt = fun_eval_cnt + 1;
 
-    convexity = eps_sign((y - y0)' - h * jac * dx, 1e-4);
+    convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
     k_direction = eps_sign(jac * dx, 1e-4);
 
     a = 4.^(convexity .* k_direction);
     b = 0.6;
+    indicating_flag = (convexity .* (abs(k_direction) > 0.5));
+    linearity = (y - y0)' - a .* (jac * (dx .* h));
+    h_shrink_idx = eps_sign(linearity .* indicating_flag, 1e-4) > 0.5;
     while norm(yq - y) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && ...
-            h > 0.01 && any(eps_sign((y - y0)' .* convexity - (h * a .* convexity) .* (jac * dx), 1e-4) > 0.5)
+            min(h) > 0.01 && any(h_shrink_idx)
         h = h * b;
-        x = x0 + dx' * h;
+        x = x0 + (dx .* h)';
         [y, jac1] = fun(x);
         fun_eval_cnt = fun_eval_cnt + 1;
 
-        convexity = ((y - y0)' > h * jac * dx) * 2 - 1;
+        convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
+        k_direction = eps_sign(jac * dx, 1e-4);
         a = 4.^(convexity .* k_direction);
+        indicating_flag = (convexity .* (abs(k_direction) > 0.5));
+        linearity = (y - y0)' - a .* (jac * (dx .* h));
+        h_shrink_idx = eps_sign(linearity .* indicating_flag, 1e-4) > 0.5;
     end
 
     x0 = x;

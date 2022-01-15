@@ -42,7 +42,7 @@ w0 = 0.00569990578729381;
 axis_pdf = generate_axis_pdf([0, 0, 0]);
 [w, cmp] = opt.compute_contour_weight(rot_llr, axis_pdf, config);
 
-assert(abs(w - w0) < 1e-8);
+assert(abs(w - w0) < 3e-5);
 end
 
 % ================================================================================
