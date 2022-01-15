@@ -40,7 +40,11 @@ status.fun_eval_cnt = status_f.fun_eval_cnt + status_b.fun_eval_cnt;
 if size(x_b, 1) < 2
     x = x_f;
 else
-    x = [flipud(x_b(2:end, :)); x_f];
+    if status_b.closed
+        x = [flipud(x_b(2:end-1, :)); x_f];
+    else
+        x = [flipud(x_b(2:end, :)); x_f];
+    end
 end
 if size(x, 1) < 2
     status.closed = false;
