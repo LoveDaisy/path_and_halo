@@ -23,11 +23,13 @@ p.addParameter('MaxEval', 30, @(x) validateattributes(x, {'double'}, {'scalar', 
 p.parse(varargin{:});
 
 [y0, jac] = fun(x0);
+h_min = 0.01;
 
 dy = yq - y0;
 x = x0;
 fun_eval_cnt = 1;
-while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval
+h = 1;
+while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     % Find deepest gradient
     dx = jac \ dy';
     jn = null(jac);
@@ -48,7 +50,7 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval
     linearity = (y - y0)' - a .* (jac * (dx .* h));
     h_shrink_idx = eps_sign(linearity .* indicating_flag, 1e-4) > 0.5;
     while norm(yq - y) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && ...
-            min(h) > 0.01 && any(h_shrink_idx)
+            h > h_min && any(h_shrink_idx)
         h = h * b;
         x = x0 + (dx .* h)';
         [y, jac1] = fun(x);

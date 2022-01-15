@@ -32,6 +32,10 @@ qm = quatmultiply(q1, q2);
 q = quatmultiply(qm, q3);
 [q, jac_norm] = geo.normalize_vector(q);
 
+neg_idx = q(:, 1) < 0;
+q(neg_idx, :) = -q(neg_idx, :);
+jac_norm(:, :, neg_idx) = -jac_norm(:, :, neg_idx);
+
 num = size(llr, 1);
 jac = nan(4, 3, num);
 for i = 1:num

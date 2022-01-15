@@ -46,6 +46,18 @@ if ~isempty(p.Results.jac_fun)
     end
 end
 
+if dim1 == 4
+    [d2, v2, itp2] = geo.distance_to_polyline(-polyline, pts0);
+    if ~isempty(p.Results.jac_fun)
+        [~, jac] = p.Results.jac_fun(itp2(:, 3:end));
+        status.fun_eval_cnt = status.fun_eval_cnt + num;
+        for i = 1:num
+            d2(i) = norm(jac(:, :, i) * v2(i, :)');
+        end
+    end
+    d = min(d, d2);
+end
+
 dup_idx = d < p.Results.eps;
 pts = pts(~dup_idx, :);
 end

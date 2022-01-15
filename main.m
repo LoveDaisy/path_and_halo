@@ -76,15 +76,17 @@ for w = 1:halo_img.x_length
             [init_rot, sol_status] = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
             fun_eval_cnt = fun_eval_cnt + sol_status.fun_eval_cnt;
             cand_rot = cand_rot(2:end, :);
-            if ~sol_status.finish
+            if ~sol_status.finish || (use_rot_quat && init_rot(1) < 0)
                 continue;
             end
             
             % Check if it locates on previous contour
             duplicated = false;
             for i = 1:k-1
-                tmp_d = geo.distance_to_polyline(rot_contour_store{i}, init_rot);
-                if tmp_d < reduce_eps
+                [init_rot, dup_status] = geo.reduce_pts_polyline(rot_contour_store{i}, init_rot, ...
+                    'eps', reduce_eps);
+                fun_eval_cnt = fun_eval_cnt + dup_status.fun_eval_cnt;
+                if isempty(init_rot)
                     duplicated = true;
                     break;
                 end
