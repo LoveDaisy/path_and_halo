@@ -51,13 +51,6 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     val_nan = any(isnan(y));
     convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
     k_direction = eps_sign(jac * dx, 5e-2);
-    
-    linearness = (jac * (dx .* h)) ./ (y - y0)';
-    linearness = linearness(abs(linearness) > 1e-6);
-    if ~isempty(linearness) && (any(eps_sign(linearness, 0.3) < -0.5) || ...
-            (all(linearness > 0) && max(abs(log10(linearness))) > 0.5))
-        break;
-    end
 
     a = 5.^(convexity .* k_direction);
     b = 0.6;
@@ -80,12 +73,6 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     end
 
     if val_nan && h < 0.3
-        break;
-    end
-    linearness = (jac * (dx .* h)) ./ (y - y0)';
-    linearness = linearness(abs(linearness) > 1e-6);
-    if ~isempty(linearness) && (any(eps_sign(linearness, 0.3) < -0.5) || ...
-            (all(linearness > 0) && max(abs(log10(linearness))) > 0.5))
         break;
     end
 

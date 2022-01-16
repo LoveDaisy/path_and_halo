@@ -33,31 +33,41 @@ dim1 = size(pts, 2);
 if dim1 == 3
     pts0 = geo.normalize_llr(pts);
     polyline = geo.normalize_llr(polyline);
+    d_th = 1;
 else
     pts0 = pts;
+    d_th = 0.2;
 end
 
-[d, v, itp] = geo.distance_to_polyline(polyline, pts0);
+[d_in, v, itp] = geo.distance_to_polyline(polyline, pts0);
 if ~isempty(p.Results.jac_fun)
+    d_out = inf(size(d_in));
     [~, jac] = p.Results.jac_fun(itp(:, 3:end));
     status.fun_eval_cnt = status.fun_eval_cnt + num;
     for i = 1:num
-        d(i) = norm(jac(:, :, i) * v(i, :)');
+        d_out(i) = norm(jac(:, :, i) * v(i, :)');
     end
+    valid_idx = d_in < d_th;
+    d_in(valid_idx) = d_out(valid_idx);
+    d_in(~valid_idx) = inf;
 end
 
 if dim1 == 4
-    [d2, v2, itp2] = geo.distance_to_polyline(-polyline, pts0);
+    [d_in2, v2, itp2] = geo.distance_to_polyline(-polyline, pts0);
     if ~isempty(p.Results.jac_fun)
+        d_out2 = inf(size(d_in2));
         [~, jac] = p.Results.jac_fun(itp2(:, 3:end));
         status.fun_eval_cnt = status.fun_eval_cnt + num;
         for i = 1:num
-            d2(i) = norm(jac(:, :, i) * v2(i, :)');
+            d_out2(i) = norm(jac(:, :, i) * v2(i, :)');
         end
+        valid_idx = d_in2 < d_th;
+        d_in2(valid_idx) = d_out2(valid_idx);
+        d_in2(~valid_idx) = inf;
     end
-    d = min(d, d2);
+    d_in = min(d_in, d_in2);
 end
 
-dup_idx = d < p.Results.eps;
+dup_idx = d_in < p.Results.eps;
 pts = pts(~dup_idx, :);
 end
