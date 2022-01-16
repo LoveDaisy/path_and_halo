@@ -21,12 +21,12 @@ close all;
 use_rot_quat = true;
 
 tic;
-halo_img = generate_halo_image([0, 4], [-20, 20], 0.2);
+halo_img = generate_halo_image([0, 4], [-20, 20], 0.1);
 
 fun_eval_cnt = 0;
 checked_pix = 0;
 progress_cnt = 0;
-progress_bin = 0.001;
+progress_bin = 0.005;
 update_progress = false;
 for w = 1:halo_img.x_length
     for h = 1:halo_img.y_length
@@ -134,7 +134,7 @@ for w = 1:halo_img.x_length
             continue;
         end
 
-%         if update_progress
+        if update_progress
             figure(1); clf;
             f1_pos = get(gcf, 'position');
             show_halo_img(halo_img);
@@ -145,7 +145,7 @@ for w = 1:halo_img.x_length
             set(gcf, 'position', f1_pos + [f1_pos(3), 0, f1_pos(3), 0]);
             show_contour_info(llr_contour_store, interp_llr_store, cmp_store);
             drawnow;
-%         end
+        end
     end
 end
 toc;

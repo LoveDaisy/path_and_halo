@@ -19,7 +19,7 @@ function [x, status] = find_solution(fun, x0, yq, varargin)
 
 p = inputParser;
 p.addParameter('eps', 1e-8, @(x) validateattributes(x, {'double'}, {'scalar', 'positive'}));
-p.addParameter('MaxEval', 30, @(x) validateattributes(x, {'double'}, {'scalar', 'integer', 'positive'}));
+p.addParameter('MaxEval', 15, @(x) validateattributes(x, {'double'}, {'scalar', 'integer', 'positive'}));
 p.parse(varargin{:});
 
 [y0, jac] = fun(x0);
@@ -42,9 +42,9 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     fun_eval_cnt = fun_eval_cnt + 1;
 
     convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
-    k_direction = eps_sign(jac * dx, 1e-4);
+    k_direction = eps_sign(jac * dx, 1e-2);
 
-    a = 4.^(convexity .* k_direction);
+    a = 5.^(convexity .* k_direction);
     b = 0.6;
     indicating_flag = (convexity .* (abs(k_direction) > 0.5));
     linearity = (y - y0)' - a .* (jac * (dx .* h));
@@ -57,8 +57,8 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
         fun_eval_cnt = fun_eval_cnt + 1;
 
         convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
-        k_direction = eps_sign(jac * dx, 1e-4);
-        a = 4.^(convexity .* k_direction);
+        k_direction = eps_sign(jac * dx, 1e-2);
+        a = 5.^(convexity .* k_direction);
         indicating_flag = (convexity .* (abs(k_direction) > 0.5));
         linearity = (y - y0)' - a .* (jac * (dx .* h));
         h_shrink_idx = eps_sign(linearity .* indicating_flag, 1e-4) > 0.5;
