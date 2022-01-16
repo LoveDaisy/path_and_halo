@@ -38,9 +38,7 @@ fun_eval_cnt = 1;
 h = 1;
 while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     % Find deepest gradient
-    dx = jac \ dy';
-    jn = null(jac);
-    dx = dx - jn * jn' * dx;
+    dx = jac' * ((jac * jac') \ dy');
 
     % Linear search
     h = 1;
@@ -49,27 +47,13 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     fun_eval_cnt = fun_eval_cnt + 1;
 
     val_nan = any(isnan(y));
-    convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
-    k_direction = eps_sign(jac * dx, 5e-2);
-
-    a = 5.^(convexity .* k_direction);
     b = 0.6;
-    indicating_flag = (convexity .* (abs(k_direction) > 0.5));
-    linearity = (y - y0)' - a .* (jac * (dx .* h));
-    h_shrink_idx = eps_sign(linearity .* indicating_flag, 1e-4) > 0.5;
     while any(isnan(y)) || (norm(yq - y) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && ...
-            h > h_min && any(h_shrink_idx))
+            h > h_min && norm(y - yq) > norm(dy))
         h = h * b;
         x = x0 + (dx .* h)';
         [y, jac1] = fun(x);
         fun_eval_cnt = fun_eval_cnt + 1;
-
-        convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
-        k_direction = eps_sign(jac * dx, 5e-2);
-        a = 5.^(convexity .* k_direction);
-        indicating_flag = (convexity .* (abs(k_direction) > 0.5));
-        linearity = (y - y0)' - a .* (jac * (dx .* h));
-        h_shrink_idx = eps_sign(linearity .* indicating_flag, 1e-4) > 0.5;
     end
 
     if val_nan && h < 0.3
@@ -77,7 +61,6 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     end
 
     x0 = x;
-    y0 = y;
     dy = yq - y;
     jac = jac1;
 end
