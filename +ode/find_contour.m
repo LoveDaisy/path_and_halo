@@ -53,7 +53,7 @@ if size(x, 1) < 2
     return;
 end
 
-[status.closed, x] = geo.check_curve_loop(x, 'eps', p.Results.h * 0.05);
+[status.closed, x] = geo.check_curve_loop(x, 'eps', p.Results.h * 0.1);
 if ~status.closed
     status.completed = status_f.completed && status_b.completed;
 else

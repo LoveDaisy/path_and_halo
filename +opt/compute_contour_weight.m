@@ -43,6 +43,11 @@ elseif dim ~= 3
     error('Input rotation must have dimesion of 3 or 4!');
 end
 
+if norm(rot_contour(1, :) - rot_contour(end, :)) < 1e-10
+    % For closed loop
+    s0(end) = s_interp(end);
+end
+
 % Interpolate components as initial value
 cmp_interp = nan(length(s_interp), 6);
 cmp_interp(:, 1) = s_interp;
