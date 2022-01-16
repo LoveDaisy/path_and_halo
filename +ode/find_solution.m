@@ -22,7 +22,14 @@ p.addParameter('eps', 1e-8, @(x) validateattributes(x, {'double'}, {'scalar', 'p
 p.addParameter('MaxEval', 15, @(x) validateattributes(x, {'double'}, {'scalar', 'integer', 'positive'}));
 p.parse(varargin{:});
 
+status.finish = false;
+status.fun_eval_cnt = 0;
+
 [y0, jac] = fun(x0);
+if any(isnan(y0))
+    x = x0;
+    return;
+end
 h_min = 0.01;
 
 dy = yq - y0;
@@ -33,7 +40,7 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     % Find deepest gradient
     dx = jac \ dy';
     jn = null(jac);
-    dx = dx - dot(dx, jn(:, 1)) * jn;
+    dx = dx - jn * jn' * dx;
 
     % Linear search
     h = 1;
@@ -41,27 +48,45 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     [y, jac1] = fun(x);
     fun_eval_cnt = fun_eval_cnt + 1;
 
+    val_nan = any(isnan(y));
     convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
-    k_direction = eps_sign(jac * dx, 1e-2);
+    k_direction = eps_sign(jac * dx, 5e-2);
+    
+    linearness = (jac * (dx .* h)) ./ (y - y0)';
+    linearness = linearness(abs(linearness) > 1e-6);
+    if ~isempty(linearness) && (any(eps_sign(linearness, 0.3) < -0.5) || ...
+            (all(linearness > 0) && max(abs(log10(linearness))) > 0.5))
+        break;
+    end
 
     a = 5.^(convexity .* k_direction);
     b = 0.6;
     indicating_flag = (convexity .* (abs(k_direction) > 0.5));
     linearity = (y - y0)' - a .* (jac * (dx .* h));
     h_shrink_idx = eps_sign(linearity .* indicating_flag, 1e-4) > 0.5;
-    while norm(yq - y) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && ...
-            h > h_min && any(h_shrink_idx)
+    while any(isnan(y)) || (norm(yq - y) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && ...
+            h > h_min && any(h_shrink_idx))
         h = h * b;
         x = x0 + (dx .* h)';
         [y, jac1] = fun(x);
         fun_eval_cnt = fun_eval_cnt + 1;
 
         convexity = eps_sign((y - y0)' - jac * (dx .* h), 1e-4);
-        k_direction = eps_sign(jac * dx, 1e-2);
+        k_direction = eps_sign(jac * dx, 5e-2);
         a = 5.^(convexity .* k_direction);
         indicating_flag = (convexity .* (abs(k_direction) > 0.5));
         linearity = (y - y0)' - a .* (jac * (dx .* h));
         h_shrink_idx = eps_sign(linearity .* indicating_flag, 1e-4) > 0.5;
+    end
+
+    if val_nan && h < 0.3
+        break;
+    end
+    linearness = (jac * (dx .* h)) ./ (y - y0)';
+    linearness = linearness(abs(linearness) > 1e-6);
+    if ~isempty(linearness) && (any(eps_sign(linearness, 0.3) < -0.5) || ...
+            (all(linearness > 0) && max(abs(log10(linearness))) > 0.5))
+        break;
     end
 
     x0 = x;

@@ -16,8 +16,12 @@ function [ray_out_ll, jac] = crystal_system(rot, ray_in_ll, crystal, trace)
 
 num = size(rot, 1);
 dim_rot = size(rot, 2);
-rot_norm = sqrt(sum(rot.^2, 2));
+if any(isnan(rot(:)))
+    ray_out_ll = nan(num, dim_rot - 1);
+    jac = nan(dim_rot - 1, dim_rot, num);
+end
 
+rot_norm = sqrt(sum(rot.^2, 2));
 xyz0 = geo.ll2xyz(ray_in_ll);
 if dim_rot == 3
     [rot_mat, jac_rot_mat] = geo.llr2mat(rot);
