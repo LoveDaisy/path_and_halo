@@ -15,17 +15,10 @@ if valid_cnt <= 0
     return;
 end
 
-[ray_in, g_norm] = geo.normalize_vector(ray_in);
-
 r = ray_in(valid_ind, :) - 2 * (ray_in(valid_ind, :) * face_normal') * face_normal;
 g_r = nan(3, 3, valid_cnt);
 for i = 1:valid_cnt
-    g_r(:, :, i) = (eye(3) - 2 * (face_normal' * face_normal)) * g_norm(:, :, i);
-end
-
-[r, g_norm_r] = geo.normalize_vector(r);
-for i = 1:valid_cnt
-    g_r(:, :, i) = g_norm_r(:, :, i) * g_r(:, :, i);
+    g_r(:, :, i) = (eye(3) - 2 * (face_normal' * face_normal));
 end
 
 ray_out(valid_ind, :) = r;

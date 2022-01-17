@@ -10,12 +10,12 @@ ray_out = nan(ray_n, 3);
 g = nan(3, 3, ray_n);
 valid_ind = sum(abs(ray_in), 2) > 1e-4;
 
-[ray_in, g_norm] = geo.normalize_vector(ray_in);
+% [ray_in, g_norm] = geo.normalize_vector(ray_in);
 
 cos_alpha = ray_in * face_normal';
 g_cos_alpha = nan(ray_n, 3);
 for i = 1:ray_n
-    g_cos_alpha(i, :) = g_norm(:, :, i) * face_normal';
+    g_cos_alpha(i, :) = face_normal';
 end
 
 delta = cos_alpha.^2 - 1 + (n1 / n0)^2;
@@ -44,7 +44,7 @@ end
 r = ray_in(valid_ind, :) - a * face_normal;
 g_r = nan(3, 3, length(valid_ind));
 for i = 1:length(valid_ind)
-    g_r(:, :, i) = g_norm(:, :, i) - face_normal' * g_a(i, :);
+    g_r(:, :, i) = eye(3) - face_normal' * g_a(i, :);
 end
 
 [r, g_norm_r] = geo.normalize_vector(r);
