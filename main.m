@@ -7,7 +7,7 @@ trace.fid = [1; 3; 2; 4; 5; 1];
 axis_pdf = geo.make_axis_pdf([1, 90, 0.2], []);
 % axis_pdf = geo.make_axis_pdf([0, 0, 0], []);
 
-sun_ll = [0, 10];
+sun_ll = [0, 15];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 ray_in_xyz = geo.ll2xyz(ray_in_ll);
 
@@ -21,7 +21,7 @@ close all;
 use_rot_quat = true;
 
 tic;
-halo_img = generate_halo_image([0, 4], [-20, 20], 0.1);
+halo_img = generate_halo_image([0, 5], [-25, 25], 0.5);
 
 fun_eval_cnt = 0;
 checked_pix = 0;
@@ -30,8 +30,8 @@ progress_bin = 0.005;
 update_progress = false;
 for w = 1:halo_img.x_length
     for h = 1:halo_img.y_length
-% for w = 1
-%     for h = 7
+% for w = 1:halo_img.x_length
+%     for h = 70
         ray_out_ll = [halo_img.img_x(w), halo_img.img_y(h)];
 
         checked_pix = checked_pix + 1;
@@ -60,10 +60,10 @@ for w = 1:halo_img.x_length
             continue;
         end
         
-        figure(5); clf;
-        plot_data_3d(cand_rot, [2,3,4], 'o');
-        hold on;
-        axis equal;
+%         figure(5); clf;
+%         plot_data_3d(cand_rot, [2,3,4], 'o');
+%         hold on;
+%         axis equal;
 
         weight = 0;
         cmp_store = {};
@@ -103,9 +103,9 @@ for w = 1:halo_img.x_length
                 continue;
             end
             
-            figure(5);
-            plot_data_3d(rot_contour, [2,3,4], '-x');
-            drawnow;
+%             figure(5);
+%             plot_data_3d(rot_contour, [2,3,4], '-x');
+%             drawnow;
 
             rot_contour_store{k} = rot_contour;
             if use_rot_quat
@@ -139,6 +139,7 @@ for w = 1:halo_img.x_length
             f1_pos = get(gcf, 'position');
             show_halo_img(halo_img);
             title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
+            axis ij;
             drawnow;
 
             figure(2); clf;
@@ -153,4 +154,5 @@ toc;
 %%
 figure(1); clf;
 show_halo_img(halo_img);
+axis ij;
 
