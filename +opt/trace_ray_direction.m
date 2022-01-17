@@ -15,21 +15,27 @@ refract_n = opt.generate_trace_n(crystal, trace);
 face_cnt = size(face_norm, 1);
 ray_cnt = size(ray_in, 1);
 
-% normalize
-[ray_in, jac_norm] = geo.normalize_vector(ray_in);
-
 valid_idx = ray_in * face_norm(1, :)' < 0;
+
+jac_out = zeros(3, 3, ray_cnt);
+for i = 1:ray_cnt
+    jac_out(:, :, i) = eye(3);
+end
 
 % refract/reflect on each face
 curr_ray = ray_in;
-jac_out = jac_norm;
-for i = 1:face_cnt
+i = 1;
+while i <= face_cnt
     if i > 1
         valid_idx = valid_idx & (curr_ray * face_norm(i, :)' > 0);
     end
     n0 = refract_n(i);
     n1 = refract_n(i + 1);
-    if n0 * n1 > 0
+
+    if face_cnt > 2 && i > 1 && i < face_cnt
+        [curr_ray, jac_curr] = opt.merge_inner_reflect(curr_ray, crystal, trace.fid(2:end - 1));
+        i = face_cnt - 1;
+    elseif n0 * n1 > 0
         [curr_ray, jac_curr] = opt.refract(curr_ray, face_norm(i, :), abs(n0), abs(n1));
     else
         [curr_ray, jac_curr] = opt.reflect(curr_ray, face_norm(i, :));
@@ -40,6 +46,7 @@ for i = 1:face_cnt
     for j = 1:ray_cnt
         jac_out(:, :, j) = jac_curr(:, :, j) * jac_out(:, :, j);
     end
+    i = i + 1;
 end
 ray_out = curr_ray;
 ray_out(~valid_idx, :) = nan;
