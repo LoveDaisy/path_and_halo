@@ -19,6 +19,7 @@ dim_rot = size(rot, 2);
 if any(isnan(rot(:)))
     ray_out_ll = nan(num, dim_rot - 1);
     jac = nan(dim_rot - 1, dim_rot, num);
+    return;
 end
 
 rot_norm = sqrt(sum(rot.^2, 2));
