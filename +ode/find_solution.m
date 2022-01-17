@@ -30,7 +30,7 @@ if any(isnan(y0))
     x = x0;
     return;
 end
-h_min = 0.01;
+h_min = 0.1;
 
 dy = yq - y0;
 x = x0;
@@ -51,14 +51,14 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     val_nan = any(isnan(y));
     b = 0.6;
     while any(isnan(y)) || (norm(yq - y) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && ...
-            h > h_min && norm(y - yq) > norm(dy))
+            h > h_min && norm(y - yq) > norm(dy) * h * 0.8)
         h = h * b;
         x = x0 + (dx .* h)';
         [y, jac1] = fun(x);
         fun_eval_cnt = fun_eval_cnt + 1;
     end
 
-    if val_nan && h < 0.3
+    if (val_nan && h < 0.3) || (h < h_min)
         break;
     end
 

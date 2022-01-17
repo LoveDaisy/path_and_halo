@@ -104,7 +104,7 @@ for w = 1:halo_img.x_length
 
             % Reduce seeds
             [cand_rot, reduce_status] = geo.reduce_pts_polyline(rot_contour, cand_rot, ...
-                'eps', config.dr * 1, 'jac_fun', fdf);
+                'eps', config.dr * 2.5, 'jac_fun', fdf);
             fun_eval_cnt = fun_eval_cnt + reduce_status.fun_eval_cnt;
             if size(rot_contour, 1) < 2
                 continue;
