@@ -24,27 +24,15 @@ tic;
 halo_img = generate_halo_image([0, 5], [-25, 25], 0.5);
 
 fun_eval_cnt = 0;
-checked_pix = 0;
-progress_cnt = 0;
-progress_bin = 0.005;
-update_progress = false;
+progress = utl.Progress(1 / (halo_img.x_length * halo_img.y_length), 0.005);
 for w = 1:halo_img.x_length
     for h = 1:halo_img.y_length
 % for w = 1:halo_img.x_length
 %     for h = 70
         ray_out_ll = [halo_img.img_x(w), halo_img.img_y(h)];
 
-        checked_pix = checked_pix + 1;
-        progress_cnt = progress_cnt + 1 / numel(halo_img.img);
-
-        if progress_cnt > progress_bin
-            fprintf('process (%d,%d) = (%.3f,%.3f), %05.2f%%\n', w, h, ray_out_ll(1), ray_out_ll(2), ...
-                checked_pix / numel(halo_img.img) * 100);
-            progress_cnt = progress_cnt - floor(progress_cnt / progress_bin) * progress_bin;
-            update_progress = true;
-        else
-            update_progress = false;
-        end
+        update_progress = progress.tik_and_show(1, 'process (%d,%d) = (%.2f,%.2f)', ...
+            w, h, ray_out_ll(1), ray_out_ll(2));
 
         % Find seed rotation
         if use_rot_quat
