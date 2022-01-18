@@ -21,14 +21,14 @@ close all;
 use_rot_quat = true;
 
 tic;
-halo_img = utl.generate_halo_image([-4, 4], [-25, 25], .2);
+halo_img = utl.generate_halo_image([-1.4, 1.4], [12, 18], .1);
 
 fun_eval_cnt = 0;
 progress = utl.Progress(1 / (halo_img.x_length * halo_img.y_length), 0.005);
 for w = 1:halo_img.x_length
     for h = 1:halo_img.y_length
-% for w = 1:halo_img.x_length
-%     for h = 70
+% for w = 17
+%     for h = 29
         ray_out_ll = [halo_img.img_x(w), halo_img.img_y(h)];
 
         update_progress = progress.tik_and_show(1, 'process (%d,%d) = (%.2f,%.2f)', ...
@@ -47,14 +47,10 @@ for w = 1:halo_img.x_length
         if isempty(cand_rot)
             continue;
         end
-        
-%         figure(5); clf;
-%         utl.plot_data_3d(cand_rot, [2,3,4], 'o');
-%         hold on;
-%         axis equal;
 
         weight = 0;
         contour_info = utl.ContourInfo;
+        contour_info.add_candidate_seeds(cand_rot);
         while ~isempty(cand_rot)
             % Find initial solution
             [init_rot, sol_status] = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
@@ -66,7 +62,7 @@ for w = 1:halo_img.x_length
             
             % Check if it locates on previous contour
             duplicated = false;
-            for i = 1:contour_info.total_cnt - 1
+            for i = 1:contour_info.total_cnt
                 [init_rot, dup_status] = geo.reduce_pts_polyline(contour_info.contour_store{i}, init_rot, ...
                     'eps', reduce_eps);
                 fun_eval_cnt = fun_eval_cnt + dup_status.fun_eval_cnt;
@@ -86,10 +82,6 @@ for w = 1:halo_img.x_length
             if isempty(rot_contour)
                 continue;
             end
-            
-%             figure(5);
-%             utl.plot_data_3d(rot_contour, [2,3,4], '-x');
-%             drawnow;
 
             % Reduce seeds
             [cand_rot, reduce_status] = geo.reduce_pts_polyline(rot_contour, cand_rot, ...
@@ -108,14 +100,12 @@ for w = 1:halo_img.x_length
 
         if update_progress
             figure(1); clf;
-            f1_pos = get(gcf, 'position');
             utl.show_halo_img(halo_img);
             title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
             axis ij;
             drawnow;
 
             figure(2); clf;
-            set(gcf, 'position', f1_pos + [f1_pos(3), 0, f1_pos(3), 0]);
             contour_info.display_info();
             drawnow;
         end

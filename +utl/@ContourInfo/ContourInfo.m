@@ -1,6 +1,7 @@
 classdef ContourInfo < handle
 properties
     total_cnt = 0;
+    candidate_seeds = [];
     contour_store = {};
     llr_contour_store = {};
     llr_interp_store = {};
@@ -19,6 +20,10 @@ methods
         if size(rot_contour, 2) == 4
             obj.llr_contour_store{obj.total_cnt} = geo.quat2llr(rot_contour);
         end
+    end
+    
+    function add_candidate_seeds(obj, cand_rot)
+        obj.candidate_seeds = cand_rot;
     end
     
     display_info(obj)  % Defined in a seperated file.

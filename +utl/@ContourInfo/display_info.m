@@ -10,28 +10,79 @@ line_color = [0, 0.447, 0.741;
         0.85, 0.325, 0.098;
         0.929, 0.694, 0.125];
 
-subplot(2, 2, 1);
-hold on;
-for k = 1:obj.total_cnt
-    plot(obj.llr_contour_store{k}(:, 2), obj.llr_contour_store{k}(:, 3), '-o');
-    plot(obj.llr_interp_store{k}(:, 2), obj.llr_interp_store{k}(:, 3), '.-');
-end
-box on;
-roll_lim1 = get(gca, 'ylim');
-subplot(2, 2, 2);
-hold on;
-for k = 1:obj.total_cnt
-    plot(obj.llr_contour_store{k}(:, 1), obj.llr_contour_store{k}(:, 3), '-o');
-    plot(obj.llr_interp_store{k}(:, 1), obj.llr_interp_store{k}(:, 3), '.-');
-end
-box on;
-roll_lim2 = get(gca, 'ylim');
-subplot(2, 2, 1);
-set(gca, 'ylim', [min(roll_lim1(1), roll_lim2(1)), max(roll_lim1(2), roll_lim2(2))]);
-subplot(2, 2, 2);
-set(gca, 'ylim', [min(roll_lim1(1), roll_lim2(1)), max(roll_lim1(2), roll_lim2(2))]);
+clf;
+fig_pos = get(gcf, 'position');
 
-subplot(2, 2, [3, 4]);
+outer_spacing = 0.05;
+inner_spacing = 0.02;
+x0 = outer_spacing;
+y0 = outer_spacing;
+h1 = 0.4; w1 = h1 * fig_pos(4) / fig_pos(3);
+h2 = 0.18;
+h3 = 1 - 3 * outer_spacing - h1 - h2;
+
+if obj.total_cnt < 1
+    return;
+end
+data_dim = size(obj.contour_store{1}, 2);
+if data_dim > 3
+    subspace_idx = [2, 3, 4];
+end
+
+% ----------------------------------
+% Plot candidate seeds and rot contours
+axes('position', [x0, 1 - y0 - h1 + inner_spacing, w1 - inner_spacing, h1 - inner_spacing]);
+hold on;
+if ~isempty(obj.candidate_seeds)
+    utl.plot_data_3d(obj.candidate_seeds, subspace_idx, 'o', 'color', line_color(1, :));
+end
+for i = 1:obj.total_cnt
+    utl.plot_data_3d(obj.contour_store{i}, subspace_idx, 'x-', 'color', line_color(2, :));
+end
+box on;
+axis equal;
+
+% ----------------------------------
+% Plot longitude-roll plane
+a12 = axes('position', [x0 + w1, 1 - y0 - h1, 1 - 2 * x0 - w1, h1]);
+hold on;
+for i = 1:obj.total_cnt
+    plot(obj.llr_contour_store{i}(:, 1), obj.llr_contour_store{i}(:, 3), '-o');
+    plot(obj.llr_interp_store{i}(:, 1), obj.llr_interp_store{i}(:, 3), '.-');
+end
+box on;
+set(a12, 'YAxisLocation', 'right', 'XAxisLocation', 'top');
+
+% ----------------------------------
+% Plot roll-latitude plane
+a21 = axes('position', [x0, y0 + h3 + outer_spacing, w1, h2]);
+hold on;
+for i = 1:obj.total_cnt
+    plot(obj.llr_contour_store{i}(:, 3), obj.llr_contour_store{i}(:, 2), '-o');
+    plot(obj.llr_interp_store{i}(:, 3), obj.llr_interp_store{i}(:, 2), '.-');
+end
+set(a21, 'xdir', 'reverse');
+box on;
+
+% ----------------------------------
+% Plot longitude-latitude plane
+a22 = axes('position', [x0 + w1, y0 + h3 + outer_spacing, 1 - 2 * x0 - w1, h2]);
+hold on;
+for i = 1:obj.total_cnt
+    plot(obj.llr_contour_store{i}(:, 1), obj.llr_contour_store{i}(:, 2), '-o');
+    plot(obj.llr_interp_store{i}(:, 1), obj.llr_interp_store{i}(:, 2), '.-');
+end
+box on;
+set(a22, 'YAxisLocation', 'right');
+
+lon_lim = get(a22, 'xlim');
+lat_lim = get(a22, 'ylim');
+set(a12, 'xlim', lon_lim);
+set(a21, 'ylim', lat_lim);
+
+% ----------------------------------
+% Plot weight components
+axes('position', [x0, y0, 1 - 2 * x0, h3]);
 hold on;
 for k = 1:obj.total_cnt
     plot(obj.weight_component_store{k}(:, 1), obj.weight_component_store{k}(:, 2), '.-k', 'linewidth', 2);
