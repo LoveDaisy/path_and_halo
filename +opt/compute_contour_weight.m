@@ -1,4 +1,4 @@
-function [weight, cmp_interp, rot_interp] = compute_contour_weight(rot_contour, axis_pdf, config)
+function [weight, cmp_interp, llr_interp] = compute_contour_weight(rot_contour, axis_pdf, config)
 % Compute the total weight of a rotation contour.
 % Weight components are: [axis_prob, det_jac, geo_factor, transit_factor]. See help of
 % compute_weight_components() below for detail.
@@ -13,7 +13,8 @@ function [weight, cmp_interp, rot_interp] = compute_contour_weight(rot_contour, 
 %
 % OUTPUT
 %   weight:             scalar
-%   cmp:                m*6, [s, w, axis_p, det_jac, geo_factor, transit_factor]
+%   cmp_interp:         m*6, [s, w, axis_p, det_jac, geo_factor, transit_factor]
+%   llr_interp:         m*3, interpolated rotation, in LLR space
 
 dim = size(rot_contour, 2);
 
@@ -28,7 +29,7 @@ interp_num = size(rot_interp, 1);
 
 % Convert to LLR space
 if dim == 4
-    rot_interp = geo.quat2llr(rot_interp);
+    llr_interp = geo.quat2llr(rot_interp);
     diff_s = sqrt(sum(diff(rot_interp).^2, 2));
     s_interp = [0; cumsum(diff_s)];
     discontinuity_idx = find(diff_s > 30);
@@ -39,7 +40,9 @@ if dim == 4
         s_interp(idx1:idx2) = s_interp(idx1:idx2) - diff_s(idx1 - 1) + diff_s(idx1 - 2);
     end
     s0 = s_interp(interp_idx);
-elseif dim ~= 3
+elseif dim == 3
+    llr_interp = rot_interp;
+else
     error('Input rotation must have dimesion of 3 or 4!');
 end
 
@@ -51,7 +54,7 @@ end
 % Interpolate components as initial value
 cmp_interp = nan(length(s_interp), 6);
 cmp_interp(:, 1) = s_interp;
-cmp_interp(:, 3) = axis_pdf(rot_interp);
+cmp_interp(:, 3) = axis_pdf(llr_interp);
 cmp_interp(:, 4) = exp(interp1(s0, log(cmp0(:, 2)), s_interp, 'linear', 'extrap'));
 cmp_interp(:, 5) = interp1(s0, cmp0(:, 3), s_interp, 'linear', 'extrap');
 cmp_interp(:, 6) = exp(interp1(s0, log(cmp0(:, 4)), s_interp, 'linear', 'extrap'));
@@ -71,7 +74,7 @@ end
 for i = 1:length(idx1)
     i1 = idx1(i);
     i2 = idx2(i);
-    cmp_interp(i1:i2, 3:6) = compute_weight_components(rot_interp(i1:i2, :), axis_pdf, config);
+    cmp_interp(i1:i2, 3:6) = compute_weight_components(llr_interp(i1:i2, :), axis_pdf, config);
 end
 cmp_interp = max(cmp_interp, 0);
 cmp_interp(:, 2) = cmp_interp(:, 3) .* cmp_interp(:, 4) .* cmp_interp(:, 5) .* cmp_interp(:, 6);

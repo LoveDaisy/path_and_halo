@@ -21,7 +21,7 @@ close all;
 use_rot_quat = true;
 
 tic;
-halo_img = generate_halo_image([0, 5], [-25, 25], 0.5);
+halo_img = generate_halo_image([-4, 4], [-25, 25], .2);
 
 fun_eval_cnt = 0;
 progress = utl.Progress(1 / (halo_img.x_length * halo_img.y_length), 0.005);
@@ -54,11 +54,7 @@ for w = 1:halo_img.x_length
 %         axis equal;
 
         weight = 0;
-        cmp_store = {};
-        interp_llr_store = {};
-        llr_contour_store = {};
-        rot_contour_store = {};
-        k = 1;
+        contour_info = utl.ContourInfo;
         while ~isempty(cand_rot)
             % Find initial solution
             [init_rot, sol_status] = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
@@ -70,8 +66,8 @@ for w = 1:halo_img.x_length
             
             % Check if it locates on previous contour
             duplicated = false;
-            for i = 1:k-1
-                [init_rot, dup_status] = geo.reduce_pts_polyline(rot_contour_store{i}, init_rot, ...
+            for i = 1:contour_info.total_cnt - 1
+                [init_rot, dup_status] = geo.reduce_pts_polyline(contour_info.contour_store{i}, init_rot, ...
                     'eps', reduce_eps);
                 fun_eval_cnt = fun_eval_cnt + dup_status.fun_eval_cnt;
                 if isempty(init_rot)
@@ -95,30 +91,18 @@ for w = 1:halo_img.x_length
 %             plot_data_3d(rot_contour, [2,3,4], '-x');
 %             drawnow;
 
-            rot_contour_store{k} = rot_contour;
-            if use_rot_quat
-                llr_contour_store{k} = geo.quat2llr(rot_contour);
-            else
-                llr_contour_store{k} = rot_contour;
-            end
-
             % Reduce seeds
             [cand_rot, reduce_status] = geo.reduce_pts_polyline(rot_contour, cand_rot, ...
                 'eps', config.dr * 2.5, 'jac_fun', fdf);
             fun_eval_cnt = fun_eval_cnt + reduce_status.fun_eval_cnt;
-            if size(rot_contour, 1) < 2
-                continue;
-            end
 
             % Compute weight
             [curr_w, curr_cmp, curr_rot] = opt.compute_contour_weight(rot_contour, axis_pdf, config);
             weight = weight + curr_w;
-            cmp_store{k} = curr_cmp;
-            interp_llr_store{k} = curr_rot;
-            k = k + 1;
+            contour_info.add_contour(rot_contour, curr_cmp, curr_rot);
         end
         halo_img.img(h, w) = weight;
-        if k <= 1
+        if contour_info.total_cnt <= 1
             continue;
         end
 
@@ -132,7 +116,7 @@ for w = 1:halo_img.x_length
 
             figure(2); clf;
             set(gcf, 'position', f1_pos + [f1_pos(3), 0, f1_pos(3), 0]);
-            show_contour_info(llr_contour_store, interp_llr_store, cmp_store);
+            contour_info.display_info();
             drawnow;
         end
     end
