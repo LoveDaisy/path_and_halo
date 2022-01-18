@@ -23,7 +23,7 @@ cmp0 = compute_weight_components(rot_contour, axis_pdf, config);
 len = sum(sqrt(sum(diff(rot_contour).^2, 2)));
 
 % Interpolate rotations
-[rot_interp, s_interp, s0, interp_idx] = geo.interp_curve(rot_contour, len * 0.005);
+[rot_interp, s_interp, s0, interp_idx] = geo.interp_curve(rot_contour, len * 0.01);
 interp_num = size(rot_interp, 1);
 
 % Convert to LLR space
@@ -57,7 +57,7 @@ cmp_interp(:, 5) = interp1(s0, cmp0(:, 3), s_interp, 'linear', 'extrap');
 cmp_interp(:, 6) = exp(interp1(s0, log(cmp0(:, 4)), s_interp, 'linear', 'extrap'));
 
 % Find out those with large probability && small geometry factor && small transit_factor
-interest_idx = cmp_interp(:, 3) >= 1e-12 & (cmp_interp(:, 5) <= 1e-2 | cmp_interp(:, 6) <= 1e-2);
+interest_idx = cmp_interp(:, 3) >= 1e-12 & (cmp_interp(:, 5) <= 1e-1 | cmp_interp(:, 6) <= 1e-1);
 idx1 = find(diff(double(interest_idx)) > 0);
 idx2 = find(diff(double(interest_idx)) < 0) + 1;
 if interest_idx(1)
@@ -73,6 +73,7 @@ for i = 1:length(idx1)
     i2 = idx2(i);
     cmp_interp(i1:i2, 3:6) = compute_weight_components(rot_interp(i1:i2, :), axis_pdf, config);
 end
+cmp_interp = max(cmp_interp, 0);
 cmp_interp(:, 2) = cmp_interp(:, 3) .* cmp_interp(:, 4) .* cmp_interp(:, 5) .* cmp_interp(:, 6);
 weight = sum(diff(s_interp) .* (cmp_interp(1:end - 1, 2) + cmp_interp(2:end, 2)) / 2);
 end
