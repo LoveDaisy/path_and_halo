@@ -2,7 +2,7 @@ function show_halo_img(halo_img, dr)
 % Display halo image.
 %
 % INPUT
-%   halo_img:       struct, generated from generate_halo_img()
+%   halo_img:       struct, generated from generate_halo_image()
 
 if nargin == 1
     dr = 6.5;

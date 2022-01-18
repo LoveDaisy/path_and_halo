@@ -49,10 +49,10 @@ if debug
     space_idx = [2, 3, 4];
     figure(1); clf;
     hold on;
-    plot_data_3d(seed_quat, space_idx, 'o');
-    plot_data_3d(seed_rot, space_idx, 's');
-    plot_data_3d(rot_contour, space_idx, '-x');
-    plot_tan_space_3d(rot_contour, fdf, space_idx);
+    utl.plot_data_3d(seed_quat, space_idx, 'o');
+    utl.plot_data_3d(seed_rot, space_idx, 's');
+    utl.plot_data_3d(rot_contour, space_idx, '-x');
+    utl.plot_tan_space_3d(rot_contour, fdf, space_idx);
     axis equal;
 end
 
@@ -91,10 +91,10 @@ if debug
     space_idx = [2, 3, 4];
     figure(1); clf;
     hold on;
-    plot_data_3d(seed_quat, space_idx, 'o');
-    plot_data_3d(seed_rot, space_idx, 's');
-    plot_data_3d(rot_contour1, space_idx, '-x');
-    plot_tan_space_3d(rot_contour1, fdf, space_idx);
+    utl.plot_data_3d(seed_quat, space_idx, 'o');
+    utl.plot_data_3d(seed_rot, space_idx, 's');
+    utl.plot_data_3d(rot_contour1, space_idx, '-x');
+    utl.plot_tan_space_3d(rot_contour1, fdf, space_idx);
     axis equal;
 end
 fprintf('passed!\n');
@@ -108,10 +108,10 @@ if debug
     space_idx = [2, 3, 4];
     figure(2); clf;
     hold on;
-    plot_data_3d(seed_quat, space_idx, 'o');
-    plot_data_3d(seed_rot, space_idx, 's');
-    plot_data_3d(rot_contour1, space_idx, '-x');
-    plot_tan_space_3d(rot_contour1, fdf, space_idx);
+    utl.plot_data_3d(seed_quat, space_idx, 'o');
+    utl.plot_data_3d(seed_rot, space_idx, 's');
+    utl.plot_data_3d(rot_contour1, space_idx, '-x');
+    utl.plot_tan_space_3d(rot_contour1, fdf, space_idx);
     axis equal;
 end
 fprintf('passed!\n');
@@ -128,10 +128,10 @@ if debug
     space_idx = [2, 3, 4];
     figure(3); clf;
     hold on;
-    plot_data_3d(seed_quat, space_idx, 'o');
-    plot_data_3d(seed_rot, space_idx, 's');
-    plot_data_3d(rot_contour1, space_idx, '-x');
-    plot_tan_space_3d(rot_contour1, fdf, space_idx);
+    utl.plot_data_3d(seed_quat, space_idx, 'o');
+    utl.plot_data_3d(seed_rot, space_idx, 's');
+    utl.plot_data_3d(rot_contour1, space_idx, '-x');
+    utl.plot_tan_space_3d(rot_contour1, fdf, space_idx);
     axis equal;
 end
 fprintf('passed!\n');
@@ -149,11 +149,11 @@ if debug
     space_idx = [2, 3, 4];
     figure(4); clf;
     hold on;
-    plot_data_3d(seed_quat, space_idx, 'o');
-    plot_data_3d(seed_quat1, space_idx, 'x');
-    plot_data_3d(rot_contour1, space_idx, '-^');
-    plot_data_3d(seed_quat(1, :), space_idx, 's', 'markersize', 15);
-    plot_tan_space_3d(rot_contour1, fdf, space_idx);
+    utl.plot_data_3d(seed_quat, space_idx, 'o');
+    utl.plot_data_3d(seed_quat1, space_idx, 'x');
+    utl.plot_data_3d(rot_contour1, space_idx, '-^');
+    utl.plot_data_3d(seed_quat(1, :), space_idx, 's', 'markersize', 15);
+    utl.plot_tan_space_3d(rot_contour1, fdf, space_idx);
     axis equal;
 end
 
@@ -164,11 +164,11 @@ if debug
     space_idx = [2, 3, 4];
     figure(5); clf;
     hold on;
-    plot_data_3d(seed_quat, space_idx, 'o');
-    plot_data_3d(seed_quat2, space_idx, 'x');
-    plot_data_3d(rot_contour2, space_idx, '-^');
-    plot_data_3d(seed_quat(end, :), space_idx, 's', 'markersize', 15);
-    plot_tan_space_3d(rot_contour2, fdf, space_idx);
+    utl.plot_data_3d(seed_quat, space_idx, 'o');
+    utl.plot_data_3d(seed_quat2, space_idx, 'x');
+    utl.plot_data_3d(rot_contour2, space_idx, '-^');
+    utl.plot_data_3d(seed_quat(end, :), space_idx, 's', 'markersize', 15);
+    utl.plot_tan_space_3d(rot_contour2, fdf, space_idx);
     axis equal;
 end
 fprintf('passed!\n');

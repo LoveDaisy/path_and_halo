@@ -21,7 +21,7 @@ close all;
 use_rot_quat = true;
 
 tic;
-halo_img = generate_halo_image([-4, 4], [-25, 25], .2);
+halo_img = utl.generate_halo_image([-4, 4], [-25, 25], .2);
 
 fun_eval_cnt = 0;
 progress = utl.Progress(1 / (halo_img.x_length * halo_img.y_length), 0.005);
@@ -49,7 +49,7 @@ for w = 1:halo_img.x_length
         end
         
 %         figure(5); clf;
-%         plot_data_3d(cand_rot, [2,3,4], 'o');
+%         utl.plot_data_3d(cand_rot, [2,3,4], 'o');
 %         hold on;
 %         axis equal;
 
@@ -88,7 +88,7 @@ for w = 1:halo_img.x_length
             end
             
 %             figure(5);
-%             plot_data_3d(rot_contour, [2,3,4], '-x');
+%             utl.plot_data_3d(rot_contour, [2,3,4], '-x');
 %             drawnow;
 
             % Reduce seeds
@@ -109,7 +109,7 @@ for w = 1:halo_img.x_length
         if update_progress
             figure(1); clf;
             f1_pos = get(gcf, 'position');
-            show_halo_img(halo_img);
+            utl.show_halo_img(halo_img);
             title(sprintf('(%d,%d)\nw: %.4e', w, h, weight));
             axis ij;
             drawnow;
@@ -125,6 +125,6 @@ toc;
 
 %%
 figure(1); clf;
-show_halo_img(halo_img);
+utl.show_halo_img(halo_img);
 axis ij;
 
