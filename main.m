@@ -21,7 +21,7 @@ close all;
 use_rot_quat = true;
 
 tic;
-halo_img = utl.generate_halo_image([-1.4, 1.4], [12, 18], .1);
+halo_img = utl.generate_halo_image([-5, 5], [-25, 25], .1);
 
 fun_eval_cnt = 0;
 progress = utl.Progress(1 / (halo_img.x_length * halo_img.y_length), 0.005);
@@ -94,7 +94,7 @@ for w = 1:halo_img.x_length
             contour_info.add_contour(rot_contour, curr_cmp, curr_rot);
         end
         halo_img.img(h, w) = weight;
-        if contour_info.total_cnt <= 1
+        if contour_info.total_cnt < 1
             continue;
         end
 
