@@ -16,7 +16,7 @@ So you must put path of MEALPix to matlab system path in order to use them.
 
 `test_packages.m` makes some basic tests.
 
-`main.m` set up a simple configuration for a crystal and sun, and run the calculation.
+`main.m` set up a simple configuration for a crystal and sun, and run the calculation. *WARNING* it is **VERY LOW**.
 
 ## Acknowledgement
 
