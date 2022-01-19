@@ -4,18 +4,15 @@ crystal = opt.make_prism_crystal(1);
 trace.fid = [1; 3; 2; 4; 5; 1];
 % trace.fid = [3; 5];
 
-axis_pdf = geo.make_axis_pdf([1, 90, 0.2], []);
-% axis_pdf = geo.make_axis_pdf([0, 0, 0], []);
+axis_pdf = geo.make_axis_pdf([90, 0.2]);
+% axis_pdf = geo.make_axis_pdf();
 
 sun_ll = [0, 15];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
-ray_in_xyz = geo.ll2xyz(ray_in_ll);
 
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
 config = opt.init_config(crystal, trace, sun_ll, 3);
-line_color = colormap('lines');
-close all;
 
 %%
 use_rot_quat = true;
