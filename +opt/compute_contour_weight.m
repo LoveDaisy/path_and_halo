@@ -34,9 +34,9 @@ if dim == 4
     s_interp = [0; cumsum(diff_s)];
     discontinuity_idx = find(diff_s > 30);
     discontinuity_idx = [0; discontinuity_idx; interp_num];
-    for i = 2:length(discontinuity_idx)-1
-        idx1 = discontinuity_idx(i)+1;
-        idx2 = discontinuity_idx(i+1);
+    for i = 2:length(discontinuity_idx) - 1
+        idx1 = discontinuity_idx(i) + 1;
+        idx2 = discontinuity_idx(i + 1);
         s_interp(idx1:idx2) = s_interp(idx1:idx2) - diff_s(idx1 - 1) + diff_s(idx1 - 2);
     end
     s0 = s_interp(interp_idx);
@@ -109,7 +109,7 @@ else
 end
 
 axis_prob = axis_pdf(llr);
-det_jac = compute_jacobian_deternimant(llr, config);
+det_jac = jacobian_factor(llr, config);
 entry_factor = entry_face_factor(llr, config);
 [transit_factor, geo_factor] = transit_geo_factor(llr, config);
 
@@ -117,32 +117,29 @@ cmp = [axis_prob, 1 ./ det_jac, entry_factor .* geo_factor, transit_factor];
 end
 
 % ================================================================================
-function det_jac = compute_jacobian_deternimant(llr, config)
-% Compute deteminant of Jacobian. For LLR representation, Jacobian is 2*2 matrix.
-% What does this Jacobian mean? We simply image this, when a point moves within a small
-% region perpendicular to contour (two degree of freedom), the output will also moves with in
-% a small region (two degree of freedom), and thus Jacobian is 2*2 matrix.
-% And clearly, the determinant of Jacobian, is the ratio of these two reagion area.
+function det_jac = jacobian_factor(llr, config)
+% Compute deteminant of Jacobian.
+% What does this Jacobian mean? We simply imagine this, when a point moves within a small
+% region orthogonal to contour (for LLR representation, the small region is a 2D subspace),
+% the output will also moves with in a small region.
+% And clearly, the determinant of Jacobian, is the ratio of these two reagion volumn.
 
 rot_num = size(llr, 1);
 ray_in_ll = [config.sun_ll(1) + 180, -config.sun_ll(2)];
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, config.crystal, config.trace);
 
 [~, jac] = fdf(llr);
+input_dim = size(jac, 2);
+
 det_jac = nan(size(llr, 1), 1);
 for i = 1:rot_num
     curr_jac = jac(:, :, i);
 
-    m = curr_jac(:, :) * curr_jac(:, :)';
-    a0 = curr_jac(1, :);
-    a = a0 / norm(a0);
-
-    b = a * curr_jac(:, :)';
-    b = [b(2), -b(1)];
-    b = b / sqrt(b * m * b');
+    m1 = det(curr_jac(:, :) * curr_jac(:, :)');
+    m2 = det([curr_jac; ones(1, input_dim)]);
 
     min_det = 1e-4;
-    j = abs(det(m) * det([[1 / norm(a0); 0], b'])) + min_det;
+    j = abs(m1 / m2) + min_det;
     if isnan(j)
         j = min_det;
     end
