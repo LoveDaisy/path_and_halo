@@ -1,18 +1,17 @@
 function test_compute_weight()
 test_cases = {@suite1};
 num = length(test_cases);
-debug = false;
 
 fprintf('Start testing for compute_weight...\n');
 for i = 1:num
     fprintf('Testing suite %d/%d...\n', i, num);
-    test_cases{i}(debug);
+    test_cases{i}();
     fprintf('suite %d/%d passed!\n', i, num);
 end
 end
 
 % ================================================================================
-function suite1(debug)
+function suite1()
 crystal = opt.make_prism_crystal(1);
 trace.fid = [3; 5];
 sun_ll = [180, 10];
@@ -30,17 +29,18 @@ end
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
 % Find seed rotation
-[seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
+cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
+init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
 
 % Find contour
-[rot_contour, contour_status] = ode.find_contour(fdf, seed_quat(1, :), 'h', 0.05);
+[rot_contour, contour_status] = ode.find_contour(fdf, init_rot, 'h', 0.05);
 assert(contour_status.closed && contour_status.completed);
 
 rot_llr = geo.quat2llr(rot_contour);
 w0 = 0.00569990578729381;
 
 axis_pdf = generate_axis_pdf([0, 0, 0]);
-[w, cmp] = opt.compute_contour_weight(rot_llr, axis_pdf, config);
+w = opt.compute_contour_weight(rot_llr, axis_pdf, config);
 
 assert(abs(w - w0) < 3e-5);
 end

@@ -118,8 +118,9 @@ fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
 fprintf(' case 1 ... ');
 ray_out_ll = [-5, 13.8];
-[seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
-[rot_contour, status] = ode.find_contour(fdf, seed_quat(1, :), 'h', 0.05);
+cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
+init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
+[rot_contour, status] = ode.find_contour(fdf, init_rot, 'h', 0.05);
 assert(status.closed);
 assert(size(rot_contour, 1) > 10);
 for i = 1:size(rot_contour, 1)
@@ -129,8 +130,9 @@ fprintf('pass!\n');
 
 fprintf(' case 2 ... ');
 ray_out_ll = [0, 15.5];
-[seed_quat, ~] = opt.find_seed_rot(config, ray_out_ll, 'quat');
-[rot_contour, status] = ode.find_contour(fdf, seed_quat(1, :), 'h', 0.05);
+cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
+init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
+[rot_contour, status] = ode.find_contour(fdf, init_rot, 'h', 0.05);
 assert(status.closed);
 assert(size(rot_contour, 1) > 10);
 for i = 1:size(rot_contour, 1)
