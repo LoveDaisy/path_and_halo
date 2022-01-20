@@ -1,16 +1,24 @@
-function [area_factor, vtx] = face_intersection_factor(vtx_entry, vtx_exit, ray_xyz)
+function [area_factor, vtx] = project_polygon_intersection(vtx_from, vtx_to, ray_xyz)
+% Project a polygon onto another one and find out the intersection polygon and the area factor.
+% The area factor is defined as a ratio of the area of intersection polygon to the area of original
+% polygon.
+%
 % INPUT
-%   vtx_entry:  entry face vertex
-%   vtx_exit:   exit face vertex. it must be *CONVEX*
-%   ray_xyz:    projection ray
+%   vtx_from:   n*3, [x, y, z], vertex of original polygon
+%   vtx_to:     m*3, [x, y, z], vertex of target polygon. it must be *CONVEX*
+%   ray_xyz:    1*3, projection ray
+%
+% OUTPUT
+%   area_factor:    scalar
+%   vtx :           k*3, [x, y, z], vertex of intersetion polygon. It is co-plane to vtx_to.
 
-e1 = vtx_exit(2, :) - vtx_exit(1, :);
-e2 = vtx_exit(4, :) - vtx_exit(1, :);
+e1 = vtx_to(2, :) - vtx_to(1, :);
+e2 = vtx_to(4, :) - vtx_to(1, :);
 e3 = cross(e1, e2);
 
-uv0 = bsxfun(@minus, vtx_exit, vtx_exit(1, :)) / [e1; e2; e3];
+uv0 = bsxfun(@minus, vtx_to, vtx_to(1, :)) / [e1; e2; e3];
 uv0 = uv0(:, 1:2);
-uvt = bsxfun(@minus, vtx_entry, vtx_exit(1, :)) / [e1; e2; -ray_xyz];
+uvt = bsxfun(@minus, vtx_from, vtx_to(1, :)) / [e1; e2; -ray_xyz];
 uvq = uvt(:, 1:2);
 
 mask_vtx_num = size(uv0, 1);
@@ -61,8 +69,8 @@ for i1 = 1:mask_vtx_num
     uvq = uv(1:q_vtx_num, :);
 end
 uv = uv(1:q_vtx_num, :);
-vtx = uv * [vtx_exit(2, :) - vtx_exit(1, :); vtx_exit(4, :) - vtx_exit(1, :)];
-vtx = bsxfun(@plus, vtx, vtx_exit(1, :));
+vtx = uv * [vtx_to(2, :) - vtx_to(1, :); vtx_to(4, :) - vtx_to(1, :)];
+vtx = bsxfun(@plus, vtx, vtx_to(1, :));
 
 if size(uv, 1) > 2
     area1 = sum(uv(:, 1) .* [uv(end, 2); uv(1:end - 1, 2)]) - ...

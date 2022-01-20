@@ -218,7 +218,7 @@ for i = 1:num
 
         if k < length(trace.fid) && geo_factor(i) > 1e-8
             vtx1 = crystal_vtx(crystal.face{trace.fid(k + 1)}, :);
-            [a, tmp_vtx] = geo.face_intersection_factor(vtx0, vtx1, r);
+            [a, tmp_vtx] = geo.project_polygon_intersection(vtx0, vtx1, r);
             geo_factor(i) = geo_factor(i) * a;
             vtx0 = tmp_vtx;
         end
