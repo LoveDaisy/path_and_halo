@@ -76,9 +76,24 @@ box on;
 set(a22, 'YAxisLocation', 'right');
 
 lon_lim = get(a22, 'xlim');
+if abs(diff(lon_lim)) < 5
+    lon_lim = [-2.5, 2.5] + mean(lon_lim);
+    set(a22, 'xlim', lon_lim);
+    set(a12, 'xlim', lon_lim);
+end
+
 lat_lim = get(a22, 'ylim');
-set(a12, 'xlim', lon_lim);
-set(a21, 'ylim', lat_lim);
+if abs(diff(lat_lim)) < 5
+    lat_lim = [-2.5, 2.5] + mean(lat_lim);
+    set(a22, 'ylim', lat_lim);
+    set(a21, 'ylim', lat_lim);
+end
+
+roll_lim2 = get(a12, 'ylim');
+roll_lim1 = get(a21, 'xlim');
+roll_lim = [min(roll_lim1(1), roll_lim2(2)), max(roll_lim1(2), roll_lim2(2))];
+set(a12, 'ylim', roll_lim);
+set(a21, 'xlim', roll_lim);
 
 % ----------------------------------
 % Plot weight components
