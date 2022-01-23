@@ -4,8 +4,8 @@ crystal = opt.make_prism_crystal(1);
 trace.fid = [1; 3; 2; 4; 5; 1];
 % trace.fid = [3; 5];
 
-axis_pdf = geo.make_axis_pdf([90, 0.2]);
-% axis_pdf = geo.make_axis_pdf();
+axis_pdf = opt.make_axis_pdf([90, 0.2]);
+% axis_pdf = opt.make_axis_pdf();
 
 sun_ll = [0, 15];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
