@@ -59,7 +59,7 @@ cmp_interp(:, 4) = exp(interp1(s0, log(cmp0(:, 2)), s_interp, 'linear', 'extrap'
 cmp_interp(:, 5) = interp1(s0, cmp0(:, 3), s_interp, 'linear', 'extrap');
 cmp_interp(:, 6) = exp(interp1(s0, log(cmp0(:, 4)), s_interp, 'linear', 'extrap'));
 
-% Find out those with large probability && small geometry factor && small transit_factor
+% Find out those with large probability && (small geometry factor || small transit_factor)
 interest_idx = cmp_interp(:, 3) >= 1e-12 & (cmp_interp(:, 5) <= 1e-1 | cmp_interp(:, 6) <= 1e-1);
 idx1 = find(diff(double(interest_idx)) > 0);
 idx2 = find(diff(double(interest_idx)) < 0) + 1;

@@ -5,10 +5,10 @@ function show_halo_img(halo_img, dr, w)
 %   halo_img:       struct, generated from generate_halo_image()
 
 if nargin == 1
-    dr = 1;
-    w = 90;
+    dr = 4;
+    w = 95;
 elseif nargin == 2
-    w = 90;
+    w = 95;
 end
 k = 2^(-dr);
 
