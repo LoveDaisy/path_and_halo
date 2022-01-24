@@ -24,13 +24,13 @@ cmp0 = compute_weight_components(rot_contour, axis_pdf, config);
 len = sum(sqrt(sum(diff(rot_contour).^2, 2)));
 
 % Interpolate rotations
-[rot_interp, s_interp, s0, interp_idx] = geo.interp_curve(rot_contour, len * 0.01);
+[rot_interp, s_interp, s0, s0_idx] = geo.interp_curve(rot_contour, len * 0.01);
 interp_num = size(rot_interp, 1);
 
 % Convert to LLR space
 if dim == 4
     llr_interp = geo.quat2llr(rot_interp);
-    diff_s = sqrt(sum(diff(rot_interp).^2, 2));
+    diff_s = sqrt(sum(diff(llr_interp).^2, 2));
     s_interp = [0; cumsum(diff_s)];
     discontinuity_idx = find(diff_s > 30);
     discontinuity_idx = [0; discontinuity_idx; interp_num];
@@ -39,16 +39,11 @@ if dim == 4
         idx2 = discontinuity_idx(i + 1);
         s_interp(idx1:idx2) = s_interp(idx1:idx2) - diff_s(idx1 - 1) + diff_s(idx1 - 2);
     end
-    s0 = s_interp(interp_idx);
+    s0 = s_interp(s0_idx);
 elseif dim == 3
     llr_interp = rot_interp;
 else
     error('Input rotation must have dimesion of 3 or 4!');
-end
-
-if norm(rot_contour(1, :) - rot_contour(end, :)) < 1e-10
-    % For closed loop
-    s0(end) = s_interp(end);
 end
 
 % Interpolate components as initial value

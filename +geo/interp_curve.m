@@ -29,6 +29,7 @@ while len_diff > 0.1 * ds
     s0 = tmp_s(idx);
     if closed
         s0(end) = tmp_s(end);
+        idx(end) = length(tmp_s);
     end
 end
 s = tmp_s;
