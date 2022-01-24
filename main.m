@@ -15,8 +15,6 @@ fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 config = opt.init_config(crystal, trace, sun_ll, 3);
 
 %%
-use_rot_quat = true;
-
 tic;
 halo_img = utl.generate_halo_image([-5, 5], [-25, 25], .1);
 
@@ -32,15 +30,9 @@ for w = 1:halo_img.x_length
             w, h, ray_out_ll(1), ray_out_ll(2));
 
         % Find seed rotation
-        if use_rot_quat
-            cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
-            contour_h = 0.05;
-            reduce_eps = 0.05;
-        else
-            cand_rot = opt.find_cand_rot(config, ray_out_ll, 'llr');
-            contour_h = 1;
-            reduce_eps = 0.5;
-        end
+        cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
+        contour_h = 0.05;
+        reduce_eps = 0.05;
         if isempty(cand_rot)
             continue;
         end
@@ -53,10 +45,10 @@ for w = 1:halo_img.x_length
             [init_rot, sol_status] = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
             fun_eval_cnt = fun_eval_cnt + sol_status.fun_eval_cnt;
             cand_rot = cand_rot(2:end, :);
-            if ~sol_status.finish || (use_rot_quat && init_rot(1) < 0)
+            if ~sol_status.finish || init_rot(1) < 0
                 continue;
             end
-            
+
             % Check if it locates on previous contour
             duplicated = false;
             for i = 1:contour_info.total_cnt
@@ -114,4 +106,3 @@ toc;
 figure(1); clf;
 utl.show_halo_img(halo_img);
 axis ij;
-
