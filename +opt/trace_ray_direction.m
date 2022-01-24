@@ -14,12 +14,15 @@ face_norm = crystal.face_norm(trace.fid, :);
 refract_n = opt.generate_trace_n(crystal, trace);
 face_cnt = size(face_norm, 1);
 ray_cnt = size(ray_in, 1);
+need_jacobian = nargout == 2;
 
 valid_idx = ray_in * face_norm(1, :)' < 0;
 
-jac_out = zeros(3, 3, ray_cnt);
-for i = 1:ray_cnt
-    jac_out(:, :, i) = eye(3);
+if need_jacobian
+    jac_out = zeros(3, 3, ray_cnt);
+    for i = 1:ray_cnt
+        jac_out(:, :, i) = eye(3);
+    end
 end
 
 % refract/reflect on each face
@@ -33,18 +36,32 @@ while i <= face_cnt
     n1 = refract_n(i + 1);
 
     if face_cnt > 2 && i > 1 && i < face_cnt
-        [curr_ray, jac_curr] = opt.merge_inner_reflect(curr_ray, crystal, trace.fid(2:end - 1));
+        if need_jacobian
+            [curr_ray, jac_curr] = opt.merge_inner_reflect(curr_ray, crystal, trace.fid(2:end - 1));
+        else
+            curr_ray = opt.merge_inner_reflect(curr_ray, crystal, trace.fid(2:end - 1));
+        end
         i = face_cnt - 1;
     elseif n0 * n1 > 0
-        [curr_ray, jac_curr] = opt.refract(curr_ray, face_norm(i, :), abs(n0), abs(n1));
+        if need_jacobian
+            [curr_ray, jac_curr] = opt.refract(curr_ray, face_norm(i, :), abs(n0), abs(n1));
+        else
+            curr_ray = opt.refract(curr_ray, face_norm(i, :), abs(n0), abs(n1));
+        end
     else
-        [curr_ray, jac_curr] = opt.reflect(curr_ray, face_norm(i, :));
+        if need_jacobian
+            [curr_ray, jac_curr] = opt.reflect(curr_ray, face_norm(i, :));
+        else
+            curr_ray = opt.reflect(curr_ray, face_norm(i, :));
+        end
     end
 
     valid_idx = valid_idx & (~isnan(curr_ray(:, 1)));
 
-    for j = 1:ray_cnt
-        jac_out(:, :, j) = jac_curr(:, :, j) * jac_out(:, :, j);
+    if need_jacobian
+        for j = 1:ray_cnt
+            jac_out(:, :, j) = jac_curr(:, :, j) * jac_out(:, :, j);
+        end
     end
     i = i + 1;
 end

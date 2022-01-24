@@ -12,6 +12,7 @@ function [ray_out, jac] = merge_inner_reflect(ray_in, crystal, fid)
 
 f_cnt = length(fid);
 num = size(ray_in, 1);
+need_jacobian = nargout == 2;
 
 m = eye(3);
 for i = 1:f_cnt
@@ -19,5 +20,7 @@ for i = 1:f_cnt
 end
 
 ray_out = ray_in * m';
-jac = repmat(m, [1, 1, num]);
+if need_jacobian
+    jac = repmat(m, [1, 1, num]);
+end
 end

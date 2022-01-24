@@ -45,7 +45,7 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     % Linear search
     h = 1;
     x = x0 + (dx .* h)';
-    [y, jac1] = fun(x);
+    y = fun(x);
     fun_eval_cnt = fun_eval_cnt + 1;
 
     val_nan = any(isnan(y));
@@ -54,7 +54,7 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
             h > h_min && norm(y - yq) > norm(dy) * h * 0.8)
         h = h * b;
         x = x0 + (dx .* h)';
-        [y, jac1] = fun(x);
+        y = fun(x);
         fun_eval_cnt = fun_eval_cnt + 1;
     end
 
@@ -64,7 +64,7 @@ while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
 
     x0 = x;
     dy = yq - y;
-    jac = jac1;
+    [~, jac] = fun(x);
 end
 status.finish = norm(dy) < p.Results.eps;
 status.fun_eval_cnt = fun_eval_cnt;
