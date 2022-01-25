@@ -38,9 +38,9 @@ fun_eval_cnt = 1;
 h = 1;
 while norm(dy) > p.Results.eps && fun_eval_cnt < p.Results.MaxEval && h > h_min
     % Find deepest gradient
-    dx = jac \ dy';
-    jn = null(jac);
-    dx = dx - jn * jn' * dx;
+    r_jac = rank(jac, 1e-8);
+    [u, s, v] = svd(jac);
+    dx = v(:, 1:r_jac) / s(1:r_jac, 1:r_jac) * u(:, 1:r_jac)' * dy';
 
     % Linear search
     h = 1;

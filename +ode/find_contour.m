@@ -216,8 +216,12 @@ if any(isnan(y(:)))
     return;
 end
 
-dx = null(jac);
-dx = dx(:, 1)';
+rank_tol = 1e-10;
+[~, s, v] = svd(jac);
+null_idx = diag(s) < rank_tol;
+
+dx = v(:, null_idx);  % Null space
+dx = dx(:, end)';  % Find the space corresponding to the smallest singular value.
 
 if ~isempty(ref_dx) && dot(dx, ref_dx) < 0
     dx = -dx;

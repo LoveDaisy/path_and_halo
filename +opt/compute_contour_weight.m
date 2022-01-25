@@ -124,21 +124,30 @@ ray_in_ll = [config.sun_ll(1) + 180, -config.sun_ll(2)];
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, config.crystal, config.trace);
 
 [~, jac] = fdf(llr);
-input_dim = size(jac, 2);
 
+min_det = 1e-8;
+jac_rank_tol = 1e-10;
+
+% Let [u, s, v] = svd(jac), i.e. u * s * v' = jac.
+% If rank(jac) = k, then there are only k values greater than 0 in s.
+% We devide u, s, v into blocks,
+% u = [u_o, u_n],     v = [v_o, v_n]
+%      m*k  m*(m-k)        n*k  n*(n-k)
+% Then jac = u_o * s(1:k, 1:k) * v_o'
+% We will find that v_n is null space of jac: jac * v_n = u_o * s(1:k, 1:k) * v_o' * v_n = 0,
+% and thus v_n is the tangent direction of contour.
+% Let dx be in the orthogonal complement to v_n, i.e. perpendicular to contour. It can be
+% expressed as dx = v_o * alpha. So,
+%   |dy|^2 = dx' * jac' * jac * dx
+%          = alpha' * v_o' * v_o * s_o * u_o' * u_o * s_o * v_o' * v_o * alpha
+%          = alpha' * s_o^2 * alpha
+% So the area factor is det(s_o)
 det_jac = nan(size(llr, 1), 1);
 for i = 1:rot_num
     curr_jac = jac(:, :, i);
-
-    m1 = det(curr_jac(:, :) * curr_jac(:, :)');
-    m2 = det([curr_jac; ones(1, input_dim)]);
-
-    min_det = 1e-4;
-    j = abs(m1 / m2) + min_det;
-    if isnan(j)
-        j = min_det;
-    end
-    det_jac(i) = j;
+    s = svd(curr_jac);
+    jac_rank = sum(s > jac_rank_tol);
+    det_jac(i) = max(prod(s(1:jac_rank)), min_det);
 end
 end
 
