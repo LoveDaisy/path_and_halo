@@ -21,6 +21,7 @@ trace.fid = [3; 5];
 sun_ll = [180, 10];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 ray_out_ll = [-5, 13.8];
+ray_out_xyz = geo.ll2xyz(ray_out_ll);
 
 config_cache_file = 'test_config_1_35_180+10_3.mat';
 if exist(config_cache_file, 'file')
@@ -34,7 +35,7 @@ fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
 % Find seed rotation
 cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
-init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
+init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_xyz, 1], 'eps', 1e-8);
 
 contour_h = 0.05;
 reduce_eps = config.dr * 1.5;
@@ -118,8 +119,9 @@ fprintf('passed!\n');
 
 % --------
 ray_out_ll = [0.5, 10];
+ray_out_xyz = geo.ll2xyz(ray_out_ll);
 cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
-init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
+init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_xyz, 1], 'eps', 1e-8);
 
 fprintf(' case 3 ... ');
 rot_contour1 = ode.find_contour(fdf, init_rot, 'h', contour_h);
@@ -138,10 +140,11 @@ fprintf('passed!\n');
 
 % --------
 ray_out_ll = [0.5, 7.5];
+ray_out_xyz = geo.ll2xyz(ray_out_ll);
 seed_quat = opt.find_cand_rot(config, ray_out_ll, 'quat');
 
 fprintf(' case 4 ... ');
-rot1 = ode.find_solution(fdf, seed_quat(1, :), [ray_out_ll, 1], 'eps', 1e-8);
+rot1 = ode.find_solution(fdf, seed_quat(1, :), [ray_out_xyz, 1], 'eps', 1e-8);
 rot_contour1 = ode.find_contour(fdf, rot1, 'h', contour_h);
 seed_quat1 = geo.reduce_pts_polyline(rot_contour1, seed_quat, 'jac_fun', fdf, 'eps', config.dr);
 if debug
@@ -156,7 +159,7 @@ if debug
     axis equal;
 end
 
-rot2 = ode.find_solution(fdf, seed_quat(end, :), [ray_out_ll, 1], 'eps', 1e-8);
+rot2 = ode.find_solution(fdf, seed_quat(end, :), [ray_out_xyz, 1], 'eps', 1e-8);
 rot_contour2 = ode.find_contour(fdf, rot2, 'h', contour_h);
 seed_quat2 = geo.reduce_pts_polyline(rot_contour2, seed_quat, 'jac_fun', fdf, 'eps', config.dr);
 if debug

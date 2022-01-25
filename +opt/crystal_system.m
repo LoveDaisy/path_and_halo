@@ -1,4 +1,4 @@
-function [ray_out_ll, jac] = crystal_system(rot, ray_in_ll, crystal, trace)
+function [ray_out, jac] = crystal_system(rot, ray_in_ll, crystal, trace)
 % Find output ray of a crystal system with given input ray and crystal rotation.
 %
 % INPUT
@@ -11,14 +11,14 @@ function [ray_out_ll, jac] = crystal_system(rot, ray_in_ll, crystal, trace)
 %   trace:              struct
 %
 % OUTPUT
-%   ray_out_ll:         n*2 or n*3, [longitude, latitude, (quat_norm)], in degree. Output ray direction.
-%   jac:                2*3*n or 3*4*n, Jacobian. Input is rotation (llr or quat3) and output is ray_out_ll
+%   ray_out:            n*2 or n*3, [longitude, latitude, (quat_norm)], in degree. Output ray direction.
+%   jac:                2*3*n or 3*4*n, Jacobian. Input is rotation (llr or quat3) and output is ray_out
 
 num = size(rot, 1);
 dim_rot = size(rot, 2);
 if any(isnan(rot(:)))
-    ray_out_ll = nan(num, dim_rot - 1);
-    jac = nan(dim_rot - 1, dim_rot, num);
+    ray_out = nan(num, dim_rot);
+    jac = nan(dim_rot, dim_rot, num);
     return;
 end
 
@@ -68,19 +68,18 @@ for i = 1:num
 end
 
 if need_jacobian
-    [ray_out_ll, jac_out_ll] = geo.xyz2ll(ray_out_xyz);
-    jac = zeros(dim_rot - 1, dim_rot, num);
+    jac = zeros(dim_rot, dim_rot, num);
     for i = 1:num
         if dim_rot == 3
-            jac(:, :, i) = jac_out_ll(:, :, i) * jac_xyz(:, :, i);
+            jac(:, :, i) = jac_xyz(:, :, i);
         else
-            jac(:, :, i) = [jac_out_ll(:, :, i) * jac_xyz(:, :, i); rot(i, :) / rot_norm(i)];
+            jac(:, :, i) = [jac_xyz(:, :, i); rot(i, :) / rot_norm(i)];
         end
     end
-else
-    ray_out_ll = geo.xyz2ll(ray_out_xyz);
 end
 if dim_rot == 4
-    ray_out_ll = [ray_out_ll, rot_norm];
+    ray_out = [ray_out_xyz, rot_norm];
+else
+    ray_out = ray_out_xyz;
 end
 end

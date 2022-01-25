@@ -74,11 +74,11 @@ ray_out_xyz = geo.ll2xyz(ray_out_ll);
 
 init_angle_diff = acosd(config.out_xyz * ray_out_xyz');
 [~, idx] = min(init_angle_diff);
-init_llr = ode.find_solution(fdf, config.axis_llr_store(idx, :), ray_out_ll);
+init_llr = ode.find_solution(fdf, config.axis_llr_store(idx, :), ray_out_xyz);
 [rot_llr, status] = ode.find_contour(fdf, init_llr, 'eps', 1e-4, 'h', 0.5);
 assert(status.closed);
 for i = 1:size(rot_llr, 1)
-    assert(norm(fdf(rot_llr(i, :)) - ray_out_ll) < 1e-4);
+    assert(norm(fdf(rot_llr(i, :)) - ray_out_xyz) < 1e-4);
 end
 fprintf('passed!\n');
 
@@ -90,11 +90,11 @@ ray_out_xyz = geo.ll2xyz(ray_out_ll);
 
 init_angle_diff = acosd(config.out_xyz * ray_out_xyz');
 [~, idx] = min(init_angle_diff);
-init_quat = ode.find_solution(fdf, config.axis_quat_store(idx, :), [ray_out_ll, 1]);
+init_quat = ode.find_solution(fdf, config.axis_quat_store(idx, :), [ray_out_xyz, 1]);
 [rot_quat, status] = ode.find_contour(fdf, init_quat, 'eps', 1e-4, 'h', 0.01);
 assert(status.closed);
 for i = 1:size(rot_quat, 1)
-    assert(norm(fdf(rot_quat(i, :)) - [ray_out_ll, 1]) < 1e-4);
+    assert(norm(fdf(rot_quat(i, :)) - [ray_out_xyz, 1]) < 1e-4);
 end
 fprintf('passed!\n');
 end
@@ -118,25 +118,27 @@ fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
 fprintf(' case 1 ... ');
 ray_out_ll = [-5, 13.8];
+ray_out_xyz = geo.ll2xyz(ray_out_ll);
 cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
-init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
+init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_xyz, 1], 'eps', 1e-8);
 [rot_contour, status] = ode.find_contour(fdf, init_rot, 'h', 0.05);
 assert(status.closed);
 assert(size(rot_contour, 1) > 10);
 for i = 1:size(rot_contour, 1)
-    assert(norm(fdf(rot_contour(i, :)) - [ray_out_ll, 1]) < 1e-4);
+    assert(norm(fdf(rot_contour(i, :)) - [ray_out_xyz, 1]) < 1e-4);
 end
 fprintf('pass!\n');
 
 fprintf(' case 2 ... ');
 ray_out_ll = [0, 15.5];
+ray_out_xyz = geo.ll2xyz(ray_out_ll);
 cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
-init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
+init_rot = ode.find_solution(fdf, cand_rot(1, :), [ray_out_xyz, 1], 'eps', 1e-8);
 [rot_contour, status] = ode.find_contour(fdf, init_rot, 'h', 0.05);
 assert(status.closed);
 assert(size(rot_contour, 1) > 10);
 for i = 1:size(rot_contour, 1)
-    assert(norm(fdf(rot_contour(i, :)) - [ray_out_ll, 1]) < 1e-4);
+    assert(norm(fdf(rot_contour(i, :)) - [ray_out_xyz, 1]) < 1e-4);
 end
 fprintf('pass!\n');
 end

@@ -22,9 +22,9 @@ for i = 1:total_num
     end
     progress_cnt = progress_cnt + 1 / total_num;
 
-    tmp_out_ll = opt.crystal_system(axis_llr_store(i, :), ray_in_ll, crystal, trace);
-    out_ll(i, :) = tmp_out_ll;
-    out_xyz(i, :) = geo.ll2xyz(tmp_out_ll);
+    tmp_out_xyz = opt.crystal_system(axis_llr_store(i, :), ray_in_ll, crystal, trace);
+    out_xyz(i, :) = tmp_out_xyz;
+    out_ll(i, :) = geo.xyz2ll(tmp_out_xyz);
 end
 
 in_xyz = geo.ll2xyz(ray_in_ll);

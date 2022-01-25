@@ -25,6 +25,7 @@ for w = 1:halo_img.x_length
 % for w = 17
 %     for h = 29
         ray_out_ll = [halo_img.img_x(w), halo_img.img_y(h)];
+        ray_out_xyz = geo.ll2xyz(ray_out_ll);
 
         update_progress = progress.tik_and_show(1, 'process (%d,%d) = (%.2f,%.2f)', ...
             w, h, ray_out_ll(1), ray_out_ll(2));
@@ -42,7 +43,7 @@ for w = 1:halo_img.x_length
         contour_info.add_candidate_seeds(cand_rot);
         while ~isempty(cand_rot)
             % Find initial solution
-            [init_rot, sol_status] = ode.find_solution(fdf, cand_rot(1, :), [ray_out_ll, 1], 'eps', 1e-8);
+            [init_rot, sol_status] = ode.find_solution(fdf, cand_rot(1, :), [ray_out_xyz, 1], 'eps', 1e-8);
             fun_eval_cnt = fun_eval_cnt + sol_status.fun_eval_cnt;
             cand_rot = cand_rot(2:end, :);
             if ~sol_status.finish || init_rot(1) < 0
