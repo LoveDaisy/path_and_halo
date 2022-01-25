@@ -25,68 +25,16 @@ for w = 1:halo_img.x_length
 % for w = 17
 %     for h = 29
         ray_out_ll = [halo_img.img_x(w), halo_img.img_y(h)];
-        ray_out_xyz = geo.ll2xyz(ray_out_ll);
 
         update_progress = progress.tik_and_show(1, 'process (%d,%d) = (%.2f,%.2f)', ...
             w, h, ray_out_ll(1), ray_out_ll(2));
 
-        % Find seed rotation
-        cand_rot = opt.find_cand_rot(config, ray_out_ll, 'quat');
-        contour_h = 0.05;
-        reduce_eps = 0.05;
-        if isempty(cand_rot)
-            continue;
-        end
-
-        weight = 0;
         contour_info = utl.ContourInfo;
-        contour_info.add_candidate_seeds(cand_rot);
-        while ~isempty(cand_rot)
-            % Find initial solution
-            [init_rot, sol_status] = ode.find_solution(fdf, cand_rot(1, :), [ray_out_xyz, 1], 'eps', 1e-8);
-            fun_eval_cnt = fun_eval_cnt + sol_status.fun_eval_cnt;
-            cand_rot = cand_rot(2:end, :);
-            if ~sol_status.finish || init_rot(1) < 0
-                continue;
-            end
-
-            % Check if it locates on previous contour
-            duplicated = false;
-            for i = 1:contour_info.total_cnt
-                [init_rot, dup_status] = geo.reduce_pts_polyline(contour_info.contour_store{i}, init_rot, ...
-                    'eps', reduce_eps);
-                fun_eval_cnt = fun_eval_cnt + dup_status.fun_eval_cnt;
-                if isempty(init_rot)
-                    duplicated = true;
-                    break;
-                end
-            end
-            if duplicated
-                continue;
-            end
-
-            % Find contour
-            [rot_contour, contour_status] = ode.find_contour(fdf, init_rot, 'h', contour_h);
-            fun_eval_cnt = fun_eval_cnt + contour_status.fun_eval_cnt;
-
-            if isempty(rot_contour)
-                continue;
-            end
-
-            % Reduce seeds
-            [cand_rot, reduce_status] = geo.reduce_pts_polyline(rot_contour, cand_rot, ...
-                'eps', config.dr * 2.5, 'jac_fun', fdf);
-            fun_eval_cnt = fun_eval_cnt + reduce_status.fun_eval_cnt;
-
-            % Compute weight
-            [curr_w, curr_cmp, curr_rot] = opt.compute_contour_weight(rot_contour, axis_pdf, config);
-            weight = weight + curr_w;
-            contour_info.add_contour(rot_contour, curr_cmp, curr_rot);
+        [weight, status] = opt.halo_weight(ray_out_ll, fdf, config, axis_pdf, contour_info);
+        if weight < 0
+            continue;
         end
         halo_img.img(h, w) = weight;
-        if contour_info.total_cnt < 1
-            continue;
-        end
 
         if update_progress
             figure(1); clf;
