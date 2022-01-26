@@ -36,11 +36,16 @@ while true
         llr_interp = geo.quat2llr(rot_interp);
         diff_s = sqrt(sum(diff(llr_interp).^2, 2));
         s_interp = [0; cumsum(diff_s)];
-        discontinuity_idx = [0; find(diff_s > 30); interp_num];
-        for i = 2:length(discontinuity_idx) - 1
-            idx1 = discontinuity_idx(i) + 1;
-            idx2 = discontinuity_idx(i + 1);
-            s_interp(idx1:idx2) = s_interp(idx1:idx2) - diff_s(idx1 - 1) + diff_s(idx1 - 2);
+        discontinuity_idx = find(diff_s > 150) + 1;
+        for i = length(discontinuity_idx):-1:1
+            idx = discontinuity_idx(i);
+            d1 = diff_s(idx - 1);
+            if idx > 2
+                d0 = diff_s(idx - 2);
+            else
+                d0 = 0;
+            end
+            s_interp(idx:end) = s_interp(idx:end) - d1 + d0;
         end
         s0 = s_interp(s0_idx);
     elseif dim == 3
@@ -49,7 +54,7 @@ while true
         error('Input rotation must have dimesion of 3 or 4!');
     end
 
-    interp_pdf = axis_pdf(llr_interp);
+    interp_pdf = axis_pdf(llr_interp) .* cosd(llr_interp(:, 2));
     if max(interp_pdf) > pdf_th && sum(interp_pdf >= pdf_th) < 20 && interp_step > len * 0.001
         interp_step = interp_step * 0.5;
     else
