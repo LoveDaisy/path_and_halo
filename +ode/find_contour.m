@@ -218,7 +218,10 @@ end
 
 rank_tol = 1e-10;
 [~, s, v] = svd(jac);
-null_idx = diag(s) < rank_tol;
+null_idx = true(size(v, 2), 1);
+for i = 1:min(size(v, 2), size(s, 1))
+    null_idx(i) = s(i, i) < rank_tol;
+end
 
 dx = v(:, null_idx);  % Null space
 dx = dx(:, end)';  % Find the space corresponding to the smallest singular value.
