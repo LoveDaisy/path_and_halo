@@ -111,6 +111,6 @@ for k = 1:obj.total_cnt
         'color', line_color(4, :));
 end
 plot([obj.weight_component_store{1}(1, 1), obj.weight_component_store{1}(end, 1)], [1, 1], ':k');
-set(gca, 'yscale', 'log', 'ylim', [1e-8, 1e6]);
+set(gca, 'yscale', 'log', 'ylim', [1e-8, 1e4]);
 box on;
 end

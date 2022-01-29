@@ -34,27 +34,23 @@ while true
     % Convert to LLR space
     if dim == 4
         llr_interp = geo.quat2llr(rot_interp);
-        diff_s = sqrt(sum(diff(llr_interp).^2, 2));
-        s_interp = [0; cumsum(diff_s)];
-        discontinuity_idx = find(diff_s > 150) + 1;
-        for i = length(discontinuity_idx):-1:1
-            idx = discontinuity_idx(i);
-            d1 = diff_s(idx - 1);
-            if idx > 2
-                d0 = diff_s(idx - 2);
-            else
-                d0 = 0;
-            end
-            s_interp(idx:end) = s_interp(idx:end) - d1 + d0;
-        end
-        s0 = s_interp(s0_idx);
     elseif dim == 3
         llr_interp = rot_interp;
+        q_interp = geo.llr2quat(rot_interp);
+        diff_s = sqrt(sum(diff(q_interp).^2, 2));
+        discontinuity_idx = find(diff_s > 1) + 1;
+        for i = length(discontinuity_idx):-1:1
+            idx = discontinuity_idx(i);
+            q_interp(idx:end, :) = -q_interp(idx:end, :);
+        end
+        diff_s = sqrt(sum(diff(q_interp).^2, 2));
+        s_interp = [0; cumsum(diff_s)];
+        s0 = s_interp(s0_idx);
     else
         error('Input rotation must have dimesion of 3 or 4!');
     end
 
-    interp_pdf = axis_pdf(llr_interp) .* cosd(llr_interp(:, 2));
+    interp_pdf = axis_pdf(llr_interp);
     if max(interp_pdf) > pdf_th && sum(interp_pdf >= pdf_th) < 20 && interp_step > len * 0.001
         interp_step = interp_step * 0.5;
     else
@@ -71,7 +67,7 @@ cmp_interp(:, 5) = interp1(s0, cmp0(:, 3), s_interp, 'linear', 'extrap');
 cmp_interp(:, 6) = exp(interp1(s0, log(cmp0(:, 4)), s_interp, 'linear', 'extrap'));
 
 % Find out those with large probability && (small geometry factor || small transit_factor)
-interest_idx = interp_pdf >= pdf_th & (cmp_interp(:, 5) <= 1e-1 | cmp_interp(:, 6) <= 1e-1);
+interest_idx = interp_pdf >= pdf_th;
 idx1 = find(diff(double(interest_idx)) > 0);
 idx2 = find(diff(double(interest_idx)) < 0) + 1;
 if interest_idx(1)
@@ -85,7 +81,7 @@ end
 for i = 1:length(idx1)
     i1 = idx1(i);
     i2 = idx2(i);
-    cmp_interp(i1:i2, 3:6) = compute_weight_components(llr_interp(i1:i2, :), axis_pdf, config);
+    cmp_interp(i1:i2, 3:6) = compute_weight_components(rot_interp(i1:i2, :), axis_pdf, config);
 end
 cmp_interp = max(cmp_interp, 0);
 cmp_interp(:, 2) = cmp_interp(:, 3) .* cmp_interp(:, 4) .* cmp_interp(:, 5) .* cmp_interp(:, 6);
@@ -111,6 +107,8 @@ function cmp = compute_weight_components(rot, axis_pdf, config)
 %   cmp:            n*4, [axis_p, det_jac, geo_factor, transit_factor]
 
 rot_dim = size(rot, 2);
+det_jac = jacobian_factor(rot, config);
+
 if rot_dim == 3
     llr = geo.normalize_llr(rot);
 elseif rot_dim == 4
@@ -120,7 +118,6 @@ else
 end
 
 axis_prob = axis_pdf(llr);
-det_jac = jacobian_factor(llr, config);
 entry_factor = entry_face_factor(llr, config);
 [transit_factor, geo_factor] = transit_geo_factor(llr, config);
 
@@ -128,18 +125,18 @@ cmp = [axis_prob, 1 ./ det_jac, entry_factor .* geo_factor, transit_factor];
 end
 
 % ================================================================================
-function det_jac = jacobian_factor(llr, config)
+function det_jac = jacobian_factor(rot, config)
 % Compute deteminant of Jacobian.
 % What does this Jacobian mean? We simply imagine this, when a point moves within a small
 % region orthogonal to contour (for LLR representation, the small region is a 2D subspace),
 % the output will also moves with in a small region.
 % And clearly, the determinant of Jacobian, is the ratio of these two reagion volumn.
 
-rot_num = size(llr, 1);
+rot_num = size(rot, 1);
 ray_in_ll = [config.sun_ll(1) + 180, -config.sun_ll(2)];
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, config.crystal, config.trace);
 
-[~, jac] = fdf(llr);
+[~, jac] = fdf(rot);
 
 min_det = 1e-8;
 jac_rank_tol = 1e-10;
@@ -158,7 +155,7 @@ jac_rank_tol = 1e-10;
 %          = alpha' * v_o' * v_o * s_o * u_o' * u_o * s_o * v_o' * v_o * alpha
 %          = alpha' * s_o^2 * alpha
 % So the area factor is det(s_o)
-det_jac = nan(size(llr, 1), 1);
+det_jac = nan(rot_num, 1);
 for i = 1:rot_num
     curr_jac = jac(:, :, i);
     s = svd(curr_jac);
