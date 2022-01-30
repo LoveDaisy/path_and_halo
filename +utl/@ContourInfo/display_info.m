@@ -110,7 +110,8 @@ for k = 1:obj.total_cnt
     plot(obj.weight_component_store{k}(:, 1), obj.weight_component_store{k}(:, 6), '-', 'linewidth', 1.2, ...
         'color', line_color(4, :));
 end
-plot([obj.weight_component_store{1}(1, 1), obj.weight_component_store{1}(end, 1)], [1, 1], ':k');
-set(gca, 'yscale', 'log', 'ylim', [1e-8, 1e4]);
+xlim = get(gca, 'xlim');
+plot(xlim, [1, 1], ':k');
+set(gca, 'yscale', 'log', 'ylim', [1e-8, 1e3]);
 box on;
 end
