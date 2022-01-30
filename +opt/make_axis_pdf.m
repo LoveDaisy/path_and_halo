@@ -31,7 +31,7 @@ end
 % Second part, roll.
 % This PDF represents the density of rolling, i.e. the probability per unit rolling angle.
 % It is normalized so that C * integrate(pdf_roll, d_theta) = 1.
-if nargin == 1 || isempty(roll)
+if nargin <= 1 || isempty(roll)
     r_pdf = @(llr) ones(size(llr, 1), 1) / (2 * pi);
 else
     tmp_x = linspace(0, 360, 50000);

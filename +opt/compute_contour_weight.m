@@ -31,26 +31,8 @@ while true
     [rot_interp, s_interp, s0, s0_idx] = geo.interp_curve(rot_contour, interp_step);
     interp_num = size(rot_interp, 1);
 
-    % Convert to LLR space
-    if dim == 4
-        llr_interp = geo.quat2llr(rot_interp);
-    elseif dim == 3
-        llr_interp = rot_interp;
-        q_interp = geo.llr2quat(rot_interp);
-        diff_s = sqrt(sum(diff(q_interp).^2, 2));
-        discontinuity_idx = find(diff_s > 1) + 1;
-        for i = length(discontinuity_idx):-1:1
-            idx = discontinuity_idx(i);
-            q_interp(idx:end, :) = -q_interp(idx:end, :);
-        end
-        diff_s = sqrt(sum(diff(q_interp).^2, 2));
-        s_interp = [0; cumsum(diff_s)];
-        s0 = s_interp(s0_idx);
-    else
-        error('Input rotation must have dimesion of 3 or 4!');
-    end
-
-    interp_pdf = axis_pdf(llr_interp);
+    % Calculate probability
+    interp_pdf = axis_pdf(geo.quat2llr(rot_interp));
     if max(interp_pdf) > pdf_th && sum(interp_pdf >= pdf_th) < 20 && interp_step > len * 0.001
         interp_step = interp_step * 0.5;
     else
@@ -108,19 +90,9 @@ function cmp = compute_weight_components(rot, axis_pdf, config)
 
 rot_dim = size(rot, 2);
 det_jac = jacobian_factor(rot, config);
-
-if rot_dim == 3
-    llr = geo.normalize_llr(rot);
-elseif rot_dim == 4
-    llr = geo.quat2llr(rot);
-else
-    error('Rotations must have dimenstion 3 or 4!');
-end
-
-axis_prob = axis_pdf(llr);
-entry_factor = entry_face_factor(llr, config);
-[transit_factor, geo_factor] = transit_geo_factor(llr, config);
-
+entry_factor = entry_face_factor(rot, config);
+[transit_factor, geo_factor] = transit_geo_factor(rot, config);
+axis_prob = axis_pdf(geo.quat2llr(rot));
 cmp = [axis_prob, 1 ./ det_jac, entry_factor .* geo_factor, transit_factor];
 end
 
@@ -165,9 +137,9 @@ end
 end
 
 % ================================================================================
-function entry_factor = entry_face_factor(llr, config)
-num = size(llr, 1);
-rot_mat = geo.llr2mat(llr);
+function entry_factor = entry_face_factor(rot, config)
+num = size(rot, 1);
+rot_mat = geo.quat2mat(rot);
 
 sun_ll = config.sun_ll;
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
@@ -183,7 +155,7 @@ end
 end
 
 % ================================================================================
-function [transit_factor, geo_factor] = transit_geo_factor(llr, config)
+function [transit_factor, geo_factor] = transit_geo_factor(rot_quat, config)
 crystal = config.crystal;
 trace = config.trace;
 trace_n = opt.generate_trace_n(crystal, trace);
@@ -192,8 +164,8 @@ ray_in_ll = [config.sun_ll(1) + 180, -config.sun_ll(2)];
 ray_in_xyz = geo.ll2xyz(ray_in_ll);
 
 face_cnt = length(trace_n) - 1;
-num = size(llr, 1);
-rot_mat = geo.llr2mat(llr);
+num = size(rot_quat, 1);
+rot_mat = geo.quat2mat(rot_quat);
 
 transit_factor = ones(num, 1);
 geo_factor = ones(num, 1);
