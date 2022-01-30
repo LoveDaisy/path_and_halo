@@ -12,7 +12,7 @@ ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
 
-config = opt.init_config(crystal, trace, sun_ll, 3);
+config = opt.init_config(crystal, trace, sun_ll);
 
 %%
 tic;

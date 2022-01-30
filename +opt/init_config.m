@@ -1,6 +1,20 @@
-function config = init_config(crystal, trace, sun_ll, level)
+function config = init_config(crystal, trace, sun_ll, varargin)
+% Initialize a configuration for calculation
+%
+% INPUT
+%   crystal:        struct
+%   trace:          struct
+%   sun_ll:         [longitude, latitude]
+%
+% OPTIONS
+%   'GridLevel':    integer, default is 3, the level for HEALPix generation
+
+p = inputParser;
+p.addParameter('GridLevel', 3, @(x) validateattributes(x, {'numeric'}, {'scalar', 'positive'}));
+p.parse(varargin{:});
+
 % initial grid
-[~, rot0_ll, dr] = geo.generate_healpix_grids(level);
+[~, rot0_ll, dr] = geo.generate_healpix_grids(p.Results.GridLevel);
 roll0 = (0:dr * 2:360)';
 
 a_num = size(rot0_ll, 1);

@@ -23,7 +23,7 @@ config_cache_file = 'test_config_1_35_180+10_3.mat';
 if exist(config_cache_file, 'file')
     load(config_cache_file);
 else
-    config = opt.init_config(crystal, trace, sun_ll, 3);
+    config = opt.init_config(crystal, trace, sun_ll);
     save(config_cache_file, 'config');
 end
 
@@ -87,7 +87,7 @@ config_cache_file = 'test_config_1_35_180+15_3.mat';
 if exist(config_cache_file, 'file')
     load(config_cache_file);
 else
-    config = opt.init_config(crystal, trace, sun_ll, 3);
+    config = opt.init_config(crystal, trace, sun_ll);
     save(config_cache_file, 'config');
 end
 

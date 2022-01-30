@@ -59,7 +59,7 @@ ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 
 config_cache_file = 'test_config_1_35_180+25_3.mat';
 if ~exist(config_cache_file, 'file');
-    config = opt.init_config(crystal, trace, sun_ll, 3);
+    config = opt.init_config(crystal, trace, sun_ll);
     save(config_cache_file, 'config');
 else
     fprintf(' load config from file <%s>\n', config_cache_file);
@@ -110,7 +110,7 @@ config_cache_file = 'test_config_1_35_180+10_3.mat';
 if exist(config_cache_file, 'file')
     load(config_cache_file);
 else
-    config = opt.init_config(crystal, trace, sun_ll, 3);
+    config = opt.init_config(crystal, trace, sun_ll);
     save(config_cache_file, 'config');
 end
 

@@ -16,7 +16,7 @@ crystal = opt.make_prism_crystal(1);
 trace.fid = [3; 5];
 sun_ll = [0, 25];
 
-config = opt.init_config(crystal, trace, sun_ll, 2);
+config = opt.init_config(crystal, trace, sun_ll, 'GridLevel', 2);
 
 hist_n0 = [8, 130, 118, 98, 68, 72, 72, 54, 28, 42, 44, 22];
 hist_edge0 = [20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44];
