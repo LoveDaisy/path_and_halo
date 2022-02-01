@@ -67,8 +67,8 @@ for i = 1:num
     polygon_centers(i, :) = mean(polygon_list{i});
 end
 d = sqrt(sum(diff(polygon_centers).^2, 2));
-t = [0; cumsum(d)];
-s = 1 - t / t(end);
+t = [0; cumsum(d)] / sum(d);
+s = 1 - t;
 
 nk = zeros(num, 1);
 for i = 1:num
@@ -99,22 +99,42 @@ for i = 2:num-1
     Aeq(num-1+i, offset+[1, num-1]) = 1;
     offset = offset + 1;
 end
+beq = ones(size(Aeq, 1), 1);
 
 edge_eps = 1e-4;
+lb = zeros(length(x0), 1) + edge_eps;
+ub = ones(length(x0), 1) - edge_eps;
+
+res = false;
+
+% Stage 1: ignore incident angle at entry and exit surface
 option = optimoptions('fmincon', 'Display', 'off', 'MaxFunctionEvaluations', 3000, ...
-    'ObjectiveLimit', -0.7);
-obj_fun = @(x) solve_prog(x, polygon_list, entry_exit_norm, edge_eps * 1.05);
+    'ObjectiveLimit', 0.5);
+
+obj_fun = @(x) solve_prog(x, polygon_list, [], edge_eps * 1.05);
 val0 = obj_fun(x0);
 if isnan(val0)
-    res = false;
     return;
 end
 
-[x, ~, opt_flag] = fmincon(obj_fun, x0, [], [], Aeq, ones(size(Aeq, 1), 1), ...
-    zeros(length(x0), 1) + edge_eps, ones(length(x0), 1) - edge_eps, ...
+[x1, ~, opt_flag, opt_output] = fmincon(obj_fun, x0, [], [], Aeq, beq, lb, ub, ...
     [], option);
 
-[~, neg_cos, rk_loss, ~, is_edge] = obj_fun(x);
+[val1, ~, rk_loss, ~, is_edge] = obj_fun(x1);
+cos_angle = find_incident_angle(x1, polygon_list, entry_exit_norm);
+res = (opt_flag >= 0 || opt_flag == -3) && all(~is_edge) && rk_loss < 1e-6;
+if (res && cos_angle > cos(asin(1 / crystal.n))) || ~res
+    return;
+end
+
+% Stage 2: find out minimun incident angle
+option = optimoptions(option, 'ObjectiveLimit', -0.7);
+obj_fun = @(x) solve_prog(x, polygon_list, entry_exit_norm, edge_eps * 1.05);
+
+[x2, ~, opt_flag, opt_output] = fmincon(obj_fun, x1, [], [], Aeq, beq, lb, ub, ...
+    [], option);
+
+[val2, neg_cos, rk_loss, ~, is_edge] = obj_fun(x2);
 res = (opt_flag >= 0 || opt_flag == -3) && all(~is_edge) && ...
     -neg_cos > cos(asin(1 / crystal.n)) && rk_loss < 1e-6;
 end
@@ -169,6 +189,29 @@ if num > 2
 else
     rk_loss = 0;
 end
-neg_cos = max([-dot(entry_exit_norm(2, :), r), dot(entry_exit_norm(1, :), r)]);
+
+if ~isempty(entry_exit_norm)
+    neg_cos = -find_incident_angle(x, polys, entry_exit_norm);
+else
+    neg_cos = 0;
+end
 val = neg_cos + rk_loss * 1e8 + x_loss * 1e-3;
+end
+
+function cos_angle = find_incident_angle(x, polys, entry_exit_norm)
+num = length(polys);
+nk = zeros(num, 1);
+for i = 1:num
+    nk(i) = size(polys{i}, 1);
+end
+
+offset = 0;
+alpha_ = x((1:nk(1))+offset);
+offset = offset + nk(1);
+beta_ = x((1:nk(end))+offset);
+
+r = -alpha_' * polys{1} + beta_' * polys{end};
+r = r / norm(r);
+
+cos_angle = min([-dot(entry_exit_norm(1, :), r), dot(entry_exit_norm(2, :), r)]);
 end

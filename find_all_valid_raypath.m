@@ -3,7 +3,7 @@ clear; close all; clc;
 crystal = opt.make_prism_crystal(.2);
 face_num = length(crystal.face);
 
-max_hits = 5;
+max_hits = 6;
 possible_raypaths = -ones(face_num^max_hits, max_hits);
 
 % Find all possible raypaths
@@ -31,7 +31,7 @@ fprintf('After reduced: %d\n', size(possible_raypaths, 1));
 
 % Check if is valid
 raypath_valid_idx = false(size(possible_raypaths, 1), 1);
-for i = 1:size(possible_raypaths, 1)
+parfor i = 1:size(possible_raypaths, 1)
     fprintf('  checking raypath %d/%d...\n', i, size(possible_raypaths, 1));
     curr_raypath = possible_raypaths(i, :);
     idx = curr_raypath > 0;
