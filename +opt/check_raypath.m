@@ -67,8 +67,8 @@ for i = 1:num
     polygon_centers(i, :) = mean(polygon_list{i});
 end
 d = sqrt(sum(diff(polygon_centers).^2, 2));
-s = [0; cumsum(d)];
-s = s / s(end);
+t = [0; cumsum(d)];
+s = 1 - t / t(end);
 
 nk = zeros(num, 1);
 for i = 1:num
@@ -84,7 +84,7 @@ for i = 2:num-1
     x_gamma(offset+1:offset+nk(i)) = ones(nk(i), 1) / nk(i);
     offset = offset + nk(i);
 end
-x0 = [x_alpha; x_beta; x_gamma; s(2:num-1)];
+x0 = [x_alpha; x_beta; x_gamma; s(2:num-1); t(2:num-1)];
 
 % Make Aeq for optimization
 Aeq = zeros(num, length(x0));
@@ -92,21 +92,34 @@ Aeq(1, 1:nk(1)) = 1;
 Aeq(2, (1:nk(end))+nk(1)) = 1;
 offset = nk(1) + nk(end);
 for i = 2:num-1
-    Aeq(i, offset+(1:nk(i))) = 1;
+    Aeq(i+1, offset+(1:nk(i))) = 1;
     offset = offset + nk(i);
 end
-
-option = optimoptions('fmincon', 'disp', 'off');
-obj_fun = @(x) solve_prog(x, polygon_list, entry_exit_norm);
-x = fmincon(obj_fun, x0, [], [], Aeq, zeros(num, 1), ...
-    zeros(length(x0), 1), ones(length(x0), 1), ...
-    [], option);
-
-[~, neg_cos, rk_loss] = solve_prog(x, polygon_list, entry_exit_norm);
-res = -neg_cos > cos(asin(1 / crystal.n)) && rk_loss < 1e-8;
+for i = 2:num-1
+    Aeq(num-1+i, offset+[1, num-1]) = 1;
+    offset = offset + 1;
 end
 
-function [val, neg_cos, rk_loss] = solve_prog(x, polys, entry_exit_norm)
+edge_eps = 1e-4;
+option = optimoptions('fmincon', 'Display', 'off', 'MaxFunctionEvaluations', 3000, ...
+    'ObjectiveLimit', -0.7);
+obj_fun = @(x) solve_prog(x, polygon_list, entry_exit_norm, edge_eps * 1.05);
+val0 = obj_fun(x0);
+if isnan(val0)
+    res = false;
+    return;
+end
+
+[x, ~, opt_flag] = fmincon(obj_fun, x0, [], [], Aeq, ones(size(Aeq, 1), 1), ...
+    zeros(length(x0), 1) + edge_eps, ones(length(x0), 1) - edge_eps, ...
+    [], option);
+
+[~, neg_cos, rk_loss, ~, is_edge] = obj_fun(x);
+res = (opt_flag >= 0 || opt_flag == -3) && all(~is_edge) && ...
+    -neg_cos > cos(asin(1 / crystal.n)) && rk_loss < 1e-6;
+end
+
+function [val, neg_cos, rk_loss, x_loss, is_edge] = solve_prog(x, polys, entry_exit_norm, edge_eps)
 % x:  [alpha, beta, gamma_2, gamma_3, ..., gamma_N-1, s_2, s_3, ..., s_N-1]
 %      n1     nN     n2       n3             nN-1      1    1          1
 % The optimization problem is:
@@ -123,22 +136,39 @@ for i = 1:num
 end
 total_k_n = sum(nk(2:num-1));
 
-alpha_ = x(1:nk(1));
-beta_ = x(nk(1)+1:nk(1)+nk(end));
-gamma_ = x(nk(1)+nk(end)+1:nk(1)+nk(end)+total_k_n);
-s_ = x(nk(1)+nk(end)+total_k_n+1:nk(1)+nk(end)+total_k_n+num-2);
+offset = 0;
+alpha_ = x((1:nk(1))+offset);
+offset = offset + nk(1);
+beta_ = x((1:nk(end))+offset);
+offset = offset + nk(end);
+gamma_ = x((1:total_k_n)+offset);
+offset = offset + total_k_n;
+s_ = x((1:num-2)+offset);
+offset = offset + num - 2;
+t_ = x((1:num-2)+offset);
 
 r = -alpha_' * polys{1} + beta_' * polys{end};
 r = r / norm(r);
 
+is_edge = false(num, 1);
+is_edge(1) = sum(alpha_ >= edge_eps) < 3;
+is_edge(2) = sum(beta_ >= edge_eps) < 3;
+
 offset = 0;
 rk = zeros(num-2, 3);
 for i = 2:num-1
-    rk(i-1, :) = s_(i-1) * alpha_' * polys{1} + (1 - s_(i-1)) * beta_' * polys{end} - ...
+    rk(i-1, :) = s_(i-1) * alpha_' * polys{1} + t_(i-1) * beta_' * polys{end} - ...
         gamma_(offset+1:offset+nk(i))' * polys{i};
+    is_edge(i+1) = sum(gamma_(offset+1:offset+nk(i)) >= edge_eps) < 3;
+    offset = offset + nk(i);
 end
 
-rk_loss = sum(rk(:).^2);
+x_loss = sum([alpha_; beta_; gamma_].^2);
+if num > 2
+    rk_loss = mean(rk(:).^2);
+else
+    rk_loss = 0;
+end
 neg_cos = max([-dot(entry_exit_norm(2, :), r), dot(entry_exit_norm(1, :), r)]);
-val = neg_cos + rk_loss;
+val = neg_cos + rk_loss * 1e8 + x_loss * 1e-3;
 end

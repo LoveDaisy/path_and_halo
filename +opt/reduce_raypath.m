@@ -7,8 +7,8 @@ function raypath = reduce_raypath(raypath, sym_level)
 %   raypath:        n*1
 %   sym_level:      integer, must be one of 0, 1, 2, 3
 
-p_idx = raypath > 2;
-b_idx = raypath <= 2;
+p_idx = find(raypath > 2);
+b_idx = find(raypath <= 2);
 
 % None symmetry
 if sym_level == 0
@@ -16,7 +16,7 @@ if sym_level == 0
 end
 
 % Apply C6 symmetry
-if sum(p_idx) > 0
+if ~isempty(p_idx)
     raypath(p_idx) = raypath(p_idx) - 3;
     raypath(p_idx) = mod(raypath(p_idx) - raypath(p_idx(1)), 6);
     raypath(p_idx) = raypath(p_idx) + 3;
@@ -26,7 +26,7 @@ if sym_level == 1
 end
 
 % Apply D6 symmetry
-if sum(p_idx) > 0
+if ~isempty(p_idx)
     raypath(p_idx) = raypath(p_idx) - 3;
     tmp_path_pos = mod(raypath(p_idx), 6);
     tmp_path_neg = mod(-raypath(p_idx), 6);
@@ -46,7 +46,7 @@ if sym_level == 2
 end
 
 % Apply D6h symmetry
-if sum(b_idx) > 0
+if ~isempty(b_idx)
     raypath(b_idx) = raypath(b_idx) - 1;
     raypath(b_idx) = mod(raypath(b_idx) - raypath(b_idx(1)), 2);
     raypath(b_idx) = raypath(b_idx) + 1;
