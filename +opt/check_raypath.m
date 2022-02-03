@@ -167,9 +167,6 @@ s_ = x((1:num-2)+offset);
 offset = offset + num - 2;
 t_ = x((1:num-2)+offset);
 
-r = -alpha_' * polys{1} + beta_' * polys{end};
-r = r / norm(r);
-
 is_edge = false(num, 1);
 is_edge(1) = sum(alpha_ >= edge_eps) < 3;
 is_edge(2) = sum(beta_ >= edge_eps) < 3;
