@@ -6,6 +6,7 @@ face_num = length(crystal.face);
 max_hits = 6;
 possible_raypaths = -ones(face_num^max_hits, max_hits);
 
+tic;
 % Find all possible raypaths
 for i = 1:face_num^max_hits
     s = dec2base(i-1, face_num, max_hits);
@@ -39,3 +40,4 @@ parfor i = 1:size(possible_raypaths, 1)
 end
 possible_raypaths = possible_raypaths(raypath_valid_idx, :);
 fprintf('Total valid: %d\n', size(possible_raypaths, 1));
+toc;
