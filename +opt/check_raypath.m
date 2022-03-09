@@ -120,9 +120,10 @@ end
 [x1, ~, opt_flag, opt_output] = fmincon(obj_fun, x0, [], [], Aeq, beq, lb, ub, ...
     [], option);
 
-[val1, ~, rk_loss, ~, is_edge] = obj_fun(x1);
+[val1, ~, rk_loss, ~, maybe_edge] = obj_fun(x1);
 cos_angle = find_incident_angle(x1, polygon_list, entry_exit_norm);
-res = (opt_flag >= 0 || opt_flag == -3) && all(~is_edge) && rk_loss < 1e-6;
+res = (opt_flag >= 0 || opt_flag == -3) && ~any(maybe_edge(1:end-1) & maybe_edge(2:end)) && ...
+    rk_loss < 1e-6;
 if (res && cos_angle > cos(asin(1 / crystal.n))) || ~res
     return;
 end
@@ -134,12 +135,12 @@ obj_fun = @(x) solve_prog(x, polygon_list, entry_exit_norm, edge_eps * 1.05);
 [x2, ~, opt_flag, opt_output] = fmincon(obj_fun, x1, [], [], Aeq, beq, lb, ub, ...
     [], option);
 
-[val2, neg_cos, rk_loss, ~, is_edge] = obj_fun(x2);
-res = (opt_flag >= 0 || opt_flag == -3) && all(~is_edge) && ...
+[val2, neg_cos, rk_loss, ~, maybe_edge] = obj_fun(x2);
+res = (opt_flag >= 0 || opt_flag == -3) && ~any(maybe_edge(1:end-1) & maybe_edge(2:end)) && ...
     -neg_cos > cos(asin(1 / crystal.n)) && rk_loss < 1e-6;
 end
 
-function [val, neg_cos, rk_loss, x_loss, is_edge] = solve_prog(x, polys, entry_exit_norm, edge_eps)
+function [val, neg_cos, rk_loss, x_loss, maybe_edge] = solve_prog(x, polys, entry_exit_norm, edge_eps, varargin)
 % x:  [alpha, beta, gamma_2, gamma_3, ..., gamma_N-1, s_2, s_3, ..., s_N-1]
 %      n1     nN     n2       n3             nN-1      1    1          1
 % The optimization problem is:
@@ -148,6 +149,12 @@ function [val, neg_cos, rk_loss, x_loss, is_edge] = solve_prog(x, polys, entry_e
 %        r = normalize(-P_1 * alpha + P_N * beta)
 %        0 <= alpha, beta, gamma_k, s_k <= 1
 %        sum(alpha) = 1, sum(beta) = 1, sum(gamma_k) = 1
+
+if isempty(varargin)
+    debug = false;
+else
+    debug = varargin{1};
+end
 
 num = length(polys);
 nk = zeros(num, 1);
@@ -167,16 +174,34 @@ s_ = x((1:num-2)+offset);
 offset = offset + num - 2;
 t_ = x((1:num-2)+offset);
 
-is_edge = false(num, 1);
-is_edge(1) = sum(alpha_ >= edge_eps) < 3;
-is_edge(2) = sum(beta_ >= edge_eps) < 3;
+maybe_edge = false(num, 1);
+maybe_edge(1) = sum(alpha_ >= edge_eps * 5) < 3;
+maybe_edge(2) = sum(beta_ >= edge_eps * 5) < 3;
+
+if debug
+    hold on;
+    for i = 1:num
+        plot3(polys{i}(:, 1), polys{i}(:, 2), polys{i}(:, 3), 'ko');
+    end
+    curr_p = alpha_' * polys{1};
+    plot3(curr_p(1), curr_p(2), curr_p(3), 'rx');
+    curr_p = beta_' * polys{end};
+    plot3(curr_p(1), curr_p(2), curr_p(3), 'rx');
+    axis equal;
+end
 
 offset = 0;
 rk = zeros(num-2, 3);
 for i = 2:num-1
     rk(i-1, :) = s_(i-1) * alpha_' * polys{1} + t_(i-1) * beta_' * polys{end} - ...
         gamma_(offset+1:offset+nk(i))' * polys{i};
-    is_edge(i+1) = sum(gamma_(offset+1:offset+nk(i)) >= edge_eps) < 3;
+    maybe_edge(i+1) = sum(gamma_(offset+1:offset+nk(i)) >= edge_eps * 5) < 3;
+    
+    if debug
+        curr_p = gamma_(offset+1:offset+nk(i))' * polys{i};
+        plot3(curr_p(1), curr_p(2), curr_p(3), 'mx');
+    end
+    
     offset = offset + nk(i);
 end
 
