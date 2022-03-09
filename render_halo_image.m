@@ -1,13 +1,13 @@
 clear; close all; clc;
 
 crystal = opt.make_prism_crystal(1);
-trace.fid = [1; 3; 2; 4; 5; 1];
-% trace.fid = [3; 5];
+% trace.fid = [1; 3; 2; 4; 5; 1];
+trace.fid = [3; 5];
 
-axis_pdf = opt.make_axis_pdf([90, 0.2]);
+axis_pdf = opt.make_axis_pdf([0, 0.5]);
 % axis_pdf = opt.make_axis_pdf();
 
-sun_ll = [0, 15];
+sun_ll = [180, 15];
 ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
 
 fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
@@ -16,7 +16,7 @@ config = opt.init_config(crystal, trace, sun_ll);
 
 %%
 tic;
-halo_img = utl.generate_halo_image([-5, 5], [-25, 25], .1);
+halo_img = utl.generate_halo_image([22.5, 28.5], [-1, 1]-15, .1);
 
 fun_eval_cnt = 0;
 progress = utl.Progress(1 / (halo_img.x_length * halo_img.y_length), 0.005);
