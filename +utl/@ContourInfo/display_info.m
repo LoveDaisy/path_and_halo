@@ -47,7 +47,7 @@ axis equal;
 a12 = axes('position', [x0 + w1, 1 - y0 - h1, 1 - 2 * x0 - w1, h1]);
 hold on;
 for i = 1:obj.total_cnt
-    plot(obj.llr_contour_store{i}(:, 1), obj.llr_contour_store{i}(:, 3), '-o');
+    plot(obj.llr_contour_store{i}(:, 1), obj.llr_contour_store{i}(:, 3), 'o');
     plot(obj.llr_interp_store{i}(:, 1), obj.llr_interp_store{i}(:, 3), '.-');
 end
 box on;
@@ -58,7 +58,7 @@ set(a12, 'YAxisLocation', 'right', 'XAxisLocation', 'top');
 a21 = axes('position', [x0, y0 + h3 + outer_spacing, w1, h2]);
 hold on;
 for i = 1:obj.total_cnt
-    plot(obj.llr_contour_store{i}(:, 3), obj.llr_contour_store{i}(:, 2), '-o');
+    plot(obj.llr_contour_store{i}(:, 3), obj.llr_contour_store{i}(:, 2), 'o');
     plot(obj.llr_interp_store{i}(:, 3), obj.llr_interp_store{i}(:, 2), '.-');
 end
 set(a21, 'xdir', 'reverse');
@@ -69,7 +69,7 @@ box on;
 a22 = axes('position', [x0 + w1, y0 + h3 + outer_spacing, 1 - 2 * x0 - w1, h2]);
 hold on;
 for i = 1:obj.total_cnt
-    plot(obj.llr_contour_store{i}(:, 1), obj.llr_contour_store{i}(:, 2), '-o');
+    plot(obj.llr_contour_store{i}(:, 1), obj.llr_contour_store{i}(:, 2), 'o');
     plot(obj.llr_interp_store{i}(:, 1), obj.llr_interp_store{i}(:, 2), '.-');
 end
 box on;

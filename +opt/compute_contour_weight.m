@@ -39,6 +39,7 @@ while true
         break;
     end
 end
+llr_interp = geo.quat2llr(rot_interp);
 
 % Interpolate components as initial value
 cmp_interp = nan(length(s_interp), 6);

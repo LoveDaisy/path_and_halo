@@ -14,7 +14,11 @@ k = 2^(-dr);
 
 white_lim = prctile(halo_img.img(:), w);
 black_lim = k * white_lim;
-imagesc(halo_img.img_x, halo_img.img_y, vis_fun(halo_img.img, [black_lim, white_lim]));
+if dr < 0
+    imagesc(halo_img.img_x, halo_img.img_y, halo_img.img);
+else
+    imagesc(halo_img.img_x, halo_img.img_y, vis_fun(halo_img.img, [black_lim, white_lim]));
+end
 axis equal; axis tight; axis xy;
 end
 
