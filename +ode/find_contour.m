@@ -4,7 +4,7 @@ function [x, status] = find_contour(fdf, x0, varargin)
 %
 % INPUT
 %   fdf:        ODE function, [y, jac] = fdf(x), input x and output y may both be vector
-%   x0:         scalar. Initial point.
+%   x0:         1*d. Initial point.
 %
 % OPTION
 %   'eps':      scalar. Tolerance for output y.

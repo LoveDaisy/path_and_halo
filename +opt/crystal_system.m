@@ -11,8 +11,8 @@ function [ray_out, jac] = crystal_system(rot, ray_in_ll, crystal, trace)
 %   trace:              struct
 %
 % OUTPUT
-%   ray_out:            n*2 or n*3, [longitude, latitude, (quat_norm)], in degree. Output ray direction.
-%   jac:                2*3*n or 3*4*n, Jacobian. Input is rotation (llr or quat3) and output is ray_out
+%   ray_out:            n*3 or n*4, [x, y, z, (quat_norm)]. Output ray direction.
+%   jac:                3*3*n or 4*4*n, Jacobian. Input is rotation (llr or quat3) and output is ray_out
 
 num = size(rot, 1);
 dim_rot = size(rot, 2);
