@@ -1,9 +1,9 @@
 clear; close all; clc;
 
-crystal = opt.make_prism_crystal(.2);
+crystal = opt.make_prism_crystal(2);
 face_num = length(crystal.face);
 
-max_hits = 5;
+max_hits = 6;
 possible_raypaths = -ones(face_num^max_hits, max_hits);
 
 tic;
