@@ -28,8 +28,8 @@ while ~isempty(cand_rot)
     
     % Check if it locates on previous contour
     duplicated = false;
-    for i = 1:contour_info.total_cnt
-        [init_rot, dup_status] = geo.reduce_pts_polyline(contour_info.contour_store{i}, init_rot, ...
+    for i = 1:contour_cnt
+        [init_rot, dup_status] = geo.reduce_pts_polyline(contour_store{i}, init_rot, ...
             'eps', reduce_eps);
         fun_eval_cnt = fun_eval_cnt + dup_status.fun_eval_cnt;
         if isempty(init_rot)
