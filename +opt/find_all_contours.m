@@ -1,4 +1,4 @@
-function [contour_store, status] = find_all_contours(target_ll, fdf, config, contour_info)
+function [contour_store, rot_seeds, status] = find_all_contours(target_ll, fdf, config)
 % High level function. Find a rotation contour for a given output LL
 
 contour_store = {};
@@ -7,13 +7,13 @@ status.fun_eval_cnt = 0;
 
 % Find seed rotation
 cand_rot = opt.find_cand_rot(config, target_ll, 'quat');
+rot_seeds = cand_rot;
 if isempty(cand_rot)
     return;
 end
 
 contour_h = 0.05;
 reduce_eps = 0.05;
-contour_info.add_candidate_seeds(cand_rot);
 
 ray_out_xyz = geo.ll2xyz(target_ll);
 fun_eval_cnt = 0;

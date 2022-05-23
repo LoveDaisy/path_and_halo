@@ -33,11 +33,13 @@ for i = 1:size(all_xy, 1)
     update_progress = progress.tik_and_show(1, 'process (%d,%d) = (%.2f,%.2f)', ...
         w, h, target_ll(1), target_ll(2));
     
-    contour_info = utl.ContourInfo;
-    [contour_store, status] = opt.find_all_contours(target_ll, fdf, config, contour_info);
+    [contour_store, rot_seeds, status] = opt.find_all_contours(target_ll, fdf, config);
     if isempty(contour_store)
         continue;
     end
+    
+    contour_info = utl.ContourInfo;
+    contour_info.add_candidate_seeds(rot_seeds);
     
     weight = 0;
     for j = 1:length(contour_store)
