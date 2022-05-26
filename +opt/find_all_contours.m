@@ -52,6 +52,7 @@ while ~isempty(cand_rot)
     contour_store{contour_cnt} = rot_contour;
     
     % Reduce seeds
+    % NOTE: this may be too aggressive
     [cand_rot, reduce_status] = geo.reduce_pts_polyline(rot_contour, cand_rot, ...
         'eps', config.dr * 2.5, 'jac_fun', fdf);
     fun_eval_cnt = fun_eval_cnt + reduce_status.fun_eval_cnt;

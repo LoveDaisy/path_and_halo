@@ -8,11 +8,9 @@ axis_pdf = opt.make_axis_pdf([0, 0.5]);
 % axis_pdf = opt.make_axis_pdf();
 
 sun_ll = [180, 15];
-ray_in_ll = [sun_ll(1) + 180, -sun_ll(2)];
-
-fdf = @(rot) opt.crystal_system(rot, ray_in_ll, crystal, trace);
-
 config = opt.init_config(crystal, trace, sun_ll);
+
+fdf = @(rot) opt.crystal_system(rot, config.ray_in_ll, crystal, trace);
 
 %%
 tic;
@@ -24,6 +22,7 @@ progress = utl.Progress(1 / (halo_img.x_length * halo_img.y_length), 0.005);
 [xx, yy] = meshgrid(1:halo_img.x_length, 1:halo_img.y_length);
 all_xy = [xx(:), yy(:)];
 clear xx yy;
+% all_xy = [21, 11];
 
 for i = 1:size(all_xy, 1)
     w = all_xy(i, 1);
