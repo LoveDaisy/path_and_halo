@@ -3,6 +3,7 @@ project(HaloPathMath VERSION 2.1.1)
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 option(DEBUG "Default OFF" OFF)
+option(BUILD_TEST "Default ON" ON)
 
 # ==================================================================================================
 # Compiler related

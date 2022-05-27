@@ -3,4 +3,5 @@
 *.psd
 
 .vscode
+.cache
 build
