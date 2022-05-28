@@ -17,41 +17,41 @@ struct ZeroExpr {};
 
 struct OneExpr {};
 
-template <class T>
-struct ScalarExpr {
-  T val_;
+template <class V>
+struct VarExpr {
+  V val_;
+
+  VarExpr(V&& v) : val_(std::forward<V>(v)) {}
 };
 
-template <class... V_Expr>
+template <class... V>
 struct VecExpr {
-  std::tuple<V_Expr...> val_;
+  std::tuple<V...> val_;
 };
 
-template <class Op, class V_Expr>
+template <class Op, class V>
 struct UnaryExpr {
   Op op_;
-  V_Expr val_;
+  V val_;
 
-  UnaryExpr(V_Expr&& v) : op_{}, val_{ std::forward<V_Expr>(v) } {}
+  UnaryExpr(V&& v) : op_{}, val_{ std::forward<V>(v) } {}
 };
 
 
-template <class Op, class L_Expr, class R_Expr>
+template <class Op, class L, class R>
 struct BinaryExpr {
   Op op_;
-  L_Expr l_;
-  R_Expr r_;
+  L l_;
+  R r_;
 
-  BinaryExpr(L_Expr&& l, R_Expr&& r) : op_{}, l_{ std::forward<L_Expr>(l) }, r_{ std::forward<R_Expr>(r) } {}
-
-  operator Varf() { return Varf{ Evaluate(*this) }; }
+  BinaryExpr(L&& l, R&& r) : op_{}, l_{ std::forward<L>(l) }, r_{ std::forward<R>(r) } {}
 };
 
 
 // =============== Operator overloads ===============
-template <class L_Expr, class R_Expr>
-AddExpr<L_Expr, R_Expr> operator+(L_Expr&& l, R_Expr&& r) {
-  return AddExpr<L_Expr, R_Expr>{ std::forward<L_Expr>(l), std::forward<R_Expr>(r) };
+template <class L, class R>
+AddExpr<L, R> operator+(L&& l, R&& r) {
+  return AddExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
 }
 
 }  // namespace ad

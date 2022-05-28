@@ -2,10 +2,10 @@
 #define AUTO_DIFF_AD_HPP_
 
 #include <cstddef>
+#include <tuple>
 
+#include "auto_diff/common.hpp"
 #include "auto_diff/expr.hpp"
-#include "auto_diff/traits.hpp"
-#include "auto_diff/types.hpp"
 
 namespace halo_pm {
 
@@ -13,16 +13,16 @@ namespace ad {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Make auto differentiation easy and straight. Like following codes:
 // ~~~c++
-// Var f(Var x, Var y, Var z) { ... }
+// VarExpr f(VarExpr x, VarExpr y, VarExpr z) { ... }
 //
-// Var x = 0.1;     // scalar
-// Var y{};         // zero-initialize
-// Var z{-0.3};
-// Var u = f(x, y, z);
+// VarExpr x = 0.1f;
+// VarExpr y = 0.0f;
+// VarExpr z{-0.3};
+// VarExpr u = f(x, y, z);
 //
-// Vec u_val = f(x, y, z);    // implicit conversion: Var --> Vec, Var is an expression and Vec is real values.
-// Vec u_val = u.eval();      // or explicit evaluation
-// Mat u_jac = u.jacobian();  // jacobian() returns a MatType
+// Vecf u_val = f(x, y, z);       // implicit conversion: VarExpr --> Vecf
+// Vecf u_val = Evaluate(u);      // or explicit evaluation
+// Mat3x3f u_jac = Jacobian(u);   // Jacobian() returns a MatType
 // ~~~
 
 // =============== Evaluate ===============
@@ -36,11 +36,6 @@ constexpr float Evaluate(ZeroExpr /* e */) {
 
 constexpr float Evaluate(OneExpr /* e */) {
   return 1;
-}
-
-template <class T>
-constexpr float Evaluate(ScalarExpr<T> e) {
-  return e.val_;
 }
 
 template <class... T>

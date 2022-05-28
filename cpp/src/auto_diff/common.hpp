@@ -44,20 +44,18 @@ struct DivideOp;
 struct ZeroExpr;
 struct OneExpr;
 
-template <class T>
-struct ScalarExpr;
+template <class V>
+struct VarExpr;
 
-template <class... V_Expr>
+template <class... V>
 struct VecExpr;
 
-template <class Op, class V_Expr>
+
+template <class Op, class V>
 struct UnaryExpr;
 
-template <class T>
-using VarExpr = UnaryExpr<NoneOp, T>;
 
-
-template <class Op, class L_Expr, class R_Expr>
+template <class Op, class L, class R>
 struct BinaryExpr;
 
 template <class L, class R>
@@ -67,9 +65,6 @@ using AddExpr = BinaryExpr<AddOp, L, R>;
 constexpr float Evaluate(float);
 constexpr float Evaluate(ZeroExpr);
 constexpr float Evaluate(OneExpr);
-
-template <class T>
-constexpr float Evaluate(ScalarExpr<T> e);
 
 template <class... T>
 constexpr auto Evaluate(VecExpr<T...> e) -> Vec<float, sizeof...(T)>;
@@ -81,8 +76,6 @@ template <class L, class R>
 constexpr auto Evaluate(AddExpr<L, R> e) -> float;
 
 }  // namespace ad
-
-using Varf = ad::VarExpr<float>;
 
 }  // namespace halo_pm
 
