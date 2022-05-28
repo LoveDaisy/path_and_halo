@@ -57,6 +57,43 @@ constexpr auto Evaluate(AddExpr<L, R> e) -> float {
   return Evaluate(e.l_) + Evaluate(e.r_);
 }
 
+template <class L, class R>
+constexpr auto Evaluate(MinusExpr<L, R> e) -> float {
+  return Evaluate(e.l_) - Evaluate(e.r_);
+}
+
+template <class L, class R>
+constexpr auto Evaluate(TimesExpr<L, R> e) -> float {
+  return Evaluate(e.l_) * Evaluate(e.r_);
+}
+
+template <class L, class R>
+constexpr auto Evaluate(DivideExpr<L, R> e) -> float {
+  return Evaluate(e.l_) / Evaluate(e.r_);
+}
+
+
+// =============== Operator overloads ===============
+template <class L, class R>
+AddExpr<L, R> operator+(L&& l, R&& r) {
+  return AddExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
+template <class L, class R>
+MinusExpr<L, R> operator-(L&& l, R&& r) {
+  return MinusExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
+template <class L, class R>
+TimesExpr<L, R> operator*(L&& l, R&& r) {
+  return TimesExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
+template <class L, class R>
+DivideExpr<L, R> operator/(L&& l, R&& r) {
+  return DivideExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
 }  // namespace ad
 
 }  // namespace halo_pm

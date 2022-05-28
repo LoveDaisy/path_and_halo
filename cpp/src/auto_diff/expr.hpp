@@ -48,12 +48,6 @@ struct BinaryExpr {
 };
 
 
-// =============== Operator overloads ===============
-template <class L, class R>
-AddExpr<L, R> operator+(L&& l, R&& r) {
-  return AddExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
-}
-
 }  // namespace ad
 }  // namespace halo_pm
 

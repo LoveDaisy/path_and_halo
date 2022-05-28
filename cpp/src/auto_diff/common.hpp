@@ -11,33 +11,35 @@ struct NoneType;
 
 template <class T, size_t Len>
 struct Vec;
-using Vec3f = Vec<float, 3>;
 
 template <class T, size_t R, size_t C>
 struct Mat;
+
+using Vec3f = Vec<float, 3>;
 using Mat3x3f = Mat<float, 3, 3>;
 
 
-// =============== Special Op ===============
+// =============== Operators ===============
+// Special Op
 struct NoneOp;
 struct IdenticalOp;
 
-// =============== Unary Op ===============
+// Unary Op
 struct NegativeOp;
 struct PositiveOp;
 
-// =============== Functional Op ===============
+// Binary Op
+struct AddOp;
+struct MinusOp;
+struct TimesOp;
+struct DivideOp;
+
+// Functional Op
 struct SinOp;
 struct CosOp;
 struct TanOp;
 struct ExpOp;
 struct LogOp;
-
-// =============== Binary Op ===============
-struct AddOp;
-struct MinusOp;
-struct TimesOp;
-struct DivideOp;
 
 
 // =============== Expressions ===============
@@ -50,16 +52,26 @@ struct VarExpr;
 template <class... V>
 struct VecExpr;
 
-
 template <class Op, class V>
 struct UnaryExpr;
-
 
 template <class Op, class L, class R>
 struct BinaryExpr;
 
+
+// =============== Expression alias ===============
 template <class L, class R>
 using AddExpr = BinaryExpr<AddOp, L, R>;
+
+template <class L, class R>
+using MinusExpr = BinaryExpr<MinusOp, L, R>;
+
+template <class L, class R>
+using TimesExpr = BinaryExpr<TimesOp, L, R>;
+
+template <class L, class R>
+using DivideExpr = BinaryExpr<DivideOp, L, R>;
+
 
 // =============== Evaluate ===============
 constexpr float Evaluate(float);
