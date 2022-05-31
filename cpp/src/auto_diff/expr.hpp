@@ -2,32 +2,49 @@
 #define AUTO_DIFF_EXPR_HPP_
 
 #include <cstddef>
+#include <functional>
+#include <string>
 #include <tuple>
-#include <type_traits>
+#include <utility>
 
 #include "auto_diff/common.hpp"
-#include "auto_diff/op.hpp"
-#include "auto_diff/types.hpp"
 
 namespace halo_pm {
 namespace ad {
 
 // =============== Expressions ===============
-struct ZeroExpr {};
-
-struct OneExpr {};
-
 template <class V>
 struct VarExpr {
   V val_;
+  size_t id_;
 
-  VarExpr(V&& v) : val_(std::forward<V>(v)) {}
+  static size_t global_id_;
+
+  VarExpr(V&& v) : val_(std::forward<V>(v)), id_(global_id_++) {}
 };
+
+template <class V>
+size_t VarExpr<V>::global_id_ = 0;
+
 
 template <class... V>
 struct VecExpr {
   std::tuple<V...> val_;
+  static constexpr size_t len = sizeof...(V);
+
+  VecExpr(V&&... v) : val_(std::make_tuple(std::forward<V>(v)...)) {}
 };
+
+
+template <size_t R, size_t C, class... V>
+struct MatExpr {
+  std::tuple<V...> val_;
+  static constexpr size_t row = R;
+  static constexpr size_t col = C;
+
+  MatExpr(V&&... v) : val_(std::make_tuple(std::forward<V>(v)...)) {}
+};
+
 
 template <class Op, class V>
 struct UnaryExpr {
@@ -47,6 +64,47 @@ struct BinaryExpr {
   BinaryExpr(L&& l, R&& r) : op_{}, l_{ std::forward<L>(l) }, r_{ std::forward<R>(r) } {}
 };
 
+
+// =============== Operator overloads ===============
+template <class L, class R>
+AddExpr<L, R> operator+(L&& l, R&& r) {
+  return AddExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
+template <class L, class R>
+MinusExpr<L, R> operator-(L&& l, R&& r) {
+  return MinusExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
+template <class L, class R>
+TimesExpr<L, R> operator*(L&& l, R&& r) {
+  return TimesExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
+template <class L, class R>
+DivideExpr<L, R> operator/(L&& l, R&& r) {
+  return DivideExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
+template <class T>
+VarExpr<T> operator+(const VarExpr<T>& a, const VarExpr<T>& b) {
+  return VarExpr<T>{ a.val_ + b.val_ };
+}
+
+template <class T>
+VarExpr<T> operator-(const VarExpr<T>& a, const VarExpr<T>& b) {
+  return VarExpr<T>{ a.val_ - b.val_ };
+}
+
+template <class T>
+VarExpr<T> operator*(const VarExpr<T>& a, const VarExpr<T>& b) {
+  return VarExpr<T>{ a.val_ * b.val_ };
+}
+
+template <class T>
+VarExpr<T> operator/(const VarExpr<T>& a, const VarExpr<T>& b) {
+  return VarExpr<T>{ a.val_ / b.val_ };
+}
 
 }  // namespace ad
 }  // namespace halo_pm

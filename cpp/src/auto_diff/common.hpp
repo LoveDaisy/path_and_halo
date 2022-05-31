@@ -43,9 +43,6 @@ struct LogOp;
 
 
 // =============== Expressions ===============
-struct ZeroExpr;
-struct OneExpr;
-
 template <class V>
 struct VarExpr;
 
@@ -75,8 +72,6 @@ using DivideExpr = BinaryExpr<DivideOp, L, R>;
 
 // =============== Evaluate ===============
 constexpr float Evaluate(float);
-constexpr float Evaluate(ZeroExpr);
-constexpr float Evaluate(OneExpr);
 
 template <class... T>
 constexpr auto Evaluate(VecExpr<T...> e) -> Vec<float, sizeof...(T)>;
@@ -86,6 +81,11 @@ constexpr auto Evaluate(VarExpr<T> e);
 
 template <class L, class R>
 constexpr auto Evaluate(AddExpr<L, R> e) -> float;
+
+
+// =============== Differentiate ===============
+template <class V>
+struct wrt;
 
 }  // namespace ad
 

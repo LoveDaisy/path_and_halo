@@ -4,13 +4,14 @@
 #include <cstddef>
 #include <type_traits>
 
+#include "auto_diff/common.hpp"
 #include "auto_diff/expr.hpp"
 #include "auto_diff/types.hpp"
 
 namespace halo_pm {
 namespace ad {
 
-namespace internal {
+namespace traits {
 
 // =============== Traits ===============
 // MatType
@@ -36,6 +37,26 @@ struct is_vec_type<VecExpr<T...>> : public std::true_type {};
 
 template <class T>
 inline constexpr bool is_vec_type_v = is_vec_type<T>::value;
+
+
+// Expr
+template <class T>
+struct is_expr : public std::false_type {};
+
+template <class T>
+struct is_expr<VarExpr<T>> : public std::true_type {};
+
+template <class... T>
+struct is_expr<VecExpr<T...>> : public std::true_type {};
+
+template <class Op, class T>
+struct is_expr<UnaryExpr<Op, T>> : public std::true_type {};
+
+template <class Op, class L, class R>
+struct is_expr<BinaryExpr<Op, L, R>> : public std::true_type {};
+
+template <class T>
+inline constexpr bool is_expr_v = is_expr<T>::value;
 
 
 // Get underlying type of value
@@ -77,36 +98,29 @@ struct value_type<VarExpr<T>> {
 template <class T>
 using value_type_t = typename value_type<T>::type;
 
-}  // namespace internal
 
-
-template <class T>
-constexpr bool IsArithmeticType() {
-  // Normal arithmetic type
-  if constexpr (std::is_arithmetic_v<T>) {
-    return true;
-  }
-
-  // VecType
-  else if constexpr (internal::is_vec_type_v<T> && IsArithmeticType<internal::value_type_t<T>>()) {
-    return true;
-  }
-
-  // MatType
-  else if constexpr (internal::is_mat_type_v<T> && IsArithmeticType<internal::value_type_t<T>>()) {
-    return true;
-  }
-
-  // Other cases
-  else {
-    return false;
-  }
-}
+// Variable dimension
+template <class T, class Enable = void>
+struct var_dim {
+  static constexpr size_t dim = 0;
+};
 
 template <class T>
-constexpr bool IsVecType() {
-  return internal::is_vec_type_v<T>;
-}
+struct var_dim<VarExpr<T>, std::enable_if_t<std::is_arithmetic_v<T>>> {
+  static constexpr size_t dim = 1;
+};
+
+template <class T>
+struct var_dim<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+  static constexpr size_t dim = 1;
+};
+
+template <class T>
+struct var_dim<wrt<T>> {
+  static constexpr size_t dim = var_dim<T>::dim;
+};
+
+}  // namespace traits
 
 }  // namespace ad
 }  // namespace halo_pm
