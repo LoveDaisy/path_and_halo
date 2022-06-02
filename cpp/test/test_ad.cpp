@@ -48,7 +48,7 @@ TEST_F(TestAD, simple_lazy) {
 }
 
 // NOLINTNEXTLINE
-TEST_F(TestAD, simple_jac) {
+TEST_F(TestAD, simple_diff) {
   ad::VarExpr a = 1.0f;
   ad::VarExpr b = 2.3f;
   ad::VarExpr c = -.3f;
@@ -61,15 +61,20 @@ TEST_F(TestAD, simple_jac) {
 
   {
     ad::VarExpr u = a / b;
-    ad::VarExpr u_jac = ad::Differentiate(u, ad::wrt(a));
-    float u_jac_val = ad::Evaluate(u_jac);
-    ASSERT_NEAR(u_jac_val, 1.0f / 2.3f, 1e-5);
+    ad::VarExpr ua = ad::Differentiate(u, ad::wrt(a));
+    float ua_val = ad::Evaluate(ua);
+    ASSERT_NEAR(ua_val, 1.0f / 2.3f, 1e-5);
   }
+
   {
     ad::VarExpr u = a / b * c;
-    ad::VarExpr u_jac = ad::Differentiate(u, ad::wrt(a));
-    float u_jac_val = ad::Evaluate(u_jac);
-    ASSERT_NEAR(u_jac_val, -0.3f / 2.3f, 1e-5);
+    ad::VarExpr ua = ad::Differentiate(u, ad::wrt(a));
+    float ua_val = ad::Evaluate(ua);
+    ASSERT_NEAR(ua_val, -0.3f / 2.3f, 1e-5);
+
+    ad::VarExpr ub = ad::Differentiate(u, ad::wrt(b));
+    float ub_val = ad::Evaluate(ub);
+    ASSERT_NEAR(ub_val, 0.3f / 2.3f / 2.3f, 1e-5);
   }
 }
 

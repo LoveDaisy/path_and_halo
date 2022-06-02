@@ -34,6 +34,11 @@ constexpr float Evaluate(float v) {
   return v;
 }
 
+template <class T, size_t C, size_t R>
+constexpr Mat<T, C, R> Evaluate(Mat<T, R, C> v) {
+  return v;
+}
+
 template <class... T>
 constexpr auto Evaluate(VecExpr<T...> e) -> Vec<float, sizeof...(T)> {
   Vec<float, sizeof...(T)> res;
