@@ -4,6 +4,7 @@
 
 #include "auto_diff/ad.hpp"
 #include "auto_diff/common.hpp"
+#include "util/log.hpp"
 
 namespace {
 // NOLINTNEXTLINE
@@ -22,6 +23,8 @@ TEST_F(TestAD, simple_lazy) {
     auto x2 = a1 + b1 + c1;         // or let it be auto (thus **NOT** a VarExpr type)
     float x1_val = ad::Evaluate(x1);
     float x2_val = ad::Evaluate(x2);
+
+    LOG_INFO("x1_val: %.4f", x1_val);
 
     ASSERT_NEAR(x1_val, 2.6f, 1e-6);
     ASSERT_NEAR(x2_val, 2.6f, 1e-6);
