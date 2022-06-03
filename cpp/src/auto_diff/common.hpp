@@ -6,19 +6,6 @@
 namespace halo_pm {
 namespace ad {
 
-// =============== Types ===============
-struct NoneType;
-
-template <class T, size_t Len>
-struct Vec;
-
-template <class T, size_t R, size_t C>
-struct Mat;
-
-using Vec3f = Vec<float, 3>;
-using Mat3x3f = Mat<float, 3, 3>;
-
-
 // =============== Operators ===============
 // Special Op
 struct NoneOp;
@@ -68,19 +55,6 @@ using TimesExpr = BinaryExpr<TimesOp, L, R>;
 
 template <class L, class R>
 using DivideExpr = BinaryExpr<DivideOp, L, R>;
-
-
-// =============== Evaluate ===============
-constexpr float Evaluate(float);
-
-template <class... T>
-constexpr auto Evaluate(VecExpr<T...> e) -> Vec<float, sizeof...(T)>;
-
-template <class T>
-constexpr auto Evaluate(VarExpr<T> e);
-
-template <class L, class R>
-constexpr auto Evaluate(AddExpr<L, R> e) -> float;
 
 
 // =============== Differentiate ===============

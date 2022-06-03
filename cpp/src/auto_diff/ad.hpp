@@ -34,42 +34,28 @@ constexpr float Evaluate(float v) {
   return v;
 }
 
-template <class T, size_t C, size_t R>
-constexpr Mat<T, C, R> Evaluate(Mat<T, R, C> v) {
-  return v;
-}
-
-template <class... T>
-constexpr auto Evaluate(VecExpr<T...> e) -> Vec<float, sizeof...(T)> {
-  Vec<float, sizeof...(T)> res;
-  for (size_t i = 0; i < sizeof...(T); i++) {
-    res.data_[i] = Evaluate(std::get<i>(e.val_));
-  }
-  return res;
-}
-
 template <class T>
 constexpr auto Evaluate(VarExpr<T> e) {
   return Evaluate(e.val_);
 }
 
 template <class L, class R>
-constexpr auto Evaluate(AddExpr<L, R> e) -> float {
+constexpr auto Evaluate(AddExpr<L, R> e) {
   return Evaluate(e.l_) + Evaluate(e.r_);
 }
 
 template <class L, class R>
-constexpr auto Evaluate(MinusExpr<L, R> e) -> float {
+constexpr auto Evaluate(MinusExpr<L, R> e) {
   return Evaluate(e.l_) - Evaluate(e.r_);
 }
 
 template <class L, class R>
-constexpr auto Evaluate(TimesExpr<L, R> e) -> float {
+constexpr auto Evaluate(TimesExpr<L, R> e) {
   return Evaluate(e.l_) * Evaluate(e.r_);
 }
 
 template <class L, class R>
-constexpr auto Evaluate(DivideExpr<L, R> e) -> float {
+constexpr auto Evaluate(DivideExpr<L, R> e) {
   return Evaluate(e.l_) / Evaluate(e.r_);
 }
 
@@ -88,7 +74,7 @@ template <class Y, class X>
 constexpr auto Differentiate(VarExpr<Y> v, wrt<X> x) {
   // Direct case, i.e. v.val_ is data type (non-expr type)
   if constexpr (!traits::is_expr_v<Y>) {
-    return Mat<float, traits::var_dim<Y>::dim, traits::var_dim<X>::dim>{};
+    return 0.0f;
   }
 
   // Expr
@@ -103,14 +89,9 @@ constexpr auto Differentiate(VarExpr<V> v, wrt<VarExpr<V>> x) {
   // Direct case, i.e. v.val_ is data type (non-expr type)
   if constexpr (!traits::is_expr_v<V>) {
     if (v.id_ == x.val_.id_) {
-      constexpr size_t n = traits::var_dim<V>::dim;
-      Mat<float, n, n> res{};
-      for (size_t i = 0; i < n; i++) {
-        res.data_[i * n + i] = 1.0f;
-      }
-      return res;
+      return 1.0f;
     } else {
-      return Mat<float, traits::var_dim<V>::dim, traits::var_dim<V>::dim>{};
+      return 0.0f;
     }
   }
 
@@ -120,9 +101,9 @@ constexpr auto Differentiate(VarExpr<V> v, wrt<VarExpr<V>> x) {
   }
 }
 
-template <class T, size_t R, size_t C, class X>
-constexpr auto Differentiate(const Mat<T, R, C>& m, wrt<X> /* x */) -> Mat<T, R, C> {
-  return m;
+template <class... V, class X>
+constexpr auto Differentiate(V... v, wrt<X> x) {
+  return VecExpr(Differentiate(v, x)...);
 }
 
 

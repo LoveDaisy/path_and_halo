@@ -13,32 +13,6 @@ namespace ad {
 
 namespace traits {
 
-// =============== Traits ===============
-// MatType
-template <class T>
-struct is_mat_type : public std::false_type {};
-
-template <class T, size_t R, size_t C>
-struct is_mat_type<Mat<T, R, C>> : public std::true_type {};
-
-template <class T>
-inline constexpr bool is_mat_type_v = is_mat_type<T>::value;
-
-
-// VecType
-template <class T>
-struct is_vec_type : public std::false_type {};
-
-template <class T, size_t Len>
-struct is_vec_type<Vec<T, Len>> : public std::true_type {};
-
-template <class... T>
-struct is_vec_type<VecExpr<T...>> : public std::true_type {};
-
-template <class T>
-inline constexpr bool is_vec_type_v = is_vec_type<T>::value;
-
-
 // Expr
 template <class T>
 struct is_expr : public std::false_type {};
@@ -68,18 +42,6 @@ struct value_type {
 template <class T>
 struct value_type<T, typename std::enable_if_t<std::is_arithmetic_v<T>>> {
   // Normal arithmetic types
-  using type = T;
-};
-
-template <class T, size_t Len>
-struct value_type<Vec<T, Len>> {
-  // VecType
-  using type = T;
-};
-
-template <class T, size_t R, size_t C>
-struct value_type<Mat<T, R, C>> {
-  // MatType
   using type = T;
 };
 
