@@ -22,6 +22,7 @@ struct VarExpr {
   static size_t global_id_;
 
   VarExpr(V&& v) : val_(std::forward<V>(v)), id_(global_id_++) {}
+  VarExpr(const V& v) : val_(v), id_(global_id_++) {}
 };
 
 template <class V>
