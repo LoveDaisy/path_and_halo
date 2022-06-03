@@ -2,8 +2,6 @@
 #define AUTO_DIFF_AD_HPP_
 
 #include <cstddef>
-#include <tuple>
-#include <utility>
 
 #include "auto_diff/common.hpp"
 #include "auto_diff/expr.hpp"
@@ -23,10 +21,10 @@ namespace ad {
 // VarExpr z{-0.3};
 // VarExpr u = f(x, y, z);
 //
-// Vecf u_val = f(x, y, z);    // implicit conversion: VarExpr --> Vecf
-// Vecf u_val = Evaluate(u);   // or explicit evaluation
-// auto jac = Differentiate(u, wrt(x, y));   // Differentiate() returns a MatExpr (Jacobian matrix)
-// auto jac_val = Evaluate(jac);
+// Vecf u_val = f(x, y, z);      // implicit conversion: VarExpr --> Vecf
+// Vecf u_val = Evaluate(u);     // or explicit evaluation
+// auto ua = Differentiate(u, wrt(x, y));  // It is an Expr
+// float ua_val = Evaluate(ua);            // explicitly convert to float
 // ~~~
 
 // =============== Evaluate ===============

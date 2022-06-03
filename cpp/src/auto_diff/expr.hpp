@@ -2,11 +2,7 @@
 #define AUTO_DIFF_EXPR_HPP_
 
 #include <cstddef>
-#include <functional>
-#include <initializer_list>
-#include <string>
 #include <tuple>
-#include <utility>
 
 #include "auto_diff/common.hpp"
 
