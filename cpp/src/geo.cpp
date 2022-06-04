@@ -6,7 +6,7 @@
 
 namespace halo_pm {
 
-void Ll2Xyz(const float* ll, float* xyz,                    // input & output
+void Ll2Xyz(const float* ll, float* xyz,                    // input & output, ll in degree
             size_t num,                                     // data number
             size_t ll_step_bytes, size_t xyz_step_bytes) {  // step of input & output
   assert(ll_step_bytes % sizeof(float) == 0);
@@ -21,6 +21,24 @@ void Ll2Xyz(const float* ll, float* xyz,                    // input & output
 
     p += ll_step_bytes == 0 ? 2 : ll_step_bytes / sizeof(float);
     q += xyz_step_bytes == 0 ? 3 : xyz_step_bytes / sizeof(float);
+  }
+}
+
+
+void Xyz2Ll(const float* xyz, float* ll,                    // input & output, ll in degree, xyz normalized
+            size_t num,                                     // data number
+            size_t xyz_step_bytes, size_t ll_step_bytes) {  // step of input & output
+  assert(xyz_step_bytes % sizeof(float) == 0);
+  assert(ll_step_bytes % sizeof(float) == 0);
+
+  const float* p = xyz;
+  float* q = ll;
+  for (size_t i = 0; i < num; i++) {
+    q[1] = std::asin(p[2]) * kRad2Degree;
+    q[0] = std::atan2(p[1], p[0]) * kRad2Degree;
+
+    p += xyz_step_bytes == 0 ? 3 : xyz_step_bytes / sizeof(float);
+    q += ll_step_bytes == 0 ? 2 : ll_step_bytes / sizeof(float);
   }
 }
 

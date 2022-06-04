@@ -14,6 +14,11 @@ void Ll2Xyz(const float* ll, float* xyz,                           // input & ou
             size_t ll_step_bytes = 0, size_t xyz_step_bytes = 0);  // step of input & output
 
 
+void Xyz2Ll(const float* xyz, float* ll,                           // input & output, ll in degree, xyz normalized
+            size_t num = 1,                                        // data number
+            size_t xyz_step_bytes = 0, size_t ll_step_bytes = 0);  // step of input & output
+
+
 void Llr2Mat(const float* llr, float* mat,                           // input & output, llr in degree
              size_t num = 1,                                         // data number
              size_t llr_step_bytes = 0, size_t mat_step_bytes = 0);  // step of input & output
