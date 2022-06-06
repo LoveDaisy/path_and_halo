@@ -32,7 +32,8 @@ target_compile_definitions(proj_test_lib PUBLIC VERBOSE_LOG)
 
 add_executable(unit_test
   "${PROJ_TEST_DIR}/test_ad.cpp"
-  "${PROJ_TEST_DIR}/test_geo.cpp")
+  "${PROJ_TEST_DIR}/test_geo.cpp"
+  "${PROJ_TEST_DIR}/test_sph_grid.cpp")
 target_include_directories(unit_test
   PRIVATE ${PROJ_TEST_DIR})
 target_link_libraries(unit_test

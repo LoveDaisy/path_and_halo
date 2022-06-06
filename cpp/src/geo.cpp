@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstddef>
 
+#include "math.hpp"
+
 namespace halo_pm {
 
 void Ll2Xyz(const float* ll, float* xyz,                    // input & output, ll in degree
