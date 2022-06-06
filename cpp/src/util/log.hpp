@@ -149,7 +149,11 @@ class Logger {
 };
 
 
+#if defined(FOR_TEST) || defined(DEBUG)
 #define LOG_DEBUG(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kDebug, __VA_ARGS__)
+#else
+#define LOG_DEBUG(...)
+#endif
 #define LOG_VERBOSE(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kVerbose, __VA_ARGS__)
 #define LOG_INFO(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kInfo, __VA_ARGS__)
 #define LOG_WARNING(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kWarning, __VA_ARGS__)

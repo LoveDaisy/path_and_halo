@@ -27,7 +27,6 @@ endif()
 add_library(proj_test_lib OBJECT ${proj_src})
 target_include_directories(proj_test_lib PUBLIC ${proj_include})
 target_compile_definitions(proj_test_lib PUBLIC FOR_TEST)
-target_compile_definitions(proj_test_lib PUBLIC VERBOSE_LOG)
 
 
 add_executable(unit_test

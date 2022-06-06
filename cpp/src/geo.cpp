@@ -5,6 +5,7 @@
 #include <cstddef>
 
 #include "math.hpp"
+#include "util/log.hpp"
 
 namespace halo_pm {
 
@@ -73,6 +74,44 @@ void Llr2Mat(const float* llr, float* mat,                    // input & output,
 
     p += llr_step_bytes == 0 ? 3 : llr_step_bytes / sizeof(float);
     q += mat_step_bytes == 0 ? 9 : mat_step_bytes / sizeof(float);
+  }
+}
+
+
+void RotateByQuat(const float* quat, const float* xyz0, float* xyz1,  // input & output
+                  size_t num,                                         // data number
+                  size_t xyz0_step_bytes, size_t xyz1_step_bytes) {   // steps
+  // Quaternion rotation. See wiki link for details: https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+  // q =    [cos(theta/2),  [ux, uy, uz] * sin(theta/2)]
+  // p =    [0,             [px, py, pz]]
+  // q^-1 = [cos(theta/2), -[ux, uy, uz] * sin(theta/2)]
+  // p' =   q * p * q^-1
+
+  assert(xyz0_step_bytes % sizeof(float) == 0);
+  assert(xyz1_step_bytes % sizeof(float) == 0);
+  if (xyz0_step_bytes == 0) {
+    xyz0_step_bytes = 3 * sizeof(float);
+  }
+  if (xyz1_step_bytes == 0) {
+    xyz1_step_bytes = 3 * sizeof(float);
+  }
+
+  float tmp[4]{};
+
+  for (size_t i = 0; i < num; i++) {
+    const float* p0 = xyz0 + i * (xyz0_step_bytes / sizeof(float));
+    tmp[0] = -quat[1] * p0[0] - quat[2] * p0[1] - quat[3] * p0[2];
+    tmp[1] = quat[0] * p0[0] + quat[2] * p0[2] - quat[3] * p0[1];
+    tmp[2] = quat[0] * p0[1] - quat[1] * p0[2] + quat[3] * p0[0];
+    tmp[3] = quat[0] * p0[2] + quat[1] * p0[1] - quat[2] * p0[0];
+
+    LOG_DEBUG("tmp=[% .4f,% .4f,% .4f,% .4f]", tmp[0], tmp[1], tmp[2], tmp[3]);
+
+    float* p1 = xyz1 + i * (xyz1_step_bytes / sizeof(float));
+    p1[0] = -tmp[0] * quat[1] + tmp[1] * quat[0] - tmp[2] * quat[3] + tmp[3] * quat[2];
+    p1[1] = -tmp[0] * quat[2] + tmp[1] * quat[3] + tmp[2] * quat[0] - tmp[3] * quat[1];
+    p1[2] = -tmp[0] * quat[3] - tmp[1] * quat[2] + tmp[2] * quat[1] + tmp[3] * quat[0];
+    LOG_DEBUG("xyz1=[% .4f,% .4f,% .4f]", p1[0], p1[1], p1[2]);
   }
 }
 }  // namespace halo_pm
