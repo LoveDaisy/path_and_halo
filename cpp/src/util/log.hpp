@@ -139,6 +139,16 @@ class Logger {
     }
   }
 
+  // No fmt string. The compiler will complain if we do not implement this version.
+  void Emit(LogLevel lv, const char* str) {
+    LogMessage msg(lv, str);
+    for (const auto& [f, w] : writers_) {
+      if (f->Check(msg)) {
+        w->Write(msg);
+      }
+    }
+  }
+
   static constexpr size_t kBufLen = 1024;
 
  private:
@@ -149,7 +159,7 @@ class Logger {
 };
 
 
-#if defined(FOR_TEST) || defined(DEBUG)
+#ifdef FOR_TEST
 #define LOG_DEBUG(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kDebug, __VA_ARGS__)
 #else
 #define LOG_DEBUG(...)

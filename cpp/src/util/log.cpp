@@ -16,9 +16,18 @@ LogMessage::LogMessage(LogLevel lv, const char* msg)
     : lv_(lv), t_(std::chrono::system_clock::now()), thread_id_(std::this_thread::get_id()), msg_(msg) {}
 
 
+constexpr LogLevel kDefaultFilterLevel =
+#ifdef FOR_TEST
+    LogLevel::kDebug;
+#else
+    LogLevel::kInfo;
+#endif
+
+
 // Logger
 Logger::Logger() : buf_{} {
-  writers_.emplace_back(LogFilterPtrU{ new MinLogLevelFilter(LogLevel::kInfo) }, LogWriterPtrU{ new LogConsoleWriter });
+  writers_.emplace_back(LogFilterPtrU{ new MinLogLevelFilter(kDefaultFilterLevel) },
+                        LogWriterPtrU{ new LogConsoleWriter });
 };
 
 Logger& Logger::GetInstance() {

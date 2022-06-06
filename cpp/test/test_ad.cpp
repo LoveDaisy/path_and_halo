@@ -24,7 +24,7 @@ TEST_F(TestAD, simple_lazy) {
     float x1_val = ad::Evaluate(x1);
     float x2_val = ad::Evaluate(x2);
 
-    LOG_INFO("x1_val: %.4f", x1_val);
+    LOG_DEBUG("x1_val: %.4f", x1_val);
 
     ASSERT_NEAR(x1_val, 2.6f, 1e-6);
     ASSERT_NEAR(x2_val, 2.6f, 1e-6);
@@ -50,11 +50,15 @@ TEST_F(TestAD, simple_lazy) {
 
     ASSERT_NEAR(x1_val, 2.92f, 1e-6);
   }
+
+  LOG_DEBUG("simple_lazy done!!");
 }
 
 
 // NOLINTNEXTLINE
 TEST_F(TestAD, simple_diff) {
+  LOG_DEBUG("test!!");
+
   ad::VarExpr a = 1.0f;
   ad::VarExpr b = 2.3f;
   ad::VarExpr c = -.3f;
