@@ -5,7 +5,7 @@
 #include <memory>
 #include <tuple>
 
-#include "math.hpp"
+#include "core/math.hpp"
 #include "util/log.hpp"
 
 namespace halo_pm {

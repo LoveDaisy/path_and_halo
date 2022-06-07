@@ -1,5 +1,5 @@
-#ifndef MATH_H_
-#define MATH_H_
+#ifndef CORE_MATH_H_
+#define CORE_MATH_H_
 
 namespace halo_pm {
 
@@ -9,4 +9,4 @@ constexpr float kRad2Degree = 180.0f / kPi;
 
 }  // namespace halo_pm
 
-#endif  // MATH_H_
+#endif  // CORE_MATH_H_

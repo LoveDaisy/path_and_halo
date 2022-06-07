@@ -1,5 +1,5 @@
-#ifndef GEO_HPP_
-#define GEO_HPP_
+#ifndef CORE_GEO_H_
+#define CORE_GEO_H_
 
 #include <cstddef>
 
@@ -46,4 +46,4 @@ void RotateByQuat(const float* quat, const float* xyz0, float* xyz1,        // i
 
 }  // namespace halo_pm
 
-#endif  // GEO_HPP_
+#endif  // CORE_GEO_H_

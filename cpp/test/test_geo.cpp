@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-#include "geo.hpp"
+#include "core/geo.hpp"
 
 // NOLINTNEXTLINE
 using namespace halo_pm;

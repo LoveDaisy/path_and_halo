@@ -72,9 +72,9 @@ endif()
 # ==================================================================================================
 # Set submodules
 set(proj_src
-	"${PROJ_SRC_DIR}/util/log.cpp"
-	"${PROJ_SRC_DIR}/geo.cpp"
-	"${PROJ_SRC_DIR}/sph_grid.cpp")
+	"${PROJ_SRC_DIR}/core/geo.cpp"
+	"${PROJ_SRC_DIR}/sph_grid.cpp"
+	"${PROJ_SRC_DIR}/util/log.cpp")
 
 set(proj_include "${PROJ_SRC_DIR}")
 

@@ -1,10 +1,10 @@
-#include "geo.hpp"
+#include "core/geo.hpp"
 
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 
-#include "math.hpp"
+#include "core/math.hpp"
 #include "util/log.hpp"
 
 namespace halo_pm {
