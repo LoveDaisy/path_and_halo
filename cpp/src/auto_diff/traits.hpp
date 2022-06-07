@@ -20,9 +20,6 @@ struct is_expr : public std::false_type {};
 template <class T>
 struct is_expr<VarExpr<T>> : public std::true_type {};
 
-template <class... T>
-struct is_expr<VecExpr<T...>> : public std::true_type {};
-
 template <class Op, class T>
 struct is_expr<UnaryExpr<Op, T>> : public std::true_type {};
 

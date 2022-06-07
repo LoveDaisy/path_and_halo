@@ -99,11 +99,6 @@ constexpr auto Differentiate(VarExpr<V> v, wrt<VarExpr<V>> x) {
   }
 }
 
-template <class... V, class X>
-constexpr auto Differentiate(V... v, wrt<X> x) {
-  return VecExpr(Differentiate(v, x)...);
-}
-
 
 template <class L, class R, class X>
 constexpr auto Differentiate(AddExpr<L, R> v, wrt<X> x) {

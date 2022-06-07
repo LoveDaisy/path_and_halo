@@ -33,9 +33,6 @@ struct LogOp;
 template <class V>
 struct VarExpr;
 
-template <class... V>
-struct VecExpr;
-
 template <class Op, class V>
 struct UnaryExpr;
 

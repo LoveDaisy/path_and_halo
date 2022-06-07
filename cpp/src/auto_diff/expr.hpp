@@ -25,25 +25,6 @@ template <class V>
 size_t VarExpr<V>::global_id_ = 0;
 
 
-template <class... V>
-struct VecExpr {
-  std::tuple<V...> val_;
-  static constexpr size_t len = sizeof...(V);
-
-  VecExpr(V&&... v) : val_(std::make_tuple(std::forward<V>(v)...)) {}
-};
-
-
-template <size_t R, size_t C, class... V>
-struct MatExpr {
-  std::tuple<V...> val_;
-  static constexpr size_t row = R;
-  static constexpr size_t col = C;
-
-  MatExpr(V&&... v) : val_(std::make_tuple(std::forward<V>(v)...)) {}
-};
-
-
 template <class Op, class V>
 struct UnaryExpr {
   Op op_;
