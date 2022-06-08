@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <tuple>
 
-#include "auto_diff/common.hpp"
+#include "auto_diff/op.hpp"
 
 namespace halo_pm {
 namespace ad {
@@ -42,6 +42,20 @@ struct BinaryExpr {
 
   BinaryExpr(L&& l, R&& r) : op_{}, l_{ std::forward<L>(l) }, r_{ std::forward<R>(r) } {}
 };
+
+
+// =============== Expression alias ===============
+template <class L, class R>
+using AddExpr = BinaryExpr<AddOp, L, R>;
+
+template <class L, class R>
+using MinusExpr = BinaryExpr<MinusOp, L, R>;
+
+template <class L, class R>
+using TimesExpr = BinaryExpr<TimesOp, L, R>;
+
+template <class L, class R>
+using DivideExpr = BinaryExpr<DivideOp, L, R>;
 
 
 // =============== Operator overloads ===============

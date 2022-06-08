@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "auto_diff/common.hpp"
 #include "auto_diff/expr.hpp"
 #include "auto_diff/types.hpp"
 
@@ -73,6 +72,10 @@ template <class T>
 struct var_dim<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
   static constexpr size_t dim = 1;
 };
+
+
+template <class V>
+struct wrt;  // forward declaration
 
 template <class T>
 struct var_dim<wrt<T>> {

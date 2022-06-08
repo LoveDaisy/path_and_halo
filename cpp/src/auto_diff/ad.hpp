@@ -3,7 +3,6 @@
 
 #include <cstddef>
 
-#include "auto_diff/common.hpp"
 #include "auto_diff/expr.hpp"
 #include "auto_diff/op.hpp"
 #include "auto_diff/traits.hpp"

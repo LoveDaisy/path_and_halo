@@ -3,7 +3,6 @@
 #include <tuple>
 
 #include "auto_diff/ad.hpp"
-#include "auto_diff/common.hpp"
 #include "util/log.hpp"
 
 namespace {
