@@ -2,7 +2,7 @@
 #define AUTO_DIFF_OP_HPP_
 
 namespace halo_pm {
-namespace ad {
+namespace internal {
 
 // =============== Special Op ===============
 struct NoneOp {};
@@ -25,7 +25,7 @@ struct MinusOp {};
 struct TimesOp {};
 struct DivideOp {};
 
-}  // namespace ad
+}  // namespace internal
 }  // namespace halo_pm
 
 #endif  // AUTO_DIFF_OP_HPP_

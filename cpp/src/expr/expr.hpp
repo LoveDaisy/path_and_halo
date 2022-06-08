@@ -4,10 +4,10 @@
 #include <cstddef>
 #include <tuple>
 
-#include "auto_diff/op.hpp"
+#include "expr/op.hpp"
 
 namespace halo_pm {
-namespace ad {
+namespace internal {
 
 // =============== Expressions ===============
 template <class V>
@@ -99,7 +99,7 @@ VarExpr<T> operator/(const VarExpr<T>& a, const VarExpr<T>& b) {
   return VarExpr<T>{ a.val_ / b.val_ };
 }
 
-}  // namespace ad
+}  // namespace internal
 }  // namespace halo_pm
 
 #endif  // AUTO_DIFF_EXPR_HPP_

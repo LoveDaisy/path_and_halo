@@ -4,8 +4,8 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "auto_diff/expr.hpp"
 #include "auto_diff/types.hpp"
+#include "expr/expr.hpp"
 
 namespace halo_pm {
 namespace ad {
@@ -17,13 +17,13 @@ template <class T>
 struct is_expr : public std::false_type {};
 
 template <class T>
-struct is_expr<VarExpr<T>> : public std::true_type {};
+struct is_expr<internal::VarExpr<T>> : public std::true_type {};
 
 template <class Op, class T>
-struct is_expr<UnaryExpr<Op, T>> : public std::true_type {};
+struct is_expr<internal::UnaryExpr<Op, T>> : public std::true_type {};
 
 template <class Op, class L, class R>
-struct is_expr<BinaryExpr<Op, L, R>> : public std::true_type {};
+struct is_expr<internal::BinaryExpr<Op, L, R>> : public std::true_type {};
 
 template <class T>
 inline constexpr bool is_expr_v = is_expr<T>::value;
@@ -42,13 +42,13 @@ struct value_type<T, typename std::enable_if_t<std::is_arithmetic_v<T>>> {
 };
 
 template <class Op, class T>
-struct value_type<UnaryExpr<Op, T>> {
+struct value_type<internal::UnaryExpr<Op, T>> {
   // UnaryExpr
   using type = typename value_type<T>::type;
 };
 
 template <class T>
-struct value_type<VarExpr<T>> {
+struct value_type<internal::VarExpr<T>> {
   // Termination of UnaryExpr recursion
   using type = T;
 };
@@ -64,7 +64,7 @@ struct var_dim {
 };
 
 template <class T>
-struct var_dim<VarExpr<T>, std::enable_if_t<std::is_arithmetic_v<T>>> {
+struct var_dim<internal::VarExpr<T>, std::enable_if_t<std::is_arithmetic_v<T>>> {
   static constexpr size_t dim = 1;
 };
 
