@@ -79,26 +79,6 @@ DivideExpr<L, R> operator/(L&& l, R&& r) {
   return DivideExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
 }
 
-template <class T>
-VarExpr<T> operator+(const VarExpr<T>& a, const VarExpr<T>& b) {
-  return VarExpr<T>{ a.val_ + b.val_ };
-}
-
-template <class T>
-VarExpr<T> operator-(const VarExpr<T>& a, const VarExpr<T>& b) {
-  return VarExpr<T>{ a.val_ - b.val_ };
-}
-
-template <class T>
-VarExpr<T> operator*(const VarExpr<T>& a, const VarExpr<T>& b) {
-  return VarExpr<T>{ a.val_ * b.val_ };
-}
-
-template <class T>
-VarExpr<T> operator/(const VarExpr<T>& a, const VarExpr<T>& b) {
-  return VarExpr<T>{ a.val_ / b.val_ };
-}
-
 }  // namespace internal
 }  // namespace halo_pm
 
