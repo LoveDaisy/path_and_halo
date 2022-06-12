@@ -61,23 +61,23 @@ void Llr2Mat(const Vec3f* llr, Mat3x3f* mat,                  // input & output,
 
   for (size_t i = 0; i < num; i++) {
     const auto& p = *reinterpret_cast<const Vec3f*>(reinterpret_cast<const uint8_t*>(llr) + i * llr_step_bytes);
-    auto c1 = std::cos(p.x_ * kDegree2Rad);
-    auto s1 = std::sin(p.x_ * kDegree2Rad);
-    auto c2 = std::cos(p.y_ * kDegree2Rad);
-    auto s2 = std::sin(p.y_ * kDegree2Rad);
-    auto c3 = std::cos(p.z_ * kDegree2Rad);
-    auto s3 = std::sin(p.z_ * kDegree2Rad);
+    auto c1 = std::cos(p(0) * kDegree2Rad);
+    auto s1 = std::sin(p(0) * kDegree2Rad);
+    auto c2 = std::cos(p(1) * kDegree2Rad);
+    auto s2 = std::sin(p(1) * kDegree2Rad);
+    auto c3 = std::cos(p(2) * kDegree2Rad);
+    auto s3 = std::sin(p(2) * kDegree2Rad);
 
     auto& q = *reinterpret_cast<Mat3x3f*>(reinterpret_cast<uint8_t*>(mat) + i * mat_step_bytes);
-    q[0] = -s1 * c3 - c1 * s2 * s3;
-    q[1] = s1 * s3 - c1 * s2 * c3;
-    q[2] = c1 * c2;
-    q[3] = c1 * c3 - s1 * s2 * s3;
-    q[4] = -c1 * s3 - s1 * s2 * c3;
-    q[5] = s1 * c2;
-    q[6] = c2 * s3;
-    q[7] = c2 * c3;
-    q[8] = s2;
+    q(0, 0) = -s1 * c3 - c1 * s2 * s3;
+    q(0, 1) = s1 * s3 - c1 * s2 * c3;
+    q(0, 2) = c1 * c2;
+    q(1, 0) = c1 * c3 - s1 * s2 * s3;
+    q(1, 1) = -c1 * s3 - s1 * s2 * c3;
+    q(1, 2) = s1 * c2;
+    q(2, 0) = c2 * s3;
+    q(2, 1) = c2 * c3;
+    q(2, 2) = s2;
   }
 }
 
@@ -104,18 +104,18 @@ void RotateByQuat(const Quatf& quat, const Vec3f* xyz0, Vec3f* xyz1,  // input &
 
   for (size_t i = 0; i < num; i++) {
     const auto& p0 = *reinterpret_cast<const Vec3f*>(reinterpret_cast<const uint8_t*>(xyz0) + i * xyz0_step_bytes);
-    tmp.x_ = quat.w_ * p0.x_ + quat.y_ * p0.z_ - quat.z_ * p0.y_;
-    tmp.y_ = quat.w_ * p0.y_ - quat.x_ * p0.z_ + quat.z_ * p0.x_;
-    tmp.z_ = quat.w_ * p0.z_ + quat.x_ * p0.y_ - quat.y_ * p0.x_;
-    tmp.w_ = -quat.x_ * p0.x_ - quat.y_ * p0.y_ - quat.z_ * p0.z_;
+    tmp.x() = quat.w() * p0(0) + quat.y() * p0(2) - quat.z() * p0(1);
+    tmp.y() = quat.w() * p0(1) - quat.x() * p0(2) + quat.z() * p0(0);
+    tmp.z() = quat.w() * p0(2) + quat.x() * p0(1) - quat.y() * p0(0);
+    tmp.w() = -quat.x() * p0(0) - quat.y() * p0(1) - quat.z() * p0(2);
 
-    LOG_DEBUG("tmp=[% .4f,% .4f,% .4f,% .4f]", tmp.x_, tmp.y_, tmp.z_, tmp.w_);
+    LOG_DEBUG("tmp=[% .4f,% .4f,% .4f,% .4f]", tmp.x(), tmp.y(), tmp.z(), tmp.w());
 
     auto& p1 = *reinterpret_cast<Vec3f*>(reinterpret_cast<uint8_t*>(xyz1) + i * xyz1_step_bytes);
-    p1.x_ = -tmp.w_ * quat.x_ + tmp.x_ * quat.w_ - tmp.y_ * quat.z_ + tmp.z_ * quat.y_;
-    p1.y_ = -tmp.w_ * quat.y_ + tmp.x_ * quat.z_ + tmp.y_ * quat.w_ - tmp.z_ * quat.x_;
-    p1.z_ = -tmp.w_ * quat.z_ - tmp.x_ * quat.y_ + tmp.y_ * quat.x_ + tmp.z_ * quat.w_;
-    LOG_DEBUG("xyz1=[% .4f,% .4f,% .4f]", p1.x_, p1.y_, p1.z_);
+    p1(0) = -tmp.w() * quat.x() + tmp.x() * quat.w() - tmp.y() * quat.z() + tmp.z() * quat.y();
+    p1(1) = -tmp.w() * quat.y() + tmp.x() * quat.z() + tmp.y() * quat.w() - tmp.z() * quat.x();
+    p1(2) = -tmp.w() * quat.z() - tmp.x() * quat.y() + tmp.y() * quat.x() + tmp.z() * quat.w();
+    LOG_DEBUG("xyz1=[% .4f,% .4f,% .4f]", p1(0), p1(1), p1(2));
   }
 }
 }  // namespace halo_pm

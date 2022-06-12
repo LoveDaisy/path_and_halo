@@ -25,13 +25,17 @@ endif()
 
 # ==================================================================================================
 add_library(proj_test_lib OBJECT ${proj_src})
-target_include_directories(proj_test_lib PUBLIC ${proj_include})
+target_include_directories(proj_test_lib PUBLIC
+  "${proj_include}")
+target_link_libraries(proj_test_lib PUBLIC Eigen3::Eigen)
 target_compile_definitions(proj_test_lib PUBLIC FOR_TEST)
 
 
 add_executable(unit_test
   "${PROJ_TEST_DIR}/test_ad.cpp"
+  "${PROJ_TEST_DIR}/test_eigen.cpp"
   "${PROJ_TEST_DIR}/test_geo.cpp"
+  "${PROJ_TEST_DIR}/test_ode.cpp"
   "${PROJ_TEST_DIR}/test_sph_grid.cpp")
 target_include_directories(unit_test
   PRIVATE ${PROJ_TEST_DIR})

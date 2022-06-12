@@ -54,9 +54,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BUILD_DIR}/${CMAKE_BUILD_TYPE}/bin/${ARCH}
 set(PROJ_SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 set(PROJ_TEST_DIR "${CMAKE_SOURCE_DIR}/test")
 set(PROJ_ROOT "${CMAKE_SOURCE_DIR}")
-set(MODULE_ROOT "${CMAKE_SOURCE_DIR}/thirdparty")
 
 # ==================================================================================================
+# Eigen3
+find_package(Eigen3 3.3 REQUIRED)
 
 # ==================================================================================================
 # Add some definitions
@@ -81,7 +82,9 @@ set(proj_include "${PROJ_SRC_DIR}")
 # ==================================================================================================
 # Add obj-lib and corresponding target definitions
 add_library(proj_lib OBJECT ${proj_src})
-target_include_directories(proj_lib PUBLIC ${proj_include})
+target_include_directories(proj_lib PUBLIC
+  "${proj_include}")
+target_link_libraries(proj_lib PUBLIC Eigen3::Eigen)
 
 # ==================================================================================================
 # Add subdirectory
