@@ -2,7 +2,11 @@
 
 #include <Eigen/Eigen>
 
+#include "core/types.hpp"
 #include "util/log.hpp"
+
+// NOLINTNEXTLINE
+using namespace halo_pm;
 
 namespace {
 
@@ -49,6 +53,23 @@ TEST_F(TestEigen, test_svd) {
       ASSERT_NEAR(u(i, j), expected_u(i, j), 1e-5);
       ASSERT_NEAR(v(i, j), expected_v(i, j), 1e-5);
     }
+  }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestEigen, test_quaternion) {
+  // NOTE: quaternion in Eigen (and wiki) seems different to that in MATLAB. The vector parts are opposite.
+  Quatf q{ 0.424935669519169, -0.480586073753202, 0.669476669301674, 0.374523285804727 };
+  Vec3f rotated_v[3]{
+    { -0.176933404857992, -0.325185721574301, -0.928950384428339 },  // [1,0,0]
+    { -0.961778934476391, 0.257538668108388, 0.0930328739017340 },   // [0,1,0]
+    { 0.208987682514584, 0.909905534060080, -0.358323970233677 },    // [0,0,1]
+  };
+
+  Vec3f v[3]{ q * Vec3f{ 1, 0, 0 }, q * Vec3f{ 0, 1, 0 }, q * Vec3f{ 0, 0, 1 } };
+  for (int i = 0; i < 3; i++) {
+    EXPECT_NEAR((rotated_v[i] - v[i]).norm(), 0, 1e-5);
   }
 }
 

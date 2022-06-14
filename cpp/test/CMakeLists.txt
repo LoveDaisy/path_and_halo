@@ -36,6 +36,7 @@ add_executable(unit_test
   "${PROJ_TEST_DIR}/test_eigen.cpp"
   "${PROJ_TEST_DIR}/test_geo.cpp"
   "${PROJ_TEST_DIR}/test_ode.cpp"
+  "${PROJ_TEST_DIR}/test_optics.cpp"
   "${PROJ_TEST_DIR}/test_sph_grid.cpp")
 target_include_directories(unit_test
   PRIVATE ${PROJ_TEST_DIR})

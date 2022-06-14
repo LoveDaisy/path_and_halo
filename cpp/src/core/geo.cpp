@@ -10,14 +10,14 @@
 
 namespace halo_pm {
 
-void Ll2Xyz(const float* ll, float* xyz,                    // input & output, ll in degree
+void Ll2Xyz(const Vec2f* ll, Vec3f* xyz,                    // input & output, ll in degree
             size_t num,                                     // data number
             size_t ll_step_bytes, size_t xyz_step_bytes) {  // step of input & output
   assert(ll_step_bytes % sizeof(float) == 0);
   assert(xyz_step_bytes % sizeof(float) == 0);
 
-  const float* p = ll;
-  float* q = xyz;
+  const auto* p = reinterpret_cast<const float*>(ll);
+  auto* q = reinterpret_cast<float*>(xyz);
   for (size_t i = 0; i < num; i++) {
     q[0] = std::cos(p[1] * kDegree2Rad) * std::cos(p[0] * kDegree2Rad);
     q[1] = std::cos(p[1] * kDegree2Rad) * std::sin(p[0] * kDegree2Rad);
@@ -26,6 +26,12 @@ void Ll2Xyz(const float* ll, float* xyz,                    // input & output, l
     p += ll_step_bytes == 0 ? 2 : ll_step_bytes / sizeof(float);
     q += xyz_step_bytes == 0 ? 3 : xyz_step_bytes / sizeof(float);
   }
+}
+
+Vec3f Ll2Xyz(const Vec2f& ll) {
+  Vec3f xyz;
+  Ll2Xyz(&ll, &xyz);
+  return xyz;
 }
 
 

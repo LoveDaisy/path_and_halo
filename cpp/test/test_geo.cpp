@@ -4,6 +4,7 @@
 
 #include "core/geo.hpp"
 #include "core/types.hpp"
+#include "util/log.hpp"
 
 // NOLINTNEXTLINE
 using namespace halo_pm;
@@ -37,6 +38,7 @@ TEST_F(TestGeo, quat_rotate) {
     -0.403854436879648,  // yj
     -0.669435573560987,  // zk
   };
+  LOG_DEBUG("quaternion: [%.6f,%.6f,%.6f,%.6f]", quat.w(), quat.x(), quat.y(), quat.z());
   Vec3f basis0[kNum] = { { 1.0f, 0.0f, 0.0f },  //
                          { 0.0f, 1.0f, 0.0f },  //
                          { 0.0f, 0.0f, 1.0f } };
@@ -48,7 +50,9 @@ TEST_F(TestGeo, quat_rotate) {
 
   RotateByQuat(quat, basis0, basis1, kNum);
   for (size_t i = 0; i < kNum; i++) {
+    LOG_DEBUG("original (%zu): [%.6f,%.6f,%.6f]", i, basis0[i].x(), basis0[i].y(), basis0[i].z());
     basis2[i] = quat * basis0[i];
+    LOG_DEBUG("rotated (%zu): [%.6f,%.6f,%.6f]", i, basis2[i].x(), basis2[i].y(), basis2[i].z());
   }
 
   for (size_t i = 0; i < kNum; i++) {

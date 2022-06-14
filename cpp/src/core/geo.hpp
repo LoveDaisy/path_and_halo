@@ -21,6 +21,8 @@ void Ll2Xyz(const Vec2f* ll, Vec3f* xyz,                           // input & ou
             size_t num = 1,                                        // data number
             size_t ll_step_bytes = 0, size_t xyz_step_bytes = 0);  // step of input & output
 
+Vec3f Ll2Xyz(const Vec2f& ll);
+
 
 void Xyz2Ll(const Vec3f* xyz, Vec2f* ll,                           // input & output, ll in degree, xyz normalized
             size_t num = 1,                                        // data number
