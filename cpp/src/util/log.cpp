@@ -79,16 +79,22 @@ void LogWriter::SetFormatter(LogFormatterPtrU fmt) {
   fmt_ = std::move(fmt);
 }
 
+void LogWriter::WriteLine(const LogMessage& msg) {
+  Write(msg);
+  Write("\n");
+}
+
+
 void LogConsoleWriter::Write(const LogMessage& msg) {
   const char* msg_str = msg.msg_.c_str();
   if (fmt_) {
     msg_str = fmt_->Format(msg);
   }
-  if (msg.lv_ < LogLevel::kWarning) {
-    std::printf("%s\n", msg_str);
-  } else {
-    std::fprintf(stderr, "%s\n", msg_str);
-  }
+  Write(msg_str);
+}
+
+void LogConsoleWriter::Write(const char* str) {
+  std::printf("%s", str);
 }
 
 

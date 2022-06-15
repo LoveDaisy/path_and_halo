@@ -50,9 +50,9 @@ TEST_F(TestGeo, quat_rotate) {
 
   RotateByQuat(quat, basis0, basis1, kNum);
   for (size_t i = 0; i < kNum; i++) {
-    LOG_DEBUG("original (%zu): [%.6f,%.6f,%.6f]", i, basis0[i].x(), basis0[i].y(), basis0[i].z());
+    LOG_DEBUG("original (%zu): %s", i, ObjLogFormatter<Vec3f>{ basis0[i] }.Format());
     basis2[i] = quat * basis0[i];
-    LOG_DEBUG("rotated (%zu): [%.6f,%.6f,%.6f]", i, basis2[i].x(), basis2[i].y(), basis2[i].z());
+    LOG_DEBUG("rotated (%zu): %s", i, ObjLogFormatter<Vec3f>{ basis2[i] }.Format());
   }
 
   for (size_t i = 0; i < kNum; i++) {

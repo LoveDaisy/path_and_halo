@@ -8,6 +8,7 @@
 #include <string>
 #include <thread>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 namespace halo_pm {
@@ -44,6 +45,7 @@ struct LogMessage {
   std::string msg_;
 
   LogMessage(LogLevel lv, const char* msg);
+  LogMessage() : LogMessage(LogLevel::kInfo, "") {}
 };
 
 
@@ -85,6 +87,8 @@ class LogWriter {
 
   void SetFormatter(LogFormatterPtrU fmt);
   virtual void Write(const LogMessage& msg) = 0;
+  virtual void Write(const char* str) = 0;
+  void WriteLine(const LogMessage& msg);
 
  protected:
   LogWriter();
@@ -95,6 +99,7 @@ class LogWriter {
 class LogConsoleWriter : public LogWriter {
  public:
   void Write(const LogMessage& msg) override;
+  void Write(const char* str) override;
 };
 
 
@@ -129,22 +134,17 @@ class Logger {
   static Logger& GetInstance();
 
   template <class... Args>
-  void Emit(LogLevel lv, const char* fmt, Args&&... args) {
-    std::snprintf(buf_, kBufLen, fmt, std::forward<Args>(args)...);
-    LogMessage msg(lv, buf_);
-    for (const auto& [f, w] : writers_) {
-      if (f->Check(msg)) {
-        w->Write(msg);
-      }
+  void Emit(bool single_line, LogLevel lv, const char* fmt, Args&&... args) {
+    LogMessage msg{};
+    if constexpr (sizeof...(args) > 0) {
+      std::snprintf(buf_, kBufLen, fmt, std::forward<Args>(args)...);
+      msg = LogMessage{ lv, buf_ };
+    } else {
+      msg = LogMessage(lv, fmt);
     }
-  }
-
-  // No fmt string. The compiler will complain if we do not implement this version.
-  void Emit(LogLevel lv, const char* str) {
-    LogMessage msg(lv, str);
     for (const auto& [f, w] : writers_) {
       if (f->Check(msg)) {
-        w->Write(msg);
+        single_line ? w->WriteLine(msg) : w->Write(msg.msg_.c_str());
       }
     }
   }
@@ -160,14 +160,24 @@ class Logger {
 
 
 #ifdef FOR_TEST
-#define LOG_DEBUG(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kDebug, __VA_ARGS__)
+#define LOG_DEBUG(...) halo_pm::Logger::GetInstance().Emit(true, halo_pm::LogLevel::kDebug, __VA_ARGS__)
 #else
 #define LOG_DEBUG(...)
 #endif
-#define LOG_VERBOSE(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kVerbose, __VA_ARGS__)
-#define LOG_INFO(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kInfo, __VA_ARGS__)
-#define LOG_WARNING(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kWarning, __VA_ARGS__)
-#define LOG_ERROR(...) halo_pm::Logger::GetInstance().Emit(halo_pm::LogLevel::kError, __VA_ARGS__)
+#define LOG_VERBOSE(...) halo_pm::Logger::GetInstance().Emit(true, halo_pm::LogLevel::kVerbose, __VA_ARGS__)
+#define LOG_INFO(...) halo_pm::Logger::GetInstance().Emit(true, halo_pm::LogLevel::kInfo, __VA_ARGS__)
+#define LOG_WARNING(...) halo_pm::Logger::GetInstance().Emit(true, halo_pm::LogLevel::kWarning, __VA_ARGS__)
+#define LOG_ERROR(...) halo_pm::Logger::GetInstance().Emit(true, halo_pm::LogLevel::kError, __VA_ARGS__)
+
+#ifdef FOR_TEST
+#define LOG_DEBUG_C(...) halo_pm::Logger::GetInstance().Emit(false, halo_pm::LogLevel::kDebug, __VA_ARGS__)
+#else
+#define LOG_DEBUG_C(...)
+#endif
+#define LOG_VERBOSE_C(...) halo_pm::Logger::GetInstance().Emit(false, halo_pm::LogLevel::kVerbose, __VA_ARGS__)
+#define LOG_INFO_C(...) halo_pm::Logger::GetInstance().Emit(false, halo_pm::LogLevel::kInfo, __VA_ARGS__)
+#define LOG_WARNING_C(...) halo_pm::Logger::GetInstance().Emit(false, halo_pm::LogLevel::kWarning, __VA_ARGS__)
+#define LOG_ERROR_C(...) halo_pm::Logger::GetInstance().Emit(false, halo_pm::LogLevel::kError, __VA_ARGS__)
 
 }  // namespace halo_pm
 

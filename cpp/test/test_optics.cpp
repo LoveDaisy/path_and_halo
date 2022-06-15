@@ -24,7 +24,7 @@ TEST_F(TestOptics, trace_direction_0) {
   std::vector<int> raypath = { 3, 5 };
 
   auto ray_out_xyz = TraceDirection(crystal, q0, ray_in_ll, raypath);
-  LOG_DEBUG("ray_out_xyz: [%.6f,%.6f,%.6f]", ray_out_xyz.x(), ray_out_xyz.y(), ray_out_xyz.z());
+  LOG_DEBUG("ray_out_xyz: %s", ObjLogFormatter<Vec3f>{ ray_out_xyz }.Format());
   ASSERT_NEAR((ray_out_xyz - ray_out_xyz0).norm(), 0, 1e-5);
 }
 
@@ -40,7 +40,7 @@ TEST_F(TestOptics, trace_direction_1) {
   auto ray_out_xyz0 = Ll2Xyz(ray_out_ll);
 
   auto ray_out_xyz = TraceDirection(crystal, q, ray_in_ll, raypath);
-  LOG_DEBUG("ray_out_xyz: [%.6f,%.6f,%.6f]", ray_out_xyz.x(), ray_out_xyz.y(), ray_out_xyz.z());
+  LOG_DEBUG("ray_out_xyz: %s", ObjLogFormatter<Vec3f>{ ray_out_xyz }.Format());
   ASSERT_NEAR((ray_out_xyz - ray_out_xyz0).norm(), 0, 1e-5);
 }
 

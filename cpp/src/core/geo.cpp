@@ -121,7 +121,7 @@ void RotateByQuat(const Quatf& quat, const Vec3f* xyz0, Vec3f* xyz1,  // input &
     p1(0) = -tmp.w() * quat.x() + tmp.x() * quat.w() - tmp.y() * quat.z() + tmp.z() * quat.y();
     p1(1) = -tmp.w() * quat.y() + tmp.x() * quat.z() + tmp.y() * quat.w() - tmp.z() * quat.x();
     p1(2) = -tmp.w() * quat.z() - tmp.x() * quat.y() + tmp.y() * quat.x() + tmp.z() * quat.w();
-    LOG_DEBUG("xyz1=[% .4f,% .4f,% .4f]", p1(0), p1(1), p1(2));
+    LOG_DEBUG("xyz1=%s", ObjLogFormatter<Vec3f>{ p1 }.Format());
   }
 }
 }  // namespace halo_pm

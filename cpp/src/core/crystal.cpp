@@ -103,7 +103,7 @@ Vec3f TraceDirection(const Crystal& crystal,                       // Crystal
   }
 
   auto xyz = Ll2Xyz(ray_ll);
-  LOG_DEBUG("ll2xyz: [%.6f,%.6f,%.6f]", xyz.x(), xyz.y(), xyz.z());
+  LOG_DEBUG("ll2xyz: %s", ObjLogFormatter<Vec3f>{ xyz }.Format());
 
   // Only ONE face: pure reflection
   if (raypath.size() == 1) {
@@ -125,13 +125,13 @@ Vec3f TraceDirection(const Crystal& crystal,                       // Crystal
     Eigen::Map<const Vec3f> norm1(crystal.face_norm_.get() + (raypath.front() - 1) * 3);
     Eigen::Map<const Vec3f> norm2(crystal.face_norm_.get() + (raypath.back() - 1) * 3);
     auto r = rot.inverse() * xyz;
-    LOG_DEBUG("r: [%.6f,%.6f,%.6f]", r.x(), r.y(), r.z());
+    LOG_DEBUG("r: %s", ObjLogFormatter<Vec3f>{ r }.Format());
     r = Refract(r, norm1, 1.0f, refractive_index);
-    LOG_DEBUG("r: [%.6f,%.6f,%.6f]", r.x(), r.y(), r.z());
+    LOG_DEBUG("r: %s", ObjLogFormatter<Vec3f>{ r }.Format());
     r = m * r;
-    LOG_DEBUG("r: [%.6f,%.6f,%.6f]", r.x(), r.y(), r.z());
+    LOG_DEBUG("r: %s", ObjLogFormatter<Vec3f>{ r }.Format());
     r = Refract(r, norm2, refractive_index, 1.0f);
-    LOG_DEBUG("r: [%.6f,%.6f,%.6f]", r.x(), r.y(), r.z());
+    LOG_DEBUG("r: %s", ObjLogFormatter<Vec3f>{ r }.Format());
     return rot * r;
   }
 }
