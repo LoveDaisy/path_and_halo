@@ -21,16 +21,7 @@ struct Crystal {
 
 Crystal MakePrismCrystal(float h);
 
-constexpr float kMinWavelength = 350.0f;
-constexpr float kMaxWavelength = 850.0f;
-constexpr float kDefaultWavelength = 546.1f;  // e-line
-
-constexpr inline float GetIceRefractiveIndex(float lambda);
-
-
-Vec3f TraceDirection(const Crystal& crystal,                                           // Crystal
-                     const Quatf& rot, const Vec2f& ray_ll,                            // May be input variables
-                     const std::vector<int>& raypath, float wl = kDefaultWavelength);  // Other parameter
+float GetIceRefractiveIndex(float lambda);
 
 }  // namespace halo_pm
 

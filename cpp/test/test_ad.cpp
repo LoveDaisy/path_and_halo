@@ -56,8 +56,6 @@ TEST_F(TestAD, simple_lazy) {
 
 // NOLINTNEXTLINE
 TEST_F(TestAD, simple_diff) {
-  LOG_DEBUG("test!!");
-
   ad::VarExpr a = 1.0f;
   ad::VarExpr b = 2.3f;
   ad::VarExpr c = -.3f;
@@ -91,6 +89,56 @@ TEST_F(TestAD, simple_diff) {
     ad::VarExpr ua = ad::Differentiate(u, ad::wrt(a));
     float ua_val = ad::Evaluate(ua);
     ASSERT_NEAR(ua_val, b.val_ * b.val_ / (a.val_ + b.val_) / (a.val_ + b.val_), 1e-5);
+  }
+
+  {
+    auto u = a * 3.0f;
+    float u_val = ad::Evaluate(u);
+    ASSERT_NEAR(u_val, 3.0f, 1e-5);
+  }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestAD, op_fun_diff) {
+  ad::VarExpr vx{ 2.0f };
+  ad::VarExpr vy{ -1.0f };
+  ad::VarExpr vz{ .3f };
+
+  {
+    auto u = sqrt(vx);
+    float u_val = ad::Evaluate(u);
+    ASSERT_NEAR(u_val, 1.4142135f, 1e-5);
+
+    auto ua = ad::Differentiate(u, ad::wrt(vx));
+    float ua_val = ad::Evaluate(ua);
+    ASSERT_NEAR(ua_val, 0.353553f, 1e-5);
+  }
+
+  {
+    auto u = sqrt(vx + 1.0f);
+    float u_val = ad::Evaluate(u);
+    ASSERT_NEAR(u_val, 1.7320508f, 1e-5);
+  }
+
+  {
+    auto c = vx * 3.2f + vy * 0.4f - vz * 0.8f;
+    auto delta = 2.0f - 0.3f / (c * c);
+    auto a = sqrt(delta);
+    auto o = 1.3f * vx + a * 0.2;
+
+    auto ax_val = ad::Evaluate(ad::Differentiate(a, ad::wrt(vx)));
+    auto ox_val = ad::Evaluate(ad::Differentiate(o, ad::wrt(vx)));
+    auto ay_val = ad::Evaluate(ad::Differentiate(a, ad::wrt(vy)));
+    auto oy_val = ad::Evaluate(ad::Differentiate(o, ad::wrt(vy)));
+    LOG_DEBUG("ax_val: %.6f", ax_val);
+    LOG_DEBUG("ox_val: %.6f", ox_val);
+    LOG_DEBUG("ay_val: %.6f", ay_val);
+    LOG_DEBUG("oy_val: %.6f", oy_val);
+    EXPECT_NEAR(ax_val, 0.00356019, 1e-5);
+    EXPECT_NEAR(ox_val, 1.30071, 1e-5);
+    EXPECT_NEAR(ay_val, 0.000445023, 1e-7);
+    EXPECT_NEAR(oy_val, 0.0000890047, 1e-7);
   }
 }
 

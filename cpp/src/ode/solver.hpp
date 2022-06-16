@@ -14,10 +14,10 @@
 
 namespace halo_pm {
 
-template <class T, size_t OutputDim, size_t InputDim>
+template <class T, int OutputDim, int InputDim>
 using Func = std::function<Vec<float, OutputDim>(const Vec<float, InputDim>&)>;
 
-template <class T, size_t OutputDim, size_t InputDim>
+template <class T, int OutputDim, int InputDim>
 using FuncAndDiff = std::function<std::tuple<Vec<T, OutputDim>, Mat<T, OutputDim, InputDim>>(const Vec<T, InputDim>&)>;
 
 
@@ -42,7 +42,7 @@ struct SolutionStatus {
   SolutionStatus(bool solved, size_t func_eval_cnt) : solved_(solved), func_eval_cnt_(func_eval_cnt){};
 };
 
-template <class T, size_t OutputDim, size_t InputDim>
+template <class T, int OutputDim, int InputDim>
 std::tuple<Vec<T, InputDim>, SolutionStatus>                                // Result & status
 FindSolution(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,           // The function
              const Vec<T, InputDim>& x_start, const Vec<T, OutputDim>& yq,  // Start point & target value

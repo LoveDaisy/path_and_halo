@@ -1,6 +1,7 @@
 #ifndef AUTO_DIFF_AD_HPP_
 #define AUTO_DIFF_AD_HPP_
 
+#include <cmath>
 #include <cstddef>
 
 #include "auto_diff/traits.hpp"
@@ -40,6 +41,11 @@ constexpr auto Evaluate(const DivideExpr<L, R>& e) {
   return Evaluate(e.l_) / Evaluate(e.r_);
 }
 
+template <class T>
+constexpr auto Evaluate(const SqrtExpr<T>& e) {
+  return std::sqrt(Evaluate(e.val_));
+}
+
 }  // namespace internal
 
 namespace ad {
@@ -76,8 +82,14 @@ struct wrt {
 };
 
 
+template <class X>
+constexpr auto Differentiate(float /* v */, const wrt<X>& /* x */) {
+  return 0.0f;
+}
+
+
 template <class Y, class X>
-constexpr auto Differentiate(const internal::VarExpr<Y>& v, const wrt<X>& x) {
+constexpr auto Differentiate(const VarExpr<Y>& v, const wrt<X>& x) -> float {
   // Direct case, i.e. v.val_ is data type (non-expr type)
   if constexpr (!ad::traits::is_expr_v<Y>) {
     return 0.0f;
@@ -85,13 +97,13 @@ constexpr auto Differentiate(const internal::VarExpr<Y>& v, const wrt<X>& x) {
 
   // Expr
   else {
-    return Differentiate(v.val_, x);
+    return Evaluate(Differentiate(v.val_, x));
   }
 };
 
 
 template <class V>
-constexpr auto Differentiate(const internal::VarExpr<V>& v, const wrt<internal::VarExpr<V>>& x) {
+constexpr auto Differentiate(const VarExpr<V>& v, const wrt<VarExpr<V>>& x) -> float {
   // Direct case, i.e. v.val_ is data type (non-expr type)
   if constexpr (!ad::traits::is_expr_v<V>) {
     if (v.id_ == x.val_.id_) {
@@ -103,29 +115,34 @@ constexpr auto Differentiate(const internal::VarExpr<V>& v, const wrt<internal::
 
   // Expr
   else {
-    return Differentiate(v.val_, x);
+    return Evaluate(Differentiate(v.val_, x));
   }
 }
 
 
 template <class L, class R, class X>
-constexpr auto Differentiate(const internal::AddExpr<L, R>& v, const wrt<X>& x) {
-  return Differentiate(v.l_, x) + Differentiate(v.r_, x);
+constexpr auto Differentiate(const AddExpr<L, R>& v, const wrt<X>& x) {
+  return Evaluate(Differentiate(v.l_, x) + Differentiate(v.r_, x));
 }
 
 template <class L, class R, class X>
-constexpr auto Differentiate(const internal::MinusExpr<L, R>& v, const wrt<X>& x) {
-  return Differentiate(v.l_, x) - Differentiate(v.r_, x);
+constexpr auto Differentiate(const MinusExpr<L, R>& v, const wrt<X>& x) {
+  return Evaluate(Differentiate(v.l_, x) - Differentiate(v.r_, x));
 }
 
 template <class L, class R, class X>
-constexpr auto Differentiate(const internal::TimesExpr<L, R>& v, const wrt<X>& x) {
-  return Differentiate(v.l_, x) * v.r_ + Differentiate(v.r_, x) * v.l_;
+constexpr auto Differentiate(const TimesExpr<L, R>& v, const wrt<X>& x) {
+  return Evaluate(Differentiate(v.l_, x) * v.r_ + v.l_ * Differentiate(v.r_, x));
 }
 
 template <class L, class R, class X>
-constexpr auto Differentiate(const internal::DivideExpr<L, R>& v, const wrt<X>& x) {
-  return (Differentiate(v.l_, x) * v.r_ - Differentiate(v.r_, x) * v.l_) / v.r_ / v.r_;
+constexpr auto Differentiate(const DivideExpr<L, R>& v, const wrt<X>& x) {
+  return Evaluate(Differentiate(v.l_, x) / v.r_ - v.l_ * Differentiate(v.r_, x) / (v.r_ * v.r_));
+}
+
+template <class T, class X>
+constexpr auto Differentiate(const SqrtExpr<T>& v, const wrt<X>& x) {
+  return Evaluate(0.5f / sqrt(v.val_) * Differentiate(v.val_, x));
 }
 
 }  // namespace internal

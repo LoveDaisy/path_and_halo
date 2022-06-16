@@ -7,6 +7,7 @@
 
 #include "core/geo.hpp"
 #include "core/math.hpp"
+#include "core/optics.hpp"
 #include "core/types.hpp"
 #include "util/log.hpp"
 
@@ -67,7 +68,7 @@ Crystal MakePrismCrystal(float h) {
 }
 
 
-constexpr float GetIceRefractiveIndex(float lambda) {
+float GetIceRefractiveIndex(float lambda) {
   if (lambda < kMinWavelength || lambda > kMaxWavelength) {
     return -1.0f;
   }
@@ -79,61 +80,6 @@ constexpr float GetIceRefractiveIndex(float lambda) {
   n2 += 0.701777f / (1.0f - 0.884400e-2 / lambda2);
   n2 += 1.091144 / (1.0f - 0.796950e2 / lambda2);
   return std::sqrt(n2);
-}
-
-
-Vec3f Refract(const Vec3f& ray_in, const Vec3f& norm, float n0, float n1) {
-  auto n = n0 / n1;
-  auto c = ray_in.dot(norm);
-  auto delta = n * n - (n * n - 1) / (c * c);
-
-  if (delta <= 0) {
-    return (Mat3x3f::Identity() - 2 * norm * norm.transpose()) * ray_in;
-  } else {
-    return n * ray_in + (std::sqrt(delta) - n) * c * norm;
-  }
-}
-
-
-Vec3f TraceDirection(const Crystal& crystal,                       // Crystal
-                     const Quatf& rot, const Vec2f& ray_ll,        // May be input variables
-                     const std::vector<int>& raypath, float wl) {  // Other parameter
-  if (raypath.empty()) {
-    return Vec3f{};
-  }
-
-  auto xyz = Ll2Xyz(ray_ll);
-  LOG_DEBUG("ll2xyz: %s", ObjLogFormatter<Vec3f>{ xyz }.Format());
-
-  // Only ONE face: pure reflection
-  if (raypath.size() == 1) {
-    const auto* n_ptr = crystal.face_norm_.get() + (raypath[0] - 1) * 3;
-    Eigen::Map<const Vec3f> n(n_ptr);
-    auto m = Mat3x3f::Identity() - 2 * n * n.transpose();
-    return rot * m * rot.inverse() * xyz;
-  }
-
-  // Multiple faces: reflection + refraction
-  else {
-    Mat3x3f m = Eigen::Matrix3f::Identity();
-    for (size_t i = 1; i + 1 < raypath.size(); i++) {
-      Eigen::Map<const Vec3f> n(crystal.face_norm_.get() + (raypath[i] - 1) * 3);
-      m = (Mat3x3f::Identity() - 2 * n * n.transpose()) * m;
-    }
-
-    auto refractive_index = GetIceRefractiveIndex(wl);
-    Eigen::Map<const Vec3f> norm1(crystal.face_norm_.get() + (raypath.front() - 1) * 3);
-    Eigen::Map<const Vec3f> norm2(crystal.face_norm_.get() + (raypath.back() - 1) * 3);
-    auto r = rot.inverse() * xyz;
-    LOG_DEBUG("r: %s", ObjLogFormatter<Vec3f>{ r }.Format());
-    r = Refract(r, norm1, 1.0f, refractive_index);
-    LOG_DEBUG("r: %s", ObjLogFormatter<Vec3f>{ r }.Format());
-    r = m * r;
-    LOG_DEBUG("r: %s", ObjLogFormatter<Vec3f>{ r }.Format());
-    r = Refract(r, norm2, refractive_index, 1.0f);
-    LOG_DEBUG("r: %s", ObjLogFormatter<Vec3f>{ r }.Format());
-    return rot * r;
-  }
 }
 
 }  // namespace halo_pm

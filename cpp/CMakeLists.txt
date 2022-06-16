@@ -75,6 +75,7 @@ endif()
 set(proj_src
 	"${PROJ_SRC_DIR}/core/crystal.cpp"
 	"${PROJ_SRC_DIR}/core/geo.cpp"
+	"${PROJ_SRC_DIR}/core/optics.cpp"
 	"${PROJ_SRC_DIR}/sph_grid.cpp"
 	"${PROJ_SRC_DIR}/util/log.cpp")
 

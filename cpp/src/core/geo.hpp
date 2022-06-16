@@ -21,6 +21,7 @@ void Ll2Xyz(const Vec2f* ll, Vec3f* xyz,                           // input & ou
             size_t num = 1,                                        // data number
             size_t ll_step_bytes = 0, size_t xyz_step_bytes = 0);  // step of input & output
 
+// A convenience overload for ONE data
 Vec3f Ll2Xyz(const Vec2f& ll);
 
 
@@ -56,6 +57,9 @@ void Llr2Mat(const Vec3f* llr, Mat3x3f* mat,                         // input & 
 void RotateByQuat(const Quatf& quat, const Vec3f* xyz0, Vec3f* xyz1,        // input & output
                   size_t num = 1,                                           // data number
                   size_t xyz0_step_bytes = 0, size_t xyz1_step_bytes = 0);  // steps
+
+
+Mat3x3f VecNormalizeDiff(const Vec3f& v);
 
 }  // namespace halo_pm
 

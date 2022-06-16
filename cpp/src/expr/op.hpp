@@ -13,6 +13,7 @@ struct NegativeOp {};
 struct PositiveOp {};
 
 // =============== Functional Op ===============
+struct SqrtOp {};
 struct SinOp {};
 struct CosOp {};
 struct TanOp {};

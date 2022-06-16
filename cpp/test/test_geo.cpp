@@ -61,4 +61,27 @@ TEST_F(TestGeo, quat_rotate) {
   }
 }
 
+
+// NOLINTNEXTLINE
+TEST_F(TestGeo, normalize) {
+  Vec3f v{ -0.4423, 0.1474, -0.8847 };
+  v.normalize();
+  LOG_DEBUG("v_norm: %.6f", v.norm());
+
+  constexpr float kD = 1e-4;
+  Vec3f vd[3]{ v + Vec3f{ kD, 0, 0 }, v + Vec3f{ 0, kD, 0 }, v + Vec3f{ 0, 0, kD } };
+  for (auto& x : vd) {
+    x.normalize();
+  }
+
+  Mat3x3f m = VecNormalizeDiff(v);
+  for (int i = 0; i < 3; i++) {
+    auto j = (vd[i] - v) / kD;
+    LOG_DEBUG("j: %s", ObjLogFormatter<Vec3f>{ j }.Format());
+    LOG_DEBUG("m.col(%d): %s", i, ObjLogFormatter<Vec3f>{ m.col(i) }.Format());
+    EXPECT_NEAR((j - m.col(i)).norm(), 0, 5e-4);
+  }
+}
+
+
 }  // namespace

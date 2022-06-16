@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <cstddef>
 #include <tuple>
 
@@ -14,13 +15,14 @@ namespace {
 
 class TestOde : public ::testing::Test {};
 
-std::tuple<Vec<float, 2>, Mat<float, 2, 2>> test_f22(const Vec<float, 2>& x) {
+std::tuple<Vec2f, Mat<float, 2, 2>> test_f22(const Vec2f& x) {
   // y1 = x1^2 + x2^2
   // y2 = 2 * x1 * x2
   Vec<float, 2> y{ x.x() * x.x() + x.y() * x.y(), 2 * x.y() * x.x() };
   Mat<float, 2, 2> jac{ { 2.0f * x.x(), 2.0f * x.y() }, { 2.0f * x.y(), 2.0f * x.x() } };
   return std::make_tuple(y, jac);
 };
+
 
 // NOLINTNEXTLINE
 TEST_F(TestOde, test_find_sol_f22) {

@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <tuple>
+#include <utility>
 
 #include "expr/op.hpp"
 
@@ -57,6 +58,9 @@ using TimesExpr = BinaryExpr<TimesOp, L, R>;
 template <class L, class R>
 using DivideExpr = BinaryExpr<DivideOp, L, R>;
 
+template <class T>
+using SqrtExpr = UnaryExpr<SqrtOp, T>;
+
 
 // =============== Operator overloads ===============
 template <class L, class R>
@@ -77,6 +81,12 @@ TimesExpr<L, R> operator*(L&& l, R&& r) {
 template <class L, class R>
 DivideExpr<L, R> operator/(L&& l, R&& r) {
   return DivideExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
+}
+
+// =============== Function overloads ===============
+template <class T>
+SqrtExpr<T> sqrt(T&& val) {
+  return SqrtExpr<T>{ std::forward<T>(val) };
 }
 
 }  // namespace internal
