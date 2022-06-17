@@ -39,7 +39,7 @@ TEST_F(TestEigen, test_svd) {
       0.42146, 0.792467, 0.440872,              //
       0.860627, -0.196303, -0.469878;
 
-  Eigen::JacobiSVD svd(m, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Eigen::JacobiSVD svd(m, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
   const auto& s = svd.singularValues();
   for (int i = 0; i < s.rows(); i++) {

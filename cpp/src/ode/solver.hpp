@@ -69,7 +69,7 @@ FindSolution(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,           // T
     LOG_DEBUG("dy: %s", ObjLogFormatter<Vec<T, OutputDim>>{ dy }.Format());
 
     // Find deepest gradient
-    Eigen::JacobiSVD svd(jac, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::JacobiSVD svd(jac, Eigen::ComputeFullU | Eigen::ComputeFullV);
     auto rank = svd.rank();
     LOG_DEBUG("jac rank: %d", rank);
     const auto& u = svd.matrixU();
