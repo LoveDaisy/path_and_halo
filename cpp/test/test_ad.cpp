@@ -20,8 +20,8 @@ TEST_F(TestAD, simple_lazy) {
   {
     ad::VarExpr x1 = a1 + b1 + c1;  // Explicitly assign result as VarExpr
     auto x2 = a1 + b1 + c1;         // or let it be auto (thus **NOT** a VarExpr type)
-    float x1_val = ad::Evaluate(x1);
-    float x2_val = ad::Evaluate(x2);
+    float x1_val = ad::Eval(x1);
+    float x2_val = ad::Eval(x2);
 
     LOG_DEBUG("x1_val: %.4f", x1_val);
 
@@ -31,21 +31,21 @@ TEST_F(TestAD, simple_lazy) {
 
   {
     ad::VarExpr x1 = a1 - b1;
-    float x1_val = ad::Evaluate(x1);
+    float x1_val = ad::Eval(x1);
 
     ASSERT_NEAR(x1_val, -1.4f, 1e-6);
   }
 
   {
     ad::VarExpr x1 = a1 * b1 * c1;
-    float x1_val = ad::Evaluate(x1);
+    float x1_val = ad::Eval(x1);
 
     ASSERT_NEAR(x1_val, -1.92f, 1e-6);
   }
 
   {
     ad::VarExpr x1 = a1 - b1 * c1;
-    float x1_val = ad::Evaluate(x1);
+    float x1_val = ad::Eval(x1);
 
     ASSERT_NEAR(x1_val, 2.92f, 1e-6);
   }
@@ -62,38 +62,38 @@ TEST_F(TestAD, simple_diff) {
 
   {
     ad::VarExpr u = a + b + c;
-    float u_jac = ad::Differentiate(u, ad::wrt(a));
+    float u_jac = ad::Diff(u, ad::wrt(a));
     ASSERT_NEAR(u_jac, 1.0f, 1e-5);
   }
 
   {
     ad::VarExpr u = a / b;
-    ad::VarExpr ua = ad::Differentiate(u, ad::wrt(a));
-    float ua_val = ad::Evaluate(ua);
+    ad::VarExpr ua = ad::Diff(u, ad::wrt(a));
+    float ua_val = ad::Eval(ua);
     ASSERT_NEAR(ua_val, 1.0f / 2.3f, 1e-5);
   }
 
   {
     ad::VarExpr u = a / b * c;
-    ad::VarExpr ua = ad::Differentiate(u, ad::wrt(a));
-    float ua_val = ad::Evaluate(ua);
+    ad::VarExpr ua = ad::Diff(u, ad::wrt(a));
+    float ua_val = ad::Eval(ua);
     ASSERT_NEAR(ua_val, -0.3f / 2.3f, 1e-5);
 
-    ad::VarExpr ub = ad::Differentiate(u, ad::wrt(b));
-    float ub_val = ad::Evaluate(ub);
+    ad::VarExpr ub = ad::Diff(u, ad::wrt(b));
+    float ub_val = ad::Eval(ub);
     ASSERT_NEAR(ub_val, 0.3f / 2.3f / 2.3f, 1e-5);
   }
 
   {
     ad::VarExpr u = a * b / (a + b);
-    ad::VarExpr ua = ad::Differentiate(u, ad::wrt(a));
-    float ua_val = ad::Evaluate(ua);
+    ad::VarExpr ua = ad::Diff(u, ad::wrt(a));
+    float ua_val = ad::Eval(ua);
     ASSERT_NEAR(ua_val, b.val_ * b.val_ / (a.val_ + b.val_) / (a.val_ + b.val_), 1e-5);
   }
 
   {
     auto u = a * 3.0f;
-    float u_val = ad::Evaluate(u);
+    float u_val = ad::Eval(u);
     ASSERT_NEAR(u_val, 3.0f, 1e-5);
   }
 }
@@ -107,17 +107,17 @@ TEST_F(TestAD, op_fun_diff) {
 
   {
     auto u = sqrt(vx);
-    float u_val = ad::Evaluate(u);
+    float u_val = ad::Eval(u);
     ASSERT_NEAR(u_val, 1.4142135f, 1e-5);
 
-    auto ua = ad::Differentiate(u, ad::wrt(vx));
-    float ua_val = ad::Evaluate(ua);
+    auto ua = ad::Diff(u, ad::wrt(vx));
+    float ua_val = ad::Eval(ua);
     ASSERT_NEAR(ua_val, 0.353553f, 1e-5);
   }
 
   {
     auto u = sqrt(vx + 1.0f);
-    float u_val = ad::Evaluate(u);
+    float u_val = ad::Eval(u);
     ASSERT_NEAR(u_val, 1.7320508f, 1e-5);
   }
 
@@ -127,10 +127,10 @@ TEST_F(TestAD, op_fun_diff) {
     auto a = sqrt(delta);
     auto o = 1.3f * vx + a * 0.2;
 
-    auto ax_val = ad::Evaluate(ad::Differentiate(a, ad::wrt(vx)));
-    auto ox_val = ad::Evaluate(ad::Differentiate(o, ad::wrt(vx)));
-    auto ay_val = ad::Evaluate(ad::Differentiate(a, ad::wrt(vy)));
-    auto oy_val = ad::Evaluate(ad::Differentiate(o, ad::wrt(vy)));
+    auto ax_val = ad::Eval(ad::Diff(a, ad::wrt(vx)));
+    auto ox_val = ad::Eval(ad::Diff(o, ad::wrt(vx)));
+    auto ay_val = ad::Eval(ad::Diff(a, ad::wrt(vy)));
+    auto oy_val = ad::Eval(ad::Diff(o, ad::wrt(vy)));
     LOG_DEBUG("ax_val: %.6f", ax_val);
     LOG_DEBUG("ox_val: %.6f", ox_val);
     LOG_DEBUG("ay_val: %.6f", ay_val);
@@ -147,9 +147,9 @@ std::tuple<float, float, float> f1(float a, float b) {
   ad::VarExpr var_a = a;
   ad::VarExpr var_b = b;
   auto u = var_a * var_b / (var_a + var_b);
-  auto ua = ad::Differentiate(u, ad::wrt(var_a));
-  auto ub = ad::Differentiate(u, ad::wrt(var_b));
-  return std::make_tuple(ad::Evaluate(u), ad::Evaluate(ua), ad::Evaluate(ub));
+  auto ua = ad::Diff(u, ad::wrt(var_a));
+  auto ub = ad::Diff(u, ad::wrt(var_b));
+  return std::make_tuple(ad::Eval(u), ad::Eval(ua), ad::Eval(ub));
 }
 
 

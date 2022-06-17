@@ -32,7 +32,7 @@ std::tuple<Vec3f, Mat3x3f> RefractAndDiff(const Vec3f& ray_in, const Vec3f& norm
 
   auto c = vx * norm.x() + vy * norm.y() + vz * norm.z();
   auto delta = n * n - (n * n - 1.0f) / (c * c);
-  auto delta_val = ad::Evaluate(delta);
+  auto delta_val = ad::Eval(delta);
 
   // Total reflection
   if (delta_val <= 0) {
@@ -47,14 +47,14 @@ std::tuple<Vec3f, Mat3x3f> RefractAndDiff(const Vec3f& ray_in, const Vec3f& norm
     auto oy = n * vy + a * norm.y();
     auto oz = n * vz + a * norm.z();
 
-    using ad::Differentiate;
-    using ad::Evaluate;
+    using ad::Diff;
+    using ad::Eval;
     using ad::wrt;
 
-    Vec3f out_ray{ Evaluate(ox), Evaluate(oy), Evaluate(oz) };
-    Mat3x3f jac{ { Differentiate(ox, wrt(vx)), Differentiate(ox, wrt(vy)), Differentiate(ox, wrt(vz)) },
-                 { Differentiate(oy, wrt(vx)), Differentiate(oy, wrt(vy)), Differentiate(oy, wrt(vz)) },
-                 { Differentiate(oz, wrt(vx)), Differentiate(ox, wrt(vy)), Differentiate(oz, wrt(vz)) } };
+    Vec3f out_ray{ Eval(ox), Eval(oy), Eval(oz) };
+    Mat3x3f jac{ { Diff(ox, wrt(vx)), Diff(ox, wrt(vy)), Diff(ox, wrt(vz)) },
+                 { Diff(oy, wrt(vx)), Diff(oy, wrt(vy)), Diff(oy, wrt(vz)) },
+                 { Diff(oz, wrt(vx)), Diff(ox, wrt(vy)), Diff(oz, wrt(vz)) } };
     Mat3x3f jac_norm = Mat3x3f::Identity() - ray_in * ray_in.transpose();  // Assume |ray_in| = 1.0
     return std::make_tuple(out_ray, jac * jac_norm);
   }

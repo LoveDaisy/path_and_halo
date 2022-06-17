@@ -18,6 +18,7 @@ using Vec3f = Eigen::Vector3f;
 using Vec4f = Eigen::Vector4f;
 
 using Mat3x3f = Eigen::Matrix3f;
+using Mat3x4f = Eigen::Matrix<float, 3, 4>;
 
 using Quatf = Eigen::Quaternionf;
 

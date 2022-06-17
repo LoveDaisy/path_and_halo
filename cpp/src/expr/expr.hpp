@@ -46,6 +46,9 @@ struct BinaryExpr {
 
 
 // =============== Expression alias ===============
+template <class T>
+using NegExpr = UnaryExpr<NegativeOp, T>;
+
 template <class L, class R>
 using AddExpr = BinaryExpr<AddOp, L, R>;
 
@@ -63,6 +66,11 @@ using SqrtExpr = UnaryExpr<SqrtOp, T>;
 
 
 // =============== Operator overloads ===============
+template <class T>
+NegExpr<T> operator-(T&& v) {
+  return UnaryExpr<NegativeOp, T>{ std::forward<T>(v) };
+}
+
 template <class L, class R>
 AddExpr<L, R> operator+(L&& l, R&& r) {
   return AddExpr<L, R>{ std::forward<L>(l), std::forward<R>(r) };
