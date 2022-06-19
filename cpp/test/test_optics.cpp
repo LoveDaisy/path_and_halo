@@ -82,7 +82,7 @@ TEST_F(TestOptics, trace_direction_diff) {
     auto j = (tmp_xyz - ray_out_xyz0) / kD;
     LOG_DEBUG("j: %s", ObjLogFormatter<Vec3f>{ j }.Format());
     LOG_DEBUG("jac.col(%d): %s", i, ObjLogFormatter<Vec3f>{ jac2.col(i) }.Format());
-    EXPECT_NEAR((j - jac2.col(i)).norm(), 0, 1e-2);
+    EXPECT_NEAR((j - jac2.col(i)).norm(), 0, 3e-3);
   }
 }
 

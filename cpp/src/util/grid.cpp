@@ -1,4 +1,4 @@
-#include "sph_grid.hpp"
+#include "util/grid.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -6,28 +6,29 @@
 #include <tuple>
 
 #include "core/math.hpp"
+#include "core/types.hpp"
 #include "util/log.hpp"
 
 namespace halo_pm {
 
-void FillVec(double z, double phi, float* xyz) {
+void FillVec(double z, double phi, Vec3f* xyz) {
   auto sth = std::sqrt((1 - z * z));
   auto x = sth * std::cos(phi);
   auto y = sth * std::sin(phi);
 
-  xyz[0] = x;
-  xyz[1] = y;
-  xyz[2] = z;
+  xyz->x() = x;
+  xyz->y() = y;
+  xyz->z() = z;
 }
 
-std::tuple<std::unique_ptr<float[]>, size_t> GenerateGrid(int level) {
+SphGrid GenerateGrid(int level) {
   if (level <= 0) {
-    return std::make_tuple(nullptr, 0);
+    return SphGrid{};
   }
 
   size_t n_side = 1 << level;
   size_t n_pix = 12 * n_side * n_side;
-  std::unique_ptr<float[]> data{ new float[n_pix * 3]{} };
+  std::unique_ptr<Vec3f[]> data{ new Vec3f[n_pix]{} };
 
 
   size_t n_cap = 2 * n_side * (n_side - 1);
@@ -47,7 +48,7 @@ std::tuple<std::unique_ptr<float[]>, size_t> GenerateGrid(int level) {
     auto z = 1 - i_ring * i_ring / fact2;
     auto phi = (i_phi - 0.5) * kPi / (2 * i_ring);
 
-    FillVec(z, phi, data.get() + i * 3);
+    FillVec(z, phi, data.get() + i);
   }
 
   // Equatorial region
@@ -60,7 +61,7 @@ std::tuple<std::unique_ptr<float[]>, size_t> GenerateGrid(int level) {
     auto z = (nl2 * 1.0 - i_ring) / fact1;
     auto phi = (i_phi - f_odd) * kPi / nl2;
 
-    FillVec(z, phi, data.get() + i * 3);
+    FillVec(z, phi, data.get() + i);
   }
 
   // South cap
@@ -74,10 +75,12 @@ std::tuple<std::unique_ptr<float[]>, size_t> GenerateGrid(int level) {
     auto z = -1 + i_ring * i_ring / fact2;
     auto phi = (i_phi - 0.5) * kPi / (2 * i_ring);
 
-    FillVec(z, phi, data.get() + i * 3);
+    FillVec(z, phi, data.get() + i);
   }
 
-  return std::make_tuple(std::move(data), n_pix);
+  float dr = std::sqrt(4 * kPi / n_pix) * 90 / kPi;
+
+  return SphGrid{ n_pix, dr, std::move(data) };
 }
 
 }  // namespace halo_pm
