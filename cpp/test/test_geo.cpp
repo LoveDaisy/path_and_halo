@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "auto_diff/ad.hpp"
 #include "core/geo.hpp"
 #include "core/types.hpp"
 #include "util/log.hpp"
@@ -79,8 +80,41 @@ TEST_F(TestGeo, normalize) {
     auto j = (vd[i] - v) / kD;
     LOG_DEBUG("j: %s", ObjLogFormatter<Vec3f>{ j }.Format());
     LOG_DEBUG("m.col(%d): %s", i, ObjLogFormatter<Vec3f>{ m.col(i) }.Format());
-    EXPECT_NEAR((j - m.col(i)).norm(), 0, 5e-4);
+    EXPECT_NEAR((j - m.col(i)).norm(), 0, 6e-4);
   }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestGeo, quat_rot_expr) {
+  Vec3f v{ 1.2f, 3.2f, -0.3f };
+  Quatf q{ 1.0f, 2.0f, -2.0f, 0.2f };
+  q.normalize();
+
+  LOG_DEBUG("v: %s", ObjLogFormatter<Vec3f>{ v }.Format());
+  LOG_DEBUG("q: %s", ObjLogFormatter<Quatf>{ q }.Format());
+
+  using ad::Diff;
+  using ad::Eval;
+  using ad::Var;
+  using ad::wrt;
+
+  Var vx = v.x();
+  Var vy = v.y();
+  Var vz = v.z();
+  Var qw = q.w();
+  Var qx = q.x();
+  Var qy = q.y();
+  Var qz = q.z();
+
+  auto [ox, oy, oz] = QuatRotExpr(qw, qx, qy, qz, vx, vy, vz);
+  float ox_val = Eval(ox);
+  float oy_val = Eval(oy);
+  float oz_val = Eval(oz);
+  EXPECT_NEAR(ox_val, -2.739823, 1e-6);
+  EXPECT_NEAR(oy_val, -0.509735, 1e-6);
+  EXPECT_NEAR(oz_val, 2.000885, 1e-6);
+  LOG_DEBUG("v_out: [%.6f,%.6f,%.6f]", Eval(ox), Eval(oy), Eval(oz));
 }
 
 
