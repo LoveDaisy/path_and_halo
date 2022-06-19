@@ -17,7 +17,7 @@ template <class T>
 struct is_expr : public std::false_type {};
 
 template <class T>
-struct is_expr<internal::VarExpr<T>> : public std::true_type {};
+struct is_expr<internal::Var<T>> : public std::true_type {};
 
 template <class Op, class T>
 struct is_expr<internal::UnaryExpr<Op, T>> : public std::true_type {};
@@ -48,7 +48,7 @@ struct value_type<internal::UnaryExpr<Op, T>> {
 };
 
 template <class T>
-struct value_type<internal::VarExpr<T>> {
+struct value_type<internal::Var<T>> {
   // Termination of UnaryExpr recursion
   using type = T;
 };
@@ -64,7 +64,7 @@ struct var_dim {
 };
 
 template <class T>
-struct var_dim<internal::VarExpr<T>, std::enable_if_t<std::is_arithmetic_v<T>>> {
+struct var_dim<internal::Var<T>, std::enable_if_t<std::is_arithmetic_v<T>>> {
   static constexpr size_t dim = 1;
 };
 

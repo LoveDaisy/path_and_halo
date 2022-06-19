@@ -26,9 +26,9 @@ Vec3f Refract(const Vec3f& ray_in, const Vec3f& norm, float n0, float n1) {
 
 std::tuple<Vec3f, Mat3x3f> RefractAndDiff(const Vec3f& ray_in, const Vec3f& norm, float n0, float n1) {
   auto n = n0 / n1;
-  ad::VarExpr vx{ ray_in.x() };
-  ad::VarExpr vy{ ray_in.y() };
-  ad::VarExpr vz{ ray_in.z() };
+  ad::Var vx{ ray_in.x() };
+  ad::Var vy{ ray_in.y() };
+  ad::Var vz{ ray_in.z() };
 
   auto c = vx * norm.x() + vy * norm.y() + vz * norm.z();
   auto delta = n * n - (n * n - 1.0f) / (c * c);

@@ -70,6 +70,23 @@ struct ObjLogFormatter<Mat<T, R, C>> {
   const char* Format() { return static_cast<const char*>(*this); }
 };
 
+
+template <class T>
+struct ObjLogFormatter<Eigen::Quaternion<T>> {
+  static constexpr size_t kBufLen = 1024;
+  char obj_buf_[kBufLen];
+  const Eigen::Quaternion<T>& q_;
+
+  ObjLogFormatter(const Eigen::Quaternion<T>& q) : q_(q){};
+
+  operator const char*() {
+    std::snprintf(obj_buf_, kBufLen, "[%.6f,%.6f,%.6f,%.6f,]", q_.w(), q_.x(), q_.y(), q_.z());
+    return obj_buf_;
+  }
+
+  const char* Format() { return static_cast<const char*>(*this); }
+};
+
 }  // namespace halo_pm
 
 #endif  // CORE_TYPES_H_

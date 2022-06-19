@@ -13,13 +13,13 @@ class TestAD : public ::testing::Test {};
 
 // NOLINTNEXTLINE
 TEST_F(TestAD, simple_lazy) {
-  ad::VarExpr a1 = 1.0f;
-  ad::VarExpr b1 = 2.4f;
-  ad::VarExpr c1 = -0.8f;
+  ad::Var a1 = 1.0f;
+  ad::Var b1 = 2.4f;
+  ad::Var c1 = -0.8f;
 
   {
-    ad::VarExpr x1 = a1 + b1 + c1;  // Explicitly assign result as VarExpr
-    auto x2 = a1 + b1 + c1;         // or let it be auto (thus **NOT** a VarExpr type)
+    ad::Var x1 = a1 + b1 + c1;  // Explicitly assign result as VarExpr
+    auto x2 = a1 + b1 + c1;     // or let it be auto (thus **NOT** a VarExpr type)
     float x1_val = ad::Eval(x1);
     float x2_val = ad::Eval(x2);
 
@@ -30,21 +30,21 @@ TEST_F(TestAD, simple_lazy) {
   }
 
   {
-    ad::VarExpr x1 = a1 - b1;
+    ad::Var x1 = a1 - b1;
     float x1_val = ad::Eval(x1);
 
     ASSERT_NEAR(x1_val, -1.4f, 1e-6);
   }
 
   {
-    ad::VarExpr x1 = a1 * b1 * c1;
+    ad::Var x1 = a1 * b1 * c1;
     float x1_val = ad::Eval(x1);
 
     ASSERT_NEAR(x1_val, -1.92f, 1e-6);
   }
 
   {
-    ad::VarExpr x1 = a1 - b1 * c1;
+    ad::Var x1 = a1 - b1 * c1;
     float x1_val = ad::Eval(x1);
 
     ASSERT_NEAR(x1_val, 2.92f, 1e-6);
@@ -56,37 +56,37 @@ TEST_F(TestAD, simple_lazy) {
 
 // NOLINTNEXTLINE
 TEST_F(TestAD, simple_diff) {
-  ad::VarExpr a = 1.0f;
-  ad::VarExpr b = 2.3f;
-  ad::VarExpr c = -.3f;
+  ad::Var a = 1.0f;
+  ad::Var b = 2.3f;
+  ad::Var c = -.3f;
 
   {
-    ad::VarExpr u = a + b + c;
+    ad::Var u = a + b + c;
     float u_jac = ad::Diff(u, ad::wrt(a));
     ASSERT_NEAR(u_jac, 1.0f, 1e-5);
   }
 
   {
-    ad::VarExpr u = a / b;
-    ad::VarExpr ua = ad::Diff(u, ad::wrt(a));
+    ad::Var u = a / b;
+    ad::Var ua = ad::Diff(u, ad::wrt(a));
     float ua_val = ad::Eval(ua);
     ASSERT_NEAR(ua_val, 1.0f / 2.3f, 1e-5);
   }
 
   {
-    ad::VarExpr u = a / b * c;
-    ad::VarExpr ua = ad::Diff(u, ad::wrt(a));
+    ad::Var u = a / b * c;
+    ad::Var ua = ad::Diff(u, ad::wrt(a));
     float ua_val = ad::Eval(ua);
     ASSERT_NEAR(ua_val, -0.3f / 2.3f, 1e-5);
 
-    ad::VarExpr ub = ad::Diff(u, ad::wrt(b));
+    ad::Var ub = ad::Diff(u, ad::wrt(b));
     float ub_val = ad::Eval(ub);
     ASSERT_NEAR(ub_val, 0.3f / 2.3f / 2.3f, 1e-5);
   }
 
   {
-    ad::VarExpr u = a * b / (a + b);
-    ad::VarExpr ua = ad::Diff(u, ad::wrt(a));
+    ad::Var u = a * b / (a + b);
+    ad::Var ua = ad::Diff(u, ad::wrt(a));
     float ua_val = ad::Eval(ua);
     ASSERT_NEAR(ua_val, b.val_ * b.val_ / (a.val_ + b.val_) / (a.val_ + b.val_), 1e-5);
   }
@@ -101,9 +101,9 @@ TEST_F(TestAD, simple_diff) {
 
 // NOLINTNEXTLINE
 TEST_F(TestAD, op_fun_diff) {
-  ad::VarExpr vx{ 2.0f };
-  ad::VarExpr vy{ -1.0f };
-  ad::VarExpr vz{ .3f };
+  ad::Var vx{ 2.0f };
+  ad::Var vy{ -1.0f };
+  ad::Var vz{ .3f };
 
   {
     auto u = sqrt(vx);
@@ -144,8 +144,8 @@ TEST_F(TestAD, op_fun_diff) {
 
 
 std::tuple<float, float, float> f1(float a, float b) {
-  ad::VarExpr var_a = a;
-  ad::VarExpr var_b = b;
+  ad::Var var_a = a;
+  ad::Var var_b = b;
   auto u = var_a * var_b / (var_a + var_b);
   auto ua = ad::Diff(u, ad::wrt(var_a));
   auto ub = ad::Diff(u, ad::wrt(var_b));
@@ -153,14 +153,49 @@ std::tuple<float, float, float> f1(float a, float b) {
 }
 
 
+template <class A, class B>
+auto f2(const ad::Var<A>& a, const ad::Var<B>& b) {
+  auto u = a + b;
+  auto v = 2 * a - b;
+  auto uv = u / v;
+  return std::make_tuple(u, v, uv);
+}
+
+
 // NOLINTNEXTLINE
 TEST_F(TestAD, simple_fun) {
-  float a = 2.3f;
-  float b = 3.4f;
-  auto [u, ua, ub] = f1(a, b);
-  ASSERT_NEAR(u, a * b / (a + b), 1e-5);
-  ASSERT_NEAR(ua, b * b / (a + b) / (a + b), 1e-5);
-  ASSERT_NEAR(ub, a * a / (a + b) / (a + b), 1e-5);
+  {
+    float a = 2.3f;
+    float b = 3.4f;
+    auto [u, ua, ub] = f1(a, b);
+    ASSERT_NEAR(u, a * b / (a + b), 1e-5);
+    ASSERT_NEAR(ua, b * b / (a + b) / (a + b), 1e-5);
+    ASSERT_NEAR(ub, a * a / (a + b) / (a + b), 1e-5);
+  }
+
+  {
+    ad::Var a = 2.3f;
+    ad::Var b = 3.4f;
+    auto [u, v, uv] = f2(a, b);
+    ASSERT_NEAR(ad::Eval(u), 5.7f, 1e-6);
+    ASSERT_NEAR(ad::Eval(v), 1.2f, 1e-6);
+    ASSERT_NEAR(ad::Eval(uv), 4.75f, 1e-6);
+
+    float ua = ad::Diff(u, ad::wrt(a));
+    float ub = ad::Diff(u, ad::wrt(b));
+    ASSERT_NEAR(ua, 1.0f, 1e-5);
+    ASSERT_NEAR(ub, 1.0f, 1e-5);
+
+    float va = ad::Diff(v, ad::wrt(a));
+    float vb = ad::Diff(v, ad::wrt(b));
+    ASSERT_NEAR(va, 2.0f, 1e-5);
+    ASSERT_NEAR(vb, -1.0f, 1e-5);
+
+    float uva = ad::Diff(uv, ad::wrt(a));
+    float uvb = ad::Diff(uv, ad::wrt(b));
+    ASSERT_NEAR(uva, -7.08333f, 1e-5);
+    ASSERT_NEAR(uvb, 4.791667f, 1e-5);
+  }
 }
 
 }  // namespace

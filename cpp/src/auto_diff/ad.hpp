@@ -17,7 +17,7 @@ constexpr float Eval(float v) {
 }
 
 template <class T>
-constexpr auto Eval(const VarExpr<T>& e) {
+constexpr auto Eval(const Var<T>& e) {
   return Eval(e.val_);
 }
 
@@ -71,7 +71,7 @@ namespace ad {
 // ~~~
 
 using internal::Eval;
-using internal::VarExpr;
+using internal::Var;
 
 }  // namespace ad
 
@@ -94,7 +94,7 @@ constexpr auto Diff(float /* v */, const wrt<X>& /* x */) {
 
 
 template <class Y, class X>
-constexpr auto Diff(const VarExpr<Y>& v, const wrt<X>& x) -> float {
+constexpr auto Diff(const Var<Y>& v, const wrt<X>& x) -> float {
   // Direct case, i.e. v.val_ is data type (non-expr type)
   if constexpr (!ad::traits::is_expr_v<Y>) {
     return 0.0f;
@@ -108,7 +108,7 @@ constexpr auto Diff(const VarExpr<Y>& v, const wrt<X>& x) -> float {
 
 
 template <class V>
-constexpr auto Diff(const VarExpr<V>& v, const wrt<VarExpr<V>>& x) -> float {
+constexpr auto Diff(const Var<V>& v, const wrt<Var<V>>& x) -> float {
   // Direct case, i.e. v.val_ is data type (non-expr type)
   if constexpr (!ad::traits::is_expr_v<V>) {
     if (v.id_ == x.val_.id_) {
