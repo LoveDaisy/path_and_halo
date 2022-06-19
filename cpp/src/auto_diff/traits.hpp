@@ -4,8 +4,8 @@
 #include <cstddef>
 #include <type_traits>
 
+#include "auto_diff/expr.hpp"
 #include "auto_diff/types.hpp"
-#include "expr/expr.hpp"
 
 namespace halo_pm {
 namespace ad {

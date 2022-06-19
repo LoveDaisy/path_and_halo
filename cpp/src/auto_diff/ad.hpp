@@ -4,9 +4,9 @@
 #include <cmath>
 #include <cstddef>
 
+#include "auto_diff/expr.hpp"
+#include "auto_diff/op.hpp"
 #include "auto_diff/traits.hpp"
-#include "expr/expr.hpp"
-#include "expr/op.hpp"
 
 namespace halo_pm {
 

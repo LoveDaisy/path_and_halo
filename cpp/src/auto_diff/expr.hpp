@@ -5,7 +5,7 @@
 #include <tuple>
 #include <utility>
 
-#include "expr/op.hpp"
+#include "auto_diff/op.hpp"
 
 namespace halo_pm {
 namespace internal {
