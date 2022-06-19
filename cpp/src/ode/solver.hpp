@@ -1,8 +1,6 @@
 #ifndef ODE_SOLVER_H_
 #define ODE_SOLVER_H_
 
-#include <Eigen/Eigen>
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <functional>
@@ -58,7 +56,7 @@ FindSolution(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,           // T
             ObjLogFormatter<Vec<T, OutputDim>>{ y }.Format());
 
   if (y.hasNaN()) {
-    return std::make_tuple(Vec<T, OutputDim>{}, status);
+    return std::make_tuple(Vec<T, InputDim>{}, status);
   }
 
   constexpr double kHMin = 0.1;
