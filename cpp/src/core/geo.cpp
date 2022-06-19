@@ -125,10 +125,4 @@ void RotateByQuat(const Quatf& quat, const Vec3f* xyz0, Vec3f* xyz1,  // input &
   }
 }
 
-Mat3x3f VecNormalizeDiff(const Vec3f& v) {
-  auto vn = v.norm();
-  auto vn3 = vn * vn * vn;
-  return Mat3x3f::Identity() / vn - v * v.transpose() / vn3;
-}
-
 }  // namespace halo_pm

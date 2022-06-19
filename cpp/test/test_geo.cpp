@@ -64,7 +64,7 @@ TEST_F(TestGeo, quat_rotate) {
 
 
 // NOLINTNEXTLINE
-TEST_F(TestGeo, normalize) {
+TEST_F(TestGeo, normalize_Vec3f) {
   Vec3f v{ -0.4423, 0.1474, -0.8847 };
   v.normalize();
   LOG_DEBUG("v_norm: %.6f", v.norm());
@@ -75,13 +75,47 @@ TEST_F(TestGeo, normalize) {
     x.normalize();
   }
 
-  Mat3x3f m = VecNormalizeDiff(v);
+  ad::Var vx = v.x();
+  ad::Var vy = v.y();
+  ad::Var vz = v.z();
+
+  auto [ox, oy, oz] = NormalizeExpr(vx, vy, vz);
+  Mat3x3f m{ { ad::Diff(ox, ad::wrt(vx)), ad::Diff(ox, ad::wrt(vy)), ad::Diff(ox, ad::wrt(vz)) },
+             { ad::Diff(oy, ad::wrt(vx)), ad::Diff(oy, ad::wrt(vy)), ad::Diff(oy, ad::wrt(vz)) },
+             { ad::Diff(oz, ad::wrt(vx)), ad::Diff(oz, ad::wrt(vy)), ad::Diff(oz, ad::wrt(vz)) } };
+
   for (int i = 0; i < 3; i++) {
     auto j = (vd[i] - v) / kD;
     LOG_DEBUG("j: %s", ObjLogFormatter<Vec3f>{ j }.Format());
     LOG_DEBUG("m.col(%d): %s", i, ObjLogFormatter<Vec3f>{ m.col(i) }.Format());
     EXPECT_NEAR((j - m.col(i)).norm(), 0, 6e-4);
   }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestGeo, normalize_Quatf) {
+  Quatf q{ -0.4423, 0.1474, -0.8847, 0.2345 };
+  q.normalize();
+
+  using ad::Diff;
+  using ad::Var;
+  using ad::wrt;
+
+  Var qw = q.w();
+  Var qx = q.x();
+  Var qy = q.y();
+  Var qz = q.z();
+
+  auto [ow, ox, oy, oz] = NormalizeExpr(qw, qx, qy, qz);
+  LOG_DEBUG("d(qx)/d_qx: %.6f", Diff(ox, wrt(qx)));
+
+  Mat4x4f m{ { Diff(ow, wrt(qw)), Diff(ow, wrt(qx)), Diff(ow, wrt(qy)), Diff(ow, wrt(qz)) },
+             { Diff(ox, wrt(qw)), Diff(ox, wrt(qx)), Diff(ox, wrt(qy)), Diff(ox, wrt(qz)) },
+             { Diff(oy, wrt(qw)), Diff(oy, wrt(qx)), Diff(oy, wrt(qy)), Diff(oy, wrt(qz)) },
+             { Diff(oz, wrt(qw)), Diff(oz, wrt(qx)), Diff(oz, wrt(qy)), Diff(oz, wrt(qz)) } };
+
+  LOG_DEBUG("jac:\n%s", ObjLogFormatter<Mat4x4f>{ m }.Format());
 }
 
 
@@ -115,6 +149,8 @@ TEST_F(TestGeo, quat_rot_expr) {
   EXPECT_NEAR(oy_val, -0.509735, 1e-6);
   EXPECT_NEAR(oz_val, 2.000885, 1e-6);
   LOG_DEBUG("v_out: [%.6f,%.6f,%.6f]", Eval(ox), Eval(oy), Eval(oz));
+  LOG_DEBUG("d/d_vx: [%.6f,%.6f,%.6f]", Diff(ox, wrt(vx)), Diff(oy, wrt(vx)), Diff(oz, wrt(vx)));
+  LOG_DEBUG("d/d_qw: [%.6f,%.6f,%.6f]", Diff(ox, wrt(qw)), Diff(oy, wrt(qw)), Diff(oz, wrt(qw)));
 }
 
 

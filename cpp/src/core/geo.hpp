@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <tuple>
 
-#include "auto_diff/ad.hpp"
 #include "core/types.hpp"
 
 namespace halo_pm {
@@ -46,6 +45,13 @@ void Llr2Mat(const Vec3f* llr, Mat3x3f* mat,                         // input & 
              size_t llr_step_bytes = 0, size_t mat_step_bytes = 0);  // step of input & output
 
 
+template <class... VX>
+auto NormalizeExpr(VX... vx) {
+  auto f = sqrt((... + (vx * vx)));
+  return std::make_tuple(vx / f...);
+}
+
+
 /**
  * @brief Rotate a point by a given quaternion.
  *
@@ -64,8 +70,10 @@ void RotateByQuat(const Quatf& quat, const Vec3f* xyz0, Vec3f* xyz1,        // i
 template <class QW, class QX, class QY, class QZ,  // quaternion
           class VX, class VY, class VZ>            // input vector
 auto                                               // output vector
-QuatRotExpr(const ad::Var<QW>& qw, const ad::Var<QX>& qx, const ad::Var<QY>& qy, const ad::Var<QZ>& qz,  // quaternion
-            const ad::Var<VX>& vx, const ad::Var<VY>& vy, const ad::Var<VZ>& vz) {                       // input vector
+QuatRotExpr(QW qw0, QX qx0, QY qy0, QZ qz0,        // quaternion
+            VX vx, VY vy, VZ vz) {                 // input vector
+  auto [qw, qx, qy, qz] = NormalizeExpr(qw0, qx0, qy0, qz0);
+
   auto tmp_qw = -qx * vx - qy * vy - qz * vz;
   auto tmp_qx = qw * vx + qy * vz - qz * vy;
   auto tmp_qy = qw * vy - qx * vz + qz * vx;
@@ -78,8 +86,6 @@ QuatRotExpr(const ad::Var<QW>& qw, const ad::Var<QX>& qx, const ad::Var<QY>& qy,
   return std::make_tuple(ox, oy, oz);
 }
 
-
-Mat3x3f VecNormalizeDiff(const Vec3f& v);
 
 }  // namespace halo_pm
 
