@@ -1,7 +1,10 @@
 function test_find_solution()
-test_fdf = {@case1, @case2};
-test_x0 = {[1.2, 1.1], [0.5, 0.5]};
-test_yq = {2, 4.5};
+q0 = [0.4, 0.5, -0.7, -0.4];
+q0 = q0 / norm(q0);
+
+test_fdf = {@case1, @case2, @case3};
+test_x0 = {[1.2, 1.1], [0.5, 0.5], q0};
+test_yq = {2, 4.5, [geo.ll2xyz([5, 25]), 1]};
 
 test_cases = struct('fdf', test_fdf, 'x0', test_x0, 'yq', test_yq);
 case_num = length(test_cases);
@@ -39,4 +42,13 @@ for i = 1:num
     jac(:, :, i) = [exp(x(i, 1) + 3 * x(i, 2) - 0.1) + exp(x(i, 1) - 3 * x(i, 2) - 0.1) - exp(-x(i, 1) - 0.1), ...
                     3 * exp(x(i, 1) + 3 * x(i, 2) - 0.1) - 3 * exp(x(i, 1) - 3 * x(i, 2) - 0.1)];
 end
+end
+
+
+function [y, jac] = case3(rot)
+trace.fid = [1; 3; 2; 4; 5; 1];
+crystal = opt.make_prism_crystal(1.0);
+ray_in_ll = [180, -15];
+
+[y, jac] = opt.crystal_system(rot, ray_in_ll, crystal, trace);
 end
