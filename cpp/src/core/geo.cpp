@@ -88,6 +88,17 @@ void Llr2Mat(const Vec3f* llr, Mat3x3f* mat,                  // input & output,
 }
 
 
+Quatf Llr2Quat(const Vec3f& llr) {
+  auto lon = llr.x() * kPi / 180.0f;
+  auto lat = kPi / 2.0f - llr.y() * kPi / 180.0f;
+  auto roll = llr.z() * kPi / 180.0f;
+  Quatf q_lon{ std::cos(lon / 2.0f), 0.0f, 0.0f, std::sin(lon / 2.0f) };
+  Quatf q_lat{ std::cos(lat / 2.0f), 0.0f, std::sin(lat / 2.0f), 0.0f };
+  Quatf q_roll{ std::cos(roll / 2.0f), 0.0f, 0.0f, std::sin(roll / 2.0f) };
+  return q_lon * q_lat * q_roll;
+}
+
+
 void RotateByQuat(const Quatf& quat, const Vec3f* xyz0, Vec3f* xyz1,  // input & output
                   size_t num,                                         // data number
                   size_t xyz0_step_bytes, size_t xyz1_step_bytes) {   // steps

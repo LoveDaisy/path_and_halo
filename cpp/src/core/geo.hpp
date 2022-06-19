@@ -45,6 +45,9 @@ void Llr2Mat(const Vec3f* llr, Mat3x3f* mat,                         // input & 
              size_t llr_step_bytes = 0, size_t mat_step_bytes = 0);  // step of input & output
 
 
+Quatf Llr2Quat(const Vec3f& llr);
+
+
 template <class... VX>
 auto NormalizeExpr(VX... vx) {
   auto f = sqrt((... + (vx * vx)));

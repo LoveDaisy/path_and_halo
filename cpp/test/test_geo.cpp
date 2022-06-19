@@ -4,6 +4,7 @@
 
 #include "auto_diff/ad.hpp"
 #include "core/geo.hpp"
+#include "core/math.hpp"
 #include "core/types.hpp"
 #include "util/log.hpp"
 
@@ -15,7 +16,7 @@ namespace {
 class TestGeo : public ::testing::Test {};
 
 // NOLINTNEXTLINE
-TEST_F(TestGeo, llr2mat) {
+TEST_F(TestGeo, llr_rot) {
   constexpr size_t kNum = 1;
   Vec3f llr[kNum]{ { 20, 35, -12 } };
   Mat3x3f expect_mat[kNum]{ Mat3x3f{ { -0.222484786672610f, -0.598317403666930f, 0.769751131320057f },  //
@@ -26,6 +27,25 @@ TEST_F(TestGeo, llr2mat) {
   Llr2Mat(llr, mat);
   for (size_t i = 0; i < kNum; i++) {
     ASSERT_NEAR((mat[i] - expect_mat[i]).norm(), 0.0, 1e-6);  // Eigen matrix is col-major
+  }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestGeo, llr_quat) {
+  Vec3f llr{ 20, 35, -12 };
+  Quatf q = Llr2Quat(llr);
+  LOG_DEBUG("q: %s", ObjLogFormatter<Quatf>{ q }.Format());
+
+  Vec3f basis[3]{ { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } };
+  Vec3f expect_basis[3]{ { 0.598317, -0.00348527, -0.801252 },  //
+                         { -0.222485, 0.959945, -0.170311 },    //
+                         { 0.769751, 0.280166, 0.573576 } };
+  for (int i = 0; i < 3; i++) {
+    auto b = q * basis[i];
+    LOG_DEBUG("expect_basis(%d): %s", i, ObjLogFormatter<Vec3f>{ expect_basis[i] }.Format());
+    LOG_DEBUG("b: %s", ObjLogFormatter<Vec3f>{ b }.Format());
+    EXPECT_NEAR((b - expect_basis[i]).norm(), 0, 1e-5);
   }
 }
 
