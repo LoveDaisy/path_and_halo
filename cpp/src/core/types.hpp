@@ -19,6 +19,7 @@ using Vec4f = Eigen::Vector4f;
 
 using Mat3x3f = Eigen::Matrix3f;
 using Mat3x4f = Eigen::Matrix<float, 3, 4>;
+using Mat4x4f = Eigen::Matrix4f;
 
 using Quatf = Eigen::Quaternionf;
 
@@ -58,11 +59,14 @@ struct ObjLogFormatter<Mat<T, R, C>> {
 
   operator const char*() {
     int offset = 0;
-    for (const auto& row : mat_.rowwise()) {
-      for (auto x : row) {
+    for (int r = 0; r < R - 1; r++) {
+      for (auto x : mat_.row(r)) {
         offset += std::snprintf(obj_buf_ + offset, kBufLen, "%.6f,", x);
       }
       offset += std::snprintf(obj_buf_ + offset, kBufLen, "\n");
+    }
+    for (auto x : mat_.row(R - 1)) {
+      offset += std::snprintf(obj_buf_ + offset, kBufLen, "%.6f,", x);
     }
     return obj_buf_;
   }
@@ -80,7 +84,7 @@ struct ObjLogFormatter<Eigen::Quaternion<T>> {
   ObjLogFormatter(const Eigen::Quaternion<T>& q) : q_(q){};
 
   operator const char*() {
-    std::snprintf(obj_buf_, kBufLen, "[%.6f,%.6f,%.6f,%.6f,]", q_.w(), q_.x(), q_.y(), q_.z());
+    std::snprintf(obj_buf_, kBufLen, "[%.6f,%.6f,%.6f,%.6f]", q_.w(), q_.x(), q_.y(), q_.z());
     return obj_buf_;
   }
 
