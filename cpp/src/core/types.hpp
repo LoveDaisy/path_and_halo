@@ -16,12 +16,19 @@ using Mat = Eigen::Matrix<T, R, C>;
 using Vec2f = Eigen::Vector2f;
 using Vec3f = Eigen::Vector3f;
 using Vec4f = Eigen::Vector4f;
+using Vec2d = Eigen::Vector2d;
+using Vec3d = Eigen::Vector3d;
+using Vec4d = Eigen::Vector4d;
 
 using Mat3x3f = Eigen::Matrix3f;
 using Mat3x4f = Eigen::Matrix<float, 3, 4>;
 using Mat4x4f = Eigen::Matrix4f;
+using Mat3x3d = Eigen::Matrix3d;
+using Mat3x4d = Eigen::Matrix<double, 3, 4>;
+using Mat4x4d = Eigen::Matrix4d;
 
 using Quatf = Eigen::Quaternionf;
+using Quatd = Eigen::Quaterniond;
 
 
 template <class T>

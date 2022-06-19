@@ -51,6 +51,7 @@ TEST_F(TestOptics, trace_direction_2) {
 TEST_F(TestOptics, trace_direction_diff) {
   auto crystal = MakePrismCrystal(1.0f);
   Quatf q{ 0.424935669519169, -0.480586073753202, 0.669476669301674, 0.374523285804727 };
+  q.normalize();
   Vec2f ray_in_ll{ 180, -15 };
   std::vector<int> raypath = { 1, 3, 2, 4, 5, 1 };
 

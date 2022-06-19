@@ -20,7 +20,7 @@ using FuncAndDiff = std::function<std::tuple<Vec<T, OutputDim>, Mat<T, OutputDim
 
 
 struct SolverOption {
-  static constexpr double kDefaultEps = 1e-8;
+  static constexpr double kDefaultEps = 1e-6;
   static constexpr size_t kDefaultMaxEval = 15;
   static constexpr size_t kDefaultMaxPts = 100;
 
@@ -77,6 +77,7 @@ FindSolution(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,           // T
       s(i) = 1.0f / s(i);
     }
     Vec<T, InputDim> dx = v.leftCols(rank) * s.head(rank).asDiagonal() * u.leftCols(rank).transpose() * dy;
+    LOG_DEBUG("jac: \n%s", ObjLogFormatter<Mat<T, OutputDim, InputDim>>{ jac }.Format());
     LOG_DEBUG("dx: %s", ObjLogFormatter<Vec<T, InputDim>>{ dx }.Format());
 
     // Linear search
@@ -86,10 +87,8 @@ FindSolution(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,           // T
       x = x0 + dx * h;
       std::tie(y, std::ignore) = func_jac(x);
       status.func_eval_cnt_++;
-      LOG_DEBUG("x: %s, y: %s", ObjLogFormatter<Vec<T, InputDim>>{ x }.Format(),
+      LOG_DEBUG("h: %.6f, x: %s, y: %s", h, ObjLogFormatter<Vec<T, InputDim>>{ x }.Format(),
                 ObjLogFormatter<Vec<T, OutputDim>>{ y }.Format());
-      LOG_DEBUG("jac: \n%s", ObjLogFormatter<Mat<T, OutputDim, InputDim>>{ jac }.Format());
-
 
       if (!y.hasNaN() && ((yq - y).norm() <= option.eps_ || status.func_eval_cnt_ > option.max_eval_ || h < kHMin ||
                           (yq - y).norm() <= dy.norm() * h * 0.8)) {
