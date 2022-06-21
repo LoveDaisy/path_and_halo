@@ -46,9 +46,9 @@ struct ObjLogFormatter<Vec<T, Dim>> {
   operator const char*() {
     int offset = std::snprintf(obj_buf_, kBufLen, "[");
     for (auto x : vec_) {
-      offset += std::snprintf(obj_buf_ + offset, kBufLen, "%.6f,", x);
+      offset += std::snprintf(obj_buf_ + offset, kBufLen - offset, "%.6f,", x);
     }
-    std::snprintf(obj_buf_ + offset, kBufLen, "]");
+    std::snprintf(obj_buf_ + offset, kBufLen - offset, "]");
     return obj_buf_;
   }
 
@@ -65,15 +65,26 @@ struct ObjLogFormatter<Mat<T, R, C>> {
   ObjLogFormatter(const Mat<T, R, C>& m) : mat_(m){};
 
   operator const char*() {
+    bool ellipsis = false;
     int offset = 0;
-    for (int r = 0; r < R - 1; r++) {
+    int r = 0;
+    for (; r < mat_.rows() - 1; r++) {
       for (auto x : mat_.row(r)) {
-        offset += std::snprintf(obj_buf_ + offset, kBufLen, "%.6f,", x);
+        offset += std::snprintf(obj_buf_ + offset, kBufLen - offset, "%.6f,", x);
+        if (offset >= static_cast<int>(kBufLen)) {
+          ellipsis = true;
+          break;
+        }
       }
-      offset += std::snprintf(obj_buf_ + offset, kBufLen, "\n");
+      if (ellipsis) {
+        break;
+      }
+      offset += std::snprintf(obj_buf_ + offset, kBufLen - offset, "\n");
     }
-    for (auto x : mat_.row(R - 1)) {
-      offset += std::snprintf(obj_buf_ + offset, kBufLen, "%.6f,", x);
+    if (!ellipsis) {
+      for (auto x : mat_.row(r)) {
+        offset += std::snprintf(obj_buf_ + offset, kBufLen - offset, "%.6f,", x);
+      }
     }
     return obj_buf_;
   }

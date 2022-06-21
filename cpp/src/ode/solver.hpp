@@ -1,6 +1,7 @@
 #ifndef ODE_SOLVER_H_
 #define ODE_SOLVER_H_
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <functional>
@@ -13,7 +14,7 @@
 namespace halo_pm {
 
 template <class T, int OutputDim, int InputDim>
-using Func = std::function<Vec<float, OutputDim>(const Vec<float, InputDim>&)>;
+using Func = std::function<Vec<T, OutputDim>(const Vec<T, InputDim>&)>;
 
 template <class T, int OutputDim, int InputDim>
 using FuncAndDiff = std::function<std::tuple<Vec<T, OutputDim>, Mat<T, OutputDim, InputDim>>(const Vec<T, InputDim>&)>;
@@ -21,23 +22,25 @@ using FuncAndDiff = std::function<std::tuple<Vec<T, OutputDim>, Mat<T, OutputDim
 
 struct SolverOption {
   static constexpr double kDefaultEps = 1e-6;
+  static constexpr double kDefaultContourH = 0.05;
   static constexpr size_t kDefaultMaxEval = 15;
   static constexpr size_t kDefaultMaxPts = 100;
 
   double eps_;
+  double h_;
   size_t max_eval_;
   size_t max_pts_;
 
-  SolverOption() : eps_(kDefaultEps), max_eval_(kDefaultMaxEval), max_pts_(kDefaultMaxPts) {}
+  SolverOption() : eps_(kDefaultEps), h_(kDefaultContourH), max_eval_(kDefaultMaxEval), max_pts_(kDefaultMaxPts) {}
 };
 
 
+// =============== FindSolution ===============
 struct SolutionStatus {
   bool solved_;
   size_t func_eval_cnt_;
 
   SolutionStatus() : solved_(false), func_eval_cnt_(0){};
-  SolutionStatus(bool solved, size_t func_eval_cnt) : solved_(solved), func_eval_cnt_(func_eval_cnt){};
 };
 
 template <class T, int OutputDim, int InputDim>
@@ -106,6 +109,64 @@ FindSolution(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,           // T
   }
   status.solved_ = dy.norm() < option.eps_;
   return std::make_tuple(x0, status);
+}
+
+
+// =============== FindContour ===============
+struct ContourStatus {
+  bool closed_;
+  size_t func_eval_cnt_;
+
+  ContourStatus() : closed_(false), func_eval_cnt_(0) {}
+};
+
+template <class T, int Dim>
+using Contour = std::vector<Vec<T, Dim>>;
+
+template <class T, int OutputDim, int InputDim>
+std::tuple<Contour<T, InputDim>, ContourStatus>                       // Result & status
+SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Function
+                const Vec<T, InputDim>& x_start, int direction,       // Start point & direction
+                SolverOption option = SolverOption{}) {               // Option
+}
+
+template <class T, int OutputDim, int InputDim>
+std::tuple<Contour<T, InputDim>, ContourStatus>                   // Result & status
+FindContour(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Function
+            const Vec<T, InputDim>& x_start,                      // Start point
+            SolverOption option = SolverOption{}) {               // Option
+
+  // 1. Search forward direction
+  auto [contour_f, status_f] = SearchDirection(func_jac, x_start, 1, option);
+
+  if (status_f.closed_) {
+    return std::make_tuple(contour_f, status_f);
+  }
+
+  // 2. Search backward direction
+  auto [contour_b, status_b] = SearchDirection(func_jac, x_start, -1, option);
+  ContourStatus status;
+  status.func_eval_cnt_ = status_f.func_eval_cnt_ + status_b.func_eval_cnt_;
+
+  Contour<T, InputDim> contour;
+  if (contour_b.size() < 2) {
+    contour = contour_f;
+  } else {
+    contour = contour_b;
+    if (status_b.closed_) {
+      contour.pop_back();
+    }
+    std::reverse(contour.begin(), contour.end());
+    contour.insert(contour.end(), contour_f.begin(), contour_f.end());
+  }
+
+  // If empty
+  if (contour.size() < 2) {
+    status.closed_ = false;
+    return std::make_tuple(Contour<T, InputDim>{}, status);
+  }
+
+  // Check close loop
 }
 
 }  // namespace halo_pm

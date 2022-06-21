@@ -1,8 +1,10 @@
 #ifndef CORE_GEO_H_
 #define CORE_GEO_H_
 
+#include <cassert>
 #include <cstddef>
 #include <tuple>
+#include <vector>
 
 #include "core/types.hpp"
 
@@ -89,6 +91,185 @@ QuatRotExpr(QW qw0, QX qx0, QY qy0, QZ qz0,        // quaternion
   return std::make_tuple(ox, oy, oz);
 }
 
+
+// =============== Spline ===============
+template <class T>
+struct Spline {
+  std::vector<T> x0_;
+  Eigen::MatrixX<T> coef_;
+};
+
+
+template <class T, int YDim>
+std::vector<Vec<T, YDim>> SampleSplinePoints(const Spline<T>& spline, const std::vector<T>& xq) {
+  int output_num = static_cast<int>(xq.size());
+  int spline_num = spline.coef_.rows() / 4;
+  std::vector<Vec<T, YDim>> res(output_num);
+
+  int idx = 0;
+  for (int i = 0; i < output_num; i++) {
+    Vec<T, 4> xx{ 1.0, xq[i], xq[i] * xq[i], xq[i] * xq[i] * xq[i] };
+    while (xq[i] > spline.x0_[idx] && idx < spline_num) {
+      idx++;
+    }
+    const Eigen::MatrixX<T>& cc = spline.coef_.middleRows(std::max(idx - 1, 0) * 4, 4);
+    res[i] = cc.transpose() * xx;
+  }
+  return res;
+}
+
+
+template <class T, int YDim>
+Spline<T> InterpSpline(const std::vector<T>& x, const std::vector<Vec<T, YDim>>& y) {
+  assert(x.size() == y.size());
+  assert(x.size() > 1);
+
+  int input_num = x.size();
+  int spline_num = input_num - 1;
+
+  bool periodic = (y.front() - y.back()).norm() < 1e-6;
+
+  Eigen::MatrixX<T> mat(4 * spline_num, 4 * spline_num);
+  Eigen::MatrixX<T> b(4 * spline_num, YDim);
+  size_t offset = 0;
+  for (int i = 0; i < spline_num; i++) {
+    mat(i + offset, i * 4 + 0) = 1;
+    mat(i + offset, i * 4 + 1) = x[i];
+    mat(i + offset, i * 4 + 2) = x[i] * x[i];
+    mat(i + offset, i * 4 + 3) = x[i] * x[i] * x[i];
+    b.row(i + offset) = y[i].transpose();
+  }
+  offset += spline_num;
+
+  for (int i = 0; i < spline_num; i++) {
+    mat(i + offset, i * 4 + 0) = 1;
+    mat(i + offset, i * 4 + 1) = x[i + 1];
+    mat(i + offset, i * 4 + 2) = x[i + 1] * x[i + 1];
+    mat(i + offset, i * 4 + 3) = x[i + 1] * x[i + 1] * x[i + 1];
+    b.row(i + offset) = y[i + 1].transpose();
+  }
+  offset += spline_num;
+
+  for (int i = 0; i + 1 < spline_num; i++) {
+    mat(i + offset, i * 4 + 0) = 0;
+    mat(i + offset, i * 4 + 1) = 1;
+    mat(i + offset, i * 4 + 2) = 2 * x[i + 1];
+    mat(i + offset, i * 4 + 3) = 3 * x[i + 1] * x[i + 1];
+    mat(i + offset, i * 4 + 4) = 0;
+    mat(i + offset, i * 4 + 5) = -1;
+    mat(i + offset, i * 4 + 6) = -2 * x[i + 1];
+    mat(i + offset, i * 4 + 7) = -3 * x[i + 1] * x[i + 1];
+  }
+  offset += (spline_num - 1);
+
+  for (int i = 0; i + 1 < spline_num; i++) {
+    mat(i + offset, i * 4 + 0) = 0;
+    mat(i + offset, i * 4 + 1) = 0;
+    mat(i + offset, i * 4 + 2) = 2;
+    mat(i + offset, i * 4 + 3) = 6 * x[i + 1];
+    mat(i + offset, i * 4 + 4) = 0;
+    mat(i + offset, i * 4 + 5) = 0;
+    mat(i + offset, i * 4 + 6) = -2;
+    mat(i + offset, i * 4 + 7) = -6 * x[i + 1];
+  }
+  offset += (spline_num - 1);
+
+  if (!periodic) {
+    mat(offset + 0, 0) = 0;
+    mat(offset + 0, 1) = 0;
+    mat(offset + 0, 2) = 2;
+    mat(offset + 0, 3) = 6 * x.front();
+
+    mat(offset + 1, (spline_num - 1) * 4 + 0) = 0;
+    mat(offset + 1, (spline_num - 1) * 4 + 1) = 0;
+    mat(offset + 1, (spline_num - 1) * 4 + 2) = 2;
+    mat(offset + 1, (spline_num - 1) * 4 + 3) = 6 * x.back();
+  } else {
+    mat(offset + 0, 0) = 0;
+    mat(offset + 0, 1) = 1;
+    mat(offset + 0, 2) = 2 * x.front();
+    mat(offset + 0, 3) = 3 * x.front() * x.front();
+    mat(offset + 0, (spline_num - 1) * 4 + 0) = 0;
+    mat(offset + 0, (spline_num - 1) * 4 + 1) = -1;
+    mat(offset + 0, (spline_num - 1) * 4 + 2) = -2 * x.back();
+    mat(offset + 0, (spline_num - 1) * 4 + 3) = -3 * x.back() * x.back();
+
+    mat(offset + 1, 0) = 0;
+    mat(offset + 1, 1) = 0;
+    mat(offset + 1, 2) = 2;
+    mat(offset + 1, 3) = 6 * x.front();
+    mat(offset + 1, (spline_num - 1) * 4 + 0) = 0;
+    mat(offset + 1, (spline_num - 1) * 4 + 1) = 0;
+    mat(offset + 1, (spline_num - 1) * 4 + 2) = -2;
+    mat(offset + 1, (spline_num - 1) * 4 + 3) = -6 * x.front();
+  }
+
+  Eigen::MatrixX<T> coef = mat.partialPivLu().solve(b);
+  return Spline<T>{ x, coef };
+}
+
+
+template <class T, int YDim>
+std::vector<Vec<T, YDim>> InterpSpline(const std::vector<T>& x, const std::vector<Vec<T, YDim>>& y,
+                                       const std::vector<T>& xq) {
+  assert(x.size() == y.size());
+  assert(x.size() > 1);
+
+  auto spline = InterpSpline(x, y);
+  return SampleSplinePoints<T, YDim>(spline, xq);
+}
+
+
+template <class T, int Dim>
+std::vector<Vec<T, Dim>> InterpCurve(const std::vector<Vec<T, Dim>>& pt, double ds) {
+  assert(pt.size() > 1);
+
+  int pt_num = static_cast<int>(pt.size());
+  std::vector<T> s(pt_num, 0);
+
+  for (int i = 1; i < pt_num; i++) {
+    auto len = (pt[i] - pt[i - 1]).norm();
+    s[i] = s[i - 1] + len;
+  }
+
+  std::vector<Vec<T, Dim>> res;
+  double diff = ds;
+  while (diff > ds * 0.1) {
+    auto last_len = s.back();
+    auto spline = InterpSpline(s, pt);
+
+    std::vector<int> s_idx;
+    int si = 0;
+    std::vector<T> ss;
+    for (double x = ds; x < last_len; x += ds) {
+      while (x >= s[si]) {
+        s_idx.emplace_back(static_cast<int>(ss.size()));
+        ss.emplace_back(s[si++]);
+      }
+      ss.emplace_back(x);
+    }
+    s_idx.emplace_back(static_cast<int>(ss.size()));
+    ss.emplace_back(last_len);
+
+    res = SampleSplinePoints<T, Dim>(spline, ss);
+
+    s.clear();
+    s.resize(ss.size());
+    s[0] = 0;
+    for (int i = 1; i < static_cast<int>(res.size()); i++) {
+      auto len = (res[i] - res[i - 1]).norm();
+      s[i] = s[i - 1] + len;
+    }
+    diff = std::abs(last_len - s.back());
+
+    std::vector<T> tmp_s;
+    for (auto i : s_idx) {
+      tmp_s.emplace_back(s[i]);
+    }
+    s.swap(tmp_s);
+  }
+  return res;
+}
 
 }  // namespace halo_pm
 

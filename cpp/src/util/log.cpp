@@ -63,11 +63,11 @@ const char* SimpleLogFormatter::Format(const LogMessage& msg) {
   offset += std::snprintf(buf_, kBufLen, "%06zu[%s]", thread_id % 1000000, lv_str);
 
   auto t = std::chrono::system_clock::to_time_t(msg.t_);
-  offset += std::strftime(buf_ + offset, kBufLen, "%H:%M:%S.", std::localtime(&t));
+  offset += std::strftime(buf_ + offset, kBufLen - offset, "%H:%M:%S.", std::localtime(&t));
 
   auto t0 = std::chrono::floor<std::chrono::seconds>(msg.t_);
   auto t_ms = std::chrono::duration<double, std::milli>(msg.t_ - t0);
-  std::snprintf(buf_ + offset, kBufLen, "%03d %s", static_cast<int>(t_ms.count()), msg.msg_.c_str());
+  std::snprintf(buf_ + offset, kBufLen - offset, "%03d %s", static_cast<int>(t_ms.count()), msg.msg_.c_str());
   return buf_;
 }
 

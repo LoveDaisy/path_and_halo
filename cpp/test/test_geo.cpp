@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <vector>
 
 #include "auto_diff/ad.hpp"
 #include "core/geo.hpp"
@@ -173,5 +174,39 @@ TEST_F(TestGeo, quat_rot_expr) {
   LOG_DEBUG("d/d_qw: [%.6f,%.6f,%.6f]", Diff(ox, wrt(qw)), Diff(oy, wrt(qw)), Diff(oz, wrt(qw)));
 }
 
+
+// NOLINTNEXTLINE
+TEST_F(TestGeo, interp_spline) {
+  constexpr size_t kXNum = 8;
+  constexpr size_t kQNum = 64;
+
+  std::vector<float> x(kXNum);
+  std::vector<Vec2f> y(kXNum);
+  for (size_t i = 0; i < kXNum; i++) {
+    x[i] = 2 * 3.1415926 / (kXNum - 1) * i;
+    y[i] = Vec2f{ std::sin(x[i]), std::cos(x[i]) };
+  }
+
+  std::vector<float> xq(kQNum);
+  for (size_t i = 0; i < kQNum; i++) {
+    xq[i] = 2 * 3.1415926 / (kQNum - 1) * i;
+  }
+
+  auto yq = InterpSpline(x, y, xq);
+
+  ASSERT_EQ(yq.size(), xq.size());
+  for (size_t i = 0; i < xq.size(); i++) {
+    LOG_DEBUG("xq: %.6f, yq: %s", xq[i], ObjLogFormatter<Vec2f>{ yq[i] }.Format());
+    EXPECT_NEAR(yq[i].x(), std::sin(xq[i]), 0.05);
+    EXPECT_NEAR(yq[i].y(), std::cos(xq[i]), 0.05);
+  }
+
+
+  auto y2q = InterpCurve(y, 0.05);
+  for (const auto& pt : y2q) {
+    LOG_DEBUG("pt: %s", ObjLogFormatter<Vec2f>{ pt }.Format());
+    EXPECT_NEAR(pt.norm(), 1.0, 0.06);
+  }
+}
 
 }  // namespace
