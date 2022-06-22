@@ -75,4 +75,33 @@ TEST_F(TestOde, trace_crystal) {
   ASSERT_NEAR((out_xyz - y).norm(), 0, 1e-5);
 }
 
+
+std::tuple<Vec<float, 1>, Mat<float, 1, 2>> fdf1(const Vec2f& x) {
+  Vec<float, 1> y{ std::exp(x.x() + 3.0f * x.y() - 0.1f) + std::exp(x.x() - 3.0f * x.y() - 0.1f) +
+                   std::exp(-x.x() - 0.1f) };
+  Mat<float, 1, 2> jac{
+    { std::exp(x.x() + 3.0f * x.y() - 0.1f) + std::exp(x.x() - 3.0f * x.y() - 0.1f) - std::exp(-x.x() - 0.1f),
+      3.0f * std::exp(x.x() + 3.0f * x.y() - 0.1f) - 3.0f * std::exp(x.x() - 3.0f * x.y() - 0.1f) }
+  };
+  return { y, jac };
+}
+
+// NOLINTNEXTLINE
+TEST_F(TestOde, find_contour_1) {
+  Vec2f x0{ 0.6, -1 };
+  Vec<float, 1> y0;
+  std::tie(y0, std::ignore) = fdf1(x0);
+
+  SolverOption option;
+  option.max_pts_ = 80;
+  option.h_ = 0.1;
+  auto [contour, status] = FindContour<float, 1, 2>(fdf1, x0, option);
+
+  LOG_DEBUG("status.closed: %d, .func_eval_cnt: %zu", status.closed_, status.func_eval_cnt_);
+  LOG_DEBUG("contour.size: %zu", contour.size());
+  for (const auto& x : contour) {
+    LOG_DEBUG("x: %s", ObjLogFormatter<Vec2f>{ x }.Format());
+  }
+}
+
 }  // namespace

@@ -12,6 +12,8 @@ constexpr float kPi = 3.14159265358f;
 constexpr float kDegree2Rad = kPi / 180.0f;
 constexpr float kRad2Degree = 180.0f / kPi;
 
+constexpr double kDefaultFloatEps = 5e-6;
+
 }  // namespace halo_pm
 
 #endif  // CORE_MATH_H_

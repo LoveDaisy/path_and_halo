@@ -196,16 +196,26 @@ TEST_F(TestGeo, interp_spline) {
 
   ASSERT_EQ(yq.size(), xq.size());
   for (size_t i = 0; i < xq.size(); i++) {
-    LOG_DEBUG("xq: %.6f, yq: %s", xq[i], ObjLogFormatter<Vec2f>{ yq[i] }.Format());
-    EXPECT_NEAR(yq[i].x(), std::sin(xq[i]), 0.05);
-    EXPECT_NEAR(yq[i].y(), std::cos(xq[i]), 0.05);
+    EXPECT_NEAR(yq[i].x(), std::sin(xq[i]), 0.003);
+    EXPECT_NEAR(yq[i].y(), std::cos(xq[i]), 0.003);
   }
 
 
   auto y2q = InterpCurve(y, 0.05);
   for (const auto& pt : y2q) {
-    LOG_DEBUG("pt: %s", ObjLogFormatter<Vec2f>{ pt }.Format());
-    EXPECT_NEAR(pt.norm(), 1.0, 0.06);
+    EXPECT_NEAR(pt.norm(), 1.0, 0.003);
+  }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestGeo, interp_curve_2) {
+  Curve2f pts{ { 0.6, -1 }, { 0.69495225, -0.968629956 }, { 0.789881468, -0.937190353 } };
+  auto interp_pts = InterpCurve(pts, 0.05);
+
+  ASSERT_EQ(interp_pts.size(), 5);
+  for (const auto& p : interp_pts) {
+    LOG_DEBUG("p: %s", ObjLogFormatter<Vec2f>{ p }.Format());
   }
 }
 
@@ -213,7 +223,7 @@ TEST_F(TestGeo, interp_spline) {
 // NOLINTNEXTLINE
 TEST_F(TestGeo, poly_line) {
   Curve2f pts{ { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
-  
+
   Vec2f p1{ 0.5, 0.1 };
   float d1 = DistanceToPolyLine(p1, pts);
   ASSERT_NEAR(d1, 0.1, 1e-5);

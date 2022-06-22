@@ -1,13 +1,14 @@
 #ifndef CORE_GEO_H_
 #define CORE_GEO_H_
 
-#include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <limits>
 #include <tuple>
 #include <vector>
 
+#include "core/math.hpp"
 #include "core/types.hpp"
 
 namespace halo_pm {
@@ -110,11 +111,13 @@ Curve<T, Dim> SampleSplinePoints(const Spline<T>& spline, const std::vector<T>& 
 
   int idx = 0;
   for (int i = 0; i < output_num; i++) {
-    Vec<T, 4> xx{ 1.0, xq[i], xq[i] * xq[i], xq[i] * xq[i] * xq[i] };
     while (xq[i] > spline.x0_[idx] && idx < spline_num) {
       idx++;
     }
-    const Eigen::MatrixX<T>& cc = spline.coef_.middleRows(std::max(idx - 1, 0) * 4, 4);
+    idx = std::max(idx - 1, 0);
+    auto dx = xq[i] - spline.x0_[idx];
+    Vec<T, 4> xx{ 1.0, dx, dx * dx, dx * dx * dx };
+    const Eigen::MatrixX<T>& cc = spline.coef_.middleRows(idx * 4, 4);
     res[i] = cc.transpose() * xx;
   }
   return res;
@@ -129,50 +132,47 @@ Spline<T> InterpSpline(const std::vector<T>& x, const Curve<T, YDim>& y) {
   int input_num = x.size();
   int spline_num = input_num - 1;
 
-  bool periodic = (y.front() - y.back()).norm() < 1e-6;
+  bool periodic = (y.front() - y.back()).norm() < kDefaultFloatEps;
 
-  Eigen::MatrixX<T> mat(4 * spline_num, 4 * spline_num);
-  Eigen::MatrixX<T> b(4 * spline_num, YDim);
+  Eigen::MatrixX<T> mat = Eigen::MatrixX<T>::Zero(4 * spline_num, 4 * spline_num);
+  Eigen::MatrixX<T> b = Eigen::MatrixX<T>::Zero(4 * spline_num, YDim);
   size_t offset = 0;
   for (int i = 0; i < spline_num; i++) {
     mat(i + offset, i * 4 + 0) = 1;
-    mat(i + offset, i * 4 + 1) = x[i];
-    mat(i + offset, i * 4 + 2) = x[i] * x[i];
-    mat(i + offset, i * 4 + 3) = x[i] * x[i] * x[i];
     b.row(i + offset) = y[i].transpose();
   }
   offset += spline_num;
 
   for (int i = 0; i < spline_num; i++) {
+    auto dx = x[i + 1] - x[i];
     mat(i + offset, i * 4 + 0) = 1;
-    mat(i + offset, i * 4 + 1) = x[i + 1];
-    mat(i + offset, i * 4 + 2) = x[i + 1] * x[i + 1];
-    mat(i + offset, i * 4 + 3) = x[i + 1] * x[i + 1] * x[i + 1];
+    mat(i + offset, i * 4 + 1) = dx;
+    mat(i + offset, i * 4 + 2) = dx * dx;
+    mat(i + offset, i * 4 + 3) = dx * dx * dx;
     b.row(i + offset) = y[i + 1].transpose();
   }
   offset += spline_num;
 
   for (int i = 0; i + 1 < spline_num; i++) {
+    auto dx = x[i + 1] - x[i];
     mat(i + offset, i * 4 + 0) = 0;
     mat(i + offset, i * 4 + 1) = 1;
-    mat(i + offset, i * 4 + 2) = 2 * x[i + 1];
-    mat(i + offset, i * 4 + 3) = 3 * x[i + 1] * x[i + 1];
+    mat(i + offset, i * 4 + 2) = 2 * dx;
+    mat(i + offset, i * 4 + 3) = 3 * dx * dx;
     mat(i + offset, i * 4 + 4) = 0;
     mat(i + offset, i * 4 + 5) = -1;
-    mat(i + offset, i * 4 + 6) = -2 * x[i + 1];
-    mat(i + offset, i * 4 + 7) = -3 * x[i + 1] * x[i + 1];
   }
   offset += (spline_num - 1);
 
   for (int i = 0; i + 1 < spline_num; i++) {
+    auto dx = x[i + 1] - x[i];
     mat(i + offset, i * 4 + 0) = 0;
     mat(i + offset, i * 4 + 1) = 0;
     mat(i + offset, i * 4 + 2) = 2;
-    mat(i + offset, i * 4 + 3) = 6 * x[i + 1];
+    mat(i + offset, i * 4 + 3) = 6 * dx;
     mat(i + offset, i * 4 + 4) = 0;
     mat(i + offset, i * 4 + 5) = 0;
     mat(i + offset, i * 4 + 6) = -2;
-    mat(i + offset, i * 4 + 7) = -6 * x[i + 1];
   }
   offset += (spline_num - 1);
 
@@ -180,30 +180,27 @@ Spline<T> InterpSpline(const std::vector<T>& x, const Curve<T, YDim>& y) {
     mat(offset + 0, 0) = 0;
     mat(offset + 0, 1) = 0;
     mat(offset + 0, 2) = 2;
-    mat(offset + 0, 3) = 6 * x.front();
 
     mat(offset + 1, (spline_num - 1) * 4 + 0) = 0;
     mat(offset + 1, (spline_num - 1) * 4 + 1) = 0;
     mat(offset + 1, (spline_num - 1) * 4 + 2) = 2;
-    mat(offset + 1, (spline_num - 1) * 4 + 3) = 6 * x.back();
+    mat(offset + 1, (spline_num - 1) * 4 + 3) = 6 * (x[spline_num] - x[spline_num - 1]);
   } else {
+    auto dx = x[spline_num] - x[spline_num - 1];
     mat(offset + 0, 0) = 0;
     mat(offset + 0, 1) = 1;
-    mat(offset + 0, 2) = 2 * x.front();
-    mat(offset + 0, 3) = 3 * x.front() * x.front();
     mat(offset + 0, (spline_num - 1) * 4 + 0) = 0;
     mat(offset + 0, (spline_num - 1) * 4 + 1) = -1;
-    mat(offset + 0, (spline_num - 1) * 4 + 2) = -2 * x.back();
-    mat(offset + 0, (spline_num - 1) * 4 + 3) = -3 * x.back() * x.back();
+    mat(offset + 0, (spline_num - 1) * 4 + 2) = -2 * dx;
+    mat(offset + 0, (spline_num - 1) * 4 + 3) = -3 * dx * dx;
 
     mat(offset + 1, 0) = 0;
     mat(offset + 1, 1) = 0;
     mat(offset + 1, 2) = 2;
-    mat(offset + 1, 3) = 6 * x.front();
     mat(offset + 1, (spline_num - 1) * 4 + 0) = 0;
     mat(offset + 1, (spline_num - 1) * 4 + 1) = 0;
     mat(offset + 1, (spline_num - 1) * 4 + 2) = -2;
-    mat(offset + 1, (spline_num - 1) * 4 + 3) = -6 * x.front();
+    mat(offset + 1, (spline_num - 1) * 4 + 3) = -6 * dx;
   }
 
   Eigen::MatrixX<T> coef = mat.partialPivLu().solve(b);
@@ -239,20 +236,30 @@ Curve<T, Dim> InterpCurve(const Curve<T, Dim>& pts, double ds) {
     auto last_len = s.back();
     auto spline = InterpSpline(s, pts);
 
-    std::vector<int> s_idx;
-    int si = 0;
     std::vector<T> ss;
-    for (double x = ds; x < last_len; x += ds) {
-      while (x >= s[si]) {
-        s_idx.emplace_back(static_cast<int>(ss.size()));
-        ss.emplace_back(s[si++]);
+    std::vector<int> s_idx;
+    {
+      double x = ds;
+      for (auto si : s) {
+        while (x < si && x < last_len) {
+          if (x < si - ds * 0.5 && x > ss.back() + ds * 0.5) {
+            ss.emplace_back(x);
+          }
+          x += ds;
+        }
+        s_idx.emplace_back(ss.size());
+        ss.emplace_back(si);
       }
-      ss.emplace_back(x);
     }
-    s_idx.emplace_back(static_cast<int>(ss.size()));
-    ss.emplace_back(last_len);
+    assert(s_idx.size() == pts.size());
 
-    res = SampleSplinePoints<T, Dim>(spline, ss);
+    auto tmp_res = SampleSplinePoints<T, Dim>(spline, ss);
+    res.clear();
+    for (const auto& r : tmp_res) {
+      if (res.empty() || (r - res.back()).norm() > kDefaultFloatEps) {
+        res.emplace_back(r);
+      }
+    }
 
     s.clear();
     s.resize(ss.size());
@@ -276,9 +283,15 @@ Curve<T, Dim> InterpCurve(const Curve<T, Dim>& pts, double ds) {
 template <class T, int Dim>
 T Point2LineDistance(const Vec<T, Dim>& p, const Vec<T, Dim>& p1, const Vec<T, Dim>& p2) {
   auto d = p2 - p1;
-  T t = ((p - p1).dot(d)) / (d.squaredNorm());
-  t = std::clamp(t, static_cast<T>(0), static_cast<T>(1));
-  return ((p1 + d * t) - p).norm();
+  auto d2 = d.squaredNorm();
+
+  if (d2 < 1e-8) {
+    return (p - p1).norm();
+  } else {
+    T t = ((p - p1).dot(d)) / d2;
+    t = std::clamp(t, static_cast<T>(0), static_cast<T>(1));
+    return ((p1 + d * t) - p).norm();
+  }
 }
 
 
@@ -299,8 +312,14 @@ CheckLoopAndReduce(const Curve<T, Dim>& pts, double eps, double ds) {
   assert(pts.size() > 1);
 
   Curve<T, Dim> res = pts;
-  for (double d = 0; d < eps; /* nothing */) {
-    Curve<T, Dim> interp_pts(res.rbegin() + 1, res.rend());
+  bool closed = false;
+  for (double d = 0; d < eps && !res.empty(); /* nothing */) {
+    Curve<T, Dim> interp_pts;
+    for (auto it = res.rbegin() + 1; it != res.rend(); it++) {
+      if (interp_pts.empty() || (interp_pts.back() - *it).norm() > kDefaultFloatEps) {
+        interp_pts.emplace_back(*it);
+      }
+    }
     if (ds > 0) {
       interp_pts = InterpCurve(interp_pts, ds);
     }
@@ -308,11 +327,26 @@ CheckLoopAndReduce(const Curve<T, Dim>& pts, double eps, double ds) {
     const auto& p = res.back();
     d = DistanceToPolyLine(p, interp_pts);
     if (d < eps) {
+      closed = true;
       res.pop_back();
     }
   }
 
-  return res;
+  return { closed, res };
+}
+
+template <class T, int Dim>
+T BendingAngle(const Vec<T, Dim>& x0, const Vec<T, Dim>& x1, const Vec<T, Dim>& x2) {
+  auto d1 = x1 - x0;
+  auto d2 = x2 - x1;
+
+  auto d1_norm = d1.norm();
+  auto d2_norm = d2.norm();
+  if (d1_norm < kDefaultFloatEps || d2_norm < kDefaultFloatEps) {
+    return static_cast<T>(0);
+  } else {
+    return std::acos(std::clamp(d1.dot(d2) / d1_norm / d2_norm, static_cast<T>(0), static_cast<T>(1)));
+  }
 }
 
 }  // namespace halo_pm
