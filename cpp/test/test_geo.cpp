@@ -181,7 +181,7 @@ TEST_F(TestGeo, interp_spline) {
   constexpr size_t kQNum = 64;
 
   std::vector<float> x(kXNum);
-  std::vector<Vec2f> y(kXNum);
+  Curve2f y(kXNum);
   for (size_t i = 0; i < kXNum; i++) {
     x[i] = 2 * 3.1415926 / (kXNum - 1) * i;
     y[i] = Vec2f{ std::sin(x[i]), std::cos(x[i]) };
@@ -207,6 +207,20 @@ TEST_F(TestGeo, interp_spline) {
     LOG_DEBUG("pt: %s", ObjLogFormatter<Vec2f>{ pt }.Format());
     EXPECT_NEAR(pt.norm(), 1.0, 0.06);
   }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestGeo, poly_line) {
+  Curve2f pts{ { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+  
+  Vec2f p1{ 0.5, 0.1 };
+  float d1 = DistanceToPolyLine(p1, pts);
+  ASSERT_NEAR(d1, 0.1, 1e-5);
+
+  Vec2f p2{ -0.5, 0.1 };
+  float d2 = DistanceToPolyLine(p2, pts);
+  ASSERT_NEAR(d2, 0.509902, 1e-5);
 }
 
 }  // namespace

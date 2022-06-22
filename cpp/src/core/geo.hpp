@@ -1,8 +1,10 @@
 #ifndef CORE_GEO_H_
 #define CORE_GEO_H_
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <limits>
 #include <tuple>
 #include <vector>
 
@@ -100,11 +102,11 @@ struct Spline {
 };
 
 
-template <class T, int YDim>
-std::vector<Vec<T, YDim>> SampleSplinePoints(const Spline<T>& spline, const std::vector<T>& xq) {
+template <class T, int Dim>
+Curve<T, Dim> SampleSplinePoints(const Spline<T>& spline, const std::vector<T>& xq) {
   int output_num = static_cast<int>(xq.size());
   int spline_num = spline.coef_.rows() / 4;
-  std::vector<Vec<T, YDim>> res(output_num);
+  Curve<T, Dim> res(output_num);
 
   int idx = 0;
   for (int i = 0; i < output_num; i++) {
@@ -120,7 +122,7 @@ std::vector<Vec<T, YDim>> SampleSplinePoints(const Spline<T>& spline, const std:
 
 
 template <class T, int YDim>
-Spline<T> InterpSpline(const std::vector<T>& x, const std::vector<Vec<T, YDim>>& y) {
+Spline<T> InterpSpline(const std::vector<T>& x, const Curve<T, YDim>& y) {
   assert(x.size() == y.size());
   assert(x.size() > 1);
 
@@ -209,34 +211,33 @@ Spline<T> InterpSpline(const std::vector<T>& x, const std::vector<Vec<T, YDim>>&
 }
 
 
-template <class T, int YDim>
-std::vector<Vec<T, YDim>> InterpSpline(const std::vector<T>& x, const std::vector<Vec<T, YDim>>& y,
-                                       const std::vector<T>& xq) {
+template <class T, int Dim>
+Curve<T, Dim> InterpSpline(const std::vector<T>& x, const Curve<T, Dim>& y, const std::vector<T>& xq) {
   assert(x.size() == y.size());
   assert(x.size() > 1);
 
   auto spline = InterpSpline(x, y);
-  return SampleSplinePoints<T, YDim>(spline, xq);
+  return SampleSplinePoints<T, Dim>(spline, xq);
 }
 
 
 template <class T, int Dim>
-std::vector<Vec<T, Dim>> InterpCurve(const std::vector<Vec<T, Dim>>& pt, double ds) {
-  assert(pt.size() > 1);
+Curve<T, Dim> InterpCurve(const Curve<T, Dim>& pts, double ds) {
+  assert(pts.size() > 1);
 
-  int pt_num = static_cast<int>(pt.size());
+  int pt_num = static_cast<int>(pts.size());
   std::vector<T> s(pt_num, 0);
 
   for (int i = 1; i < pt_num; i++) {
-    auto len = (pt[i] - pt[i - 1]).norm();
+    auto len = (pts[i] - pts[i - 1]).norm();
     s[i] = s[i - 1] + len;
   }
 
-  std::vector<Vec<T, Dim>> res;
+  Curve<T, Dim> res;
   double diff = ds;
   while (diff > ds * 0.1) {
     auto last_len = s.back();
-    auto spline = InterpSpline(s, pt);
+    auto spline = InterpSpline(s, pts);
 
     std::vector<int> s_idx;
     int si = 0;
@@ -268,6 +269,49 @@ std::vector<Vec<T, Dim>> InterpCurve(const std::vector<Vec<T, Dim>>& pt, double 
     }
     s.swap(tmp_s);
   }
+  return res;
+}
+
+
+template <class T, int Dim>
+T Point2LineDistance(const Vec<T, Dim>& p, const Vec<T, Dim>& p1, const Vec<T, Dim>& p2) {
+  auto d = p2 - p1;
+  T t = ((p - p1).dot(d)) / (d.squaredNorm());
+  t = std::clamp(t, static_cast<T>(0), static_cast<T>(1));
+  return ((p1 + d * t) - p).norm();
+}
+
+
+template <class T, int Dim>
+T DistanceToPolyLine(const Vec<T, Dim>& p, const Curve<T, Dim>& poly_line) {
+  T d = std::numeric_limits<T>::max();
+  for (size_t i = 0; i + 1 < poly_line.size(); i++) {
+    T curr_d = Point2LineDistance(p, poly_line[i], poly_line[i + 1]);
+    d = std::min(curr_d, d);
+  }
+  return d;
+}
+
+
+template <class T, int Dim>
+std::tuple<bool, Curve<T, Dim>>  // Check result & reduced curve
+CheckLoopAndReduce(const Curve<T, Dim>& pts, double eps, double ds) {
+  assert(pts.size() > 1);
+
+  Curve<T, Dim> res = pts;
+  for (double d = 0; d < eps; /* nothing */) {
+    Curve<T, Dim> interp_pts(res.rbegin() + 1, res.rend());
+    if (ds > 0) {
+      interp_pts = InterpCurve(interp_pts, ds);
+    }
+
+    const auto& p = res.back();
+    d = DistanceToPolyLine(p, interp_pts);
+    if (d < eps) {
+      res.pop_back();
+    }
+  }
+
   return res;
 }
 

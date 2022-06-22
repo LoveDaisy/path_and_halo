@@ -7,6 +7,7 @@
 #include <functional>
 #include <tuple>
 
+#include "core/geo.hpp"
 #include "core/math.hpp"
 #include "core/types.hpp"
 #include "util/log.hpp"
@@ -120,18 +121,16 @@ struct ContourStatus {
   ContourStatus() : closed_(false), func_eval_cnt_(0) {}
 };
 
-template <class T, int Dim>
-using Contour = std::vector<Vec<T, Dim>>;
 
 template <class T, int OutputDim, int InputDim>
-std::tuple<Contour<T, InputDim>, ContourStatus>                       // Result & status
+std::tuple<Curve<T, InputDim>, ContourStatus>                         // Result & status
 SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Function
                 const Vec<T, InputDim>& x_start, int direction,       // Start point & direction
                 SolverOption option = SolverOption{}) {               // Option
 }
 
 template <class T, int OutputDim, int InputDim>
-std::tuple<Contour<T, InputDim>, ContourStatus>                   // Result & status
+std::tuple<Curve<T, InputDim>, ContourStatus>                     // Result & status
 FindContour(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Function
             const Vec<T, InputDim>& x_start,                      // Start point
             SolverOption option = SolverOption{}) {               // Option
@@ -148,25 +147,28 @@ FindContour(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Function
   ContourStatus status;
   status.func_eval_cnt_ = status_f.func_eval_cnt_ + status_b.func_eval_cnt_;
 
-  Contour<T, InputDim> contour;
+  Curve<T, InputDim> contour;
   if (contour_b.size() < 2) {
     contour = contour_f;
+  } else if (status_b.closed_) {
+    contour = contour_b;
   } else {
     contour = contour_b;
-    if (status_b.closed_) {
-      contour.pop_back();
-    }
     std::reverse(contour.begin(), contour.end());
+    contour.pop_back();  // remove start (contour_f has the same start)
     contour.insert(contour.end(), contour_f.begin(), contour_f.end());
   }
-
   // If empty
   if (contour.size() < 2) {
     status.closed_ = false;
-    return std::make_tuple(Contour<T, InputDim>{}, status);
+    return std::make_tuple(Curve<T, InputDim>{}, status);
   }
 
   // Check close loop
+  else {
+    std::tie(status.closed_, contour) = CheckLoopAndReduce(contour, option.h_ * 0.1, -1);
+    std::make_tuple(contour, status);
+  }
 }
 
 }  // namespace halo_pm

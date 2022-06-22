@@ -4,6 +4,7 @@
 #include <Eigen/Eigen>
 #include <cstddef>
 #include <cstdio>
+#include <vector>
 
 namespace halo_pm {
 
@@ -29,6 +30,17 @@ using Mat4x4d = Eigen::Matrix4d;
 
 using Quatf = Eigen::Quaternionf;
 using Quatd = Eigen::Quaterniond;
+
+
+template <class T, int Dim>
+using Curve = std::vector<Vec<T, Dim>>;
+
+using Curve2f = Curve<float, 2>;
+using Curve3f = Curve<float, 3>;
+using Curve4f = Curve<float, 4>;
+using Curve2d = Curve<double, 2>;
+using Curve3d = Curve<double, 3>;
+using Curve4d = Curve<double, 4>;
 
 
 template <class T>
