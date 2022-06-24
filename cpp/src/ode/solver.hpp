@@ -23,7 +23,7 @@ using FuncAndDiff = std::function<std::tuple<Vec<T, OutputDim>, Mat<T, OutputDim
 
 struct SolverOption {
   static constexpr double kDefaultAbsEps = 5e-6;
-  static constexpr double kDefaultRelEps = 1e-6;
+  static constexpr double kDefaultRelEps = 1e-7;
   static constexpr double kDefaultStepH = 0.05;
   static constexpr size_t kDefaultMaxEval = 15;
   static constexpr size_t kDefaultMaxPts = 100;
@@ -116,7 +116,7 @@ FindSolution(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,           // T
       break;
     }
   }
-  status.solved_ = dy.norm() <= option.abs_eps_ || dx.norm() / x0.norm() <= option.rel_eps_;
+  status.solved_ = dy.norm() <= option.abs_eps_;
   return std::make_tuple(x0, status);
 }
 
@@ -199,12 +199,11 @@ SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Functio
     // Start x2-loop to find new point
     while (!x2_solved && h > h_min) {
       // Call RK4 for first try.
-      Vec<T, InputDim> x1;
       Func<T, InputDim, InputDim> dx_func = [=, &func_jac, &ref_dx](const Vec<T, InputDim>& x) -> Vec<T, InputDim> {
         auto [y, dx] = WrapToFdx(func_jac, x, ref_dx);
         return dx;
       };  // func: x -> dx
-      std::tie(x1, ref_dx) = rk4(dx_func, x0, direction, h);
+      auto [x1, ref_dx1] = rk4(dx_func, x0, direction, h);
       status.func_eval_cnt_ += 4;
       LOG_DEBUG("x1: %s, h: %.6f, dx: %s", ObjLogFormatter<Vec<T, InputDim>>{ x1 }.Format(), h,
                 ObjLogFormatter<Vec<T, InputDim>>{ ref_dx }.Format());
@@ -222,7 +221,7 @@ SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Functio
       std::tie(y1, std::ignore) = func_jac(x1);
       status.func_eval_cnt_++;
       auto x1_error = (y1 - y0).norm();
-      LOG_DEBUG("y1: %s", ObjLogFormatter<Vec<T, OutputDim>>{ y1 }.Format());
+      LOG_DEBUG("y1: %s, x1_error: %.6f", ObjLogFormatter<Vec<T, OutputDim>>{ y1 }.Format(), x1_error);
 
       // Check bending angle
       T bending = 0;
@@ -238,6 +237,12 @@ SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Functio
         LOG_DEBUG("bending %.6f too large. shrink h to %.6f and pop one point.", bending, h);
         break;
       }
+      if (x1_error > std::max(option.abs_eps_ * 5e3, h * 0.1)) {
+        h *= 0.5;
+        h_extension_cnt = 0;
+        LOG_DEBUG("x1_error too large. shrink h to %.6f", h);
+        continue;
+      }
 
       // Check error. Refine if neccessary
       x2 = x1;
@@ -250,13 +255,14 @@ SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Functio
         x2_solved = x2_status.solved_;
         LOG_DEBUG("x2: %s solved: %d", ObjLogFormatter<Vec<T, InputDim>>{ x2 }.Format(), x2_solved);
       }
+      ref_dx = ref_dx1;
 
       // Adaptive scheme
       T dx1 = (x1 - x2).norm();
-      if (!x2_solved || (dx1 > h * 0.05 || x1_error > std::max(option.abs_eps_ * 5e3, h * 0.1))) {
+      if (!x2_solved || dx1 > h * 0.05) {
         h *= 0.5;
         h_extension_cnt = 0;
-        LOG_DEBUG("can't solve x2 || x1_error too large. shrink h to %.6f", h);
+        LOG_DEBUG("can't solve x2 or x2 changes too much. shrink h to %.6f", h);
       } else if (h < h_max * 0.5 && (dx1 < h * 0.01 || x1_error < std::max(option.abs_eps_ * 100, h * 0.002))) {
         h_extension_cnt++;
         if (h_extension_cnt > 2) {

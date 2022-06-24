@@ -102,6 +102,71 @@ TEST_F(TestOde, find_contour_1) {
   for (const auto& x : contour) {
     LOG_DEBUG("x: %s", ObjLogFormatter<Vec2f>{ x }.Format());
   }
+
+  ASSERT_TRUE(status.closed_);
+  for (const auto& x : contour) {
+    Vec<float, 1> y;
+    std::tie(y, std::ignore) = fdf1(x);
+    EXPECT_NEAR((y - y0).norm(), 0, 5e-5);
+  }
+}
+
+
+std::tuple<Vec<float, 1>, Mat<float, 1, 2>> fdf2(const Vec2f& x) {
+  auto a = (x.x() * x.x() - x.y());
+  Vec<float, 1> y{ std::log(a * a) - std::log(x.x()) - std::log(1 - x.x()) };
+  Mat<float, 1, 2> jac{ { 4 * x.x() / (x.x() * x.x() - x.y()) + 1 / (1 - x.x()) - 1 / x.x(),
+                          -2 / (x.x() * x.x() - x.y()) } };
+  return { y, jac };
+}
+
+// NOLINTNEXTLINE
+TEST_F(TestOde, find_contour_2) {
+  {
+    LOG_INFO("case 1!");
+    Vec2f x0{ 0.6, -1 };
+    Vec<float, 1> y0;
+    std::tie(y0, std::ignore) = fdf2(x0);
+
+    SolverOption option;
+    auto [contour, status] = FindContour<float, 1, 2>(fdf2, x0, option);
+
+    LOG_DEBUG("status.closed: %d, .func_eval_cnt: %zu", status.closed_, status.func_eval_cnt_);
+    LOG_DEBUG("contour.size: %zu", contour.size());
+    for (const auto& x : contour) {
+      LOG_DEBUG("x: %s", ObjLogFormatter<Vec2f>{ x }.Format());
+    }
+
+    ASSERT_FALSE(status.closed_);
+    for (const auto& x : contour) {
+      Vec<float, 1> y;
+      std::tie(y, std::ignore) = fdf2(x);
+      EXPECT_NEAR((y - y0).norm(), 0, 1e-4);
+    }
+  }
+
+  {
+    LOG_INFO("case 2!");
+    Vec2f x0{ 0.5, 0 };
+    Vec<float, 1> y0;
+    std::tie(y0, std::ignore) = fdf2(x0);
+
+    SolverOption option;
+    auto [contour, status] = FindContour<float, 1, 2>(fdf2, x0, option);
+
+    LOG_DEBUG("status.closed: %d, .func_eval_cnt: %zu", status.closed_, status.func_eval_cnt_);
+    LOG_DEBUG("contour.size: %zu", contour.size());
+    for (const auto& x : contour) {
+      LOG_DEBUG("x: %s", ObjLogFormatter<Vec2f>{ x }.Format());
+    }
+
+    ASSERT_FALSE(status.closed_);
+    for (const auto& x : contour) {
+      Vec<float, 1> y;
+      std::tie(y, std::ignore) = fdf2(x);
+      EXPECT_NEAR((y - y0).norm(), 0, 1e-4);
+    }
+  }
 }
 
 }  // namespace
