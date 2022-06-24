@@ -5,11 +5,11 @@
 #include <tuple>
 #include <vector>
 
-#include "core/crystal.hpp"
-#include "core/geo.hpp"
-#include "core/optics.hpp"
+#include "core/solver.hpp"
 #include "core/types.hpp"
-#include "ode/solver.hpp"
+#include "geo/geo.hpp"
+#include "optics/crystal.hpp"
+#include "optics/system.hpp"
 #include "util/log.hpp"
 
 // NOLINTNEXTLINE

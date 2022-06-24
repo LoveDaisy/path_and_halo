@@ -1,12 +1,12 @@
-#ifndef CORE_OPTICS_H_
-#define CORE_OPTICS_H_
+#ifndef OPTICS_OPTICS_H_
+#define OPTICS_OPTICS_H_
 
 #include <tuple>
 #include <vector>
 
 #include "auto_diff/ad.hpp"
-#include "core/geo.hpp"
 #include "core/types.hpp"
+#include "geo/geo.hpp"
 
 namespace halo_pm {
 
@@ -37,21 +37,6 @@ auto RefractExpr(const VX& vx, const VY& vy, const VZ& vz, const Vec3f& norm, fl
   return std::make_tuple(delta, rx, ry, rz, lx, ly, lz);
 }
 
-
-// Forward declaration
-struct Crystal;
-
-Vec3f TraceDirection(const Crystal& crystal,                                           // Crystal
-                     const Quatf& rot, const Vec2f& ray_ll,                            // May be input variables
-                     const std::vector<int>& raypath, float wl = kDefaultWavelength);  // Other parameter
-
-
-std::tuple<Vec3f, Mat3x4f>                               // (output vector, Jacobian wrt quaternion)
-TraceDirDiffQuat(const Crystal& crystal,                 // crystal
-                 const Quatf& rot, const Vec2f& ray_ll,  // input quaternion, input vector
-                 const std::vector<int>& raypath, float wl = kDefaultWavelength);  // other parameter
-
-
 }  // namespace halo_pm
 
-#endif  // CORE_OPTICS_H_
+#endif  // OPTICS_OPTICS_H_

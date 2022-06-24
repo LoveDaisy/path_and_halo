@@ -3,7 +3,7 @@
 #include <cstddef>
 
 #include "core/types.hpp"
-#include "util/grid.hpp"
+#include "geo/grid.hpp"
 
 // NOLINTNEXTLINE
 using namespace halo_pm;

@@ -1,4 +1,4 @@
-#include "core/geo.hpp"
+#include "geo/geo.hpp"
 
 #include <cassert>
 #include <cmath>

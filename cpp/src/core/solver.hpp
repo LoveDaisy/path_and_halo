@@ -7,9 +7,9 @@
 #include <limits>
 #include <tuple>
 
-#include "core/geo.hpp"
 #include "core/math.hpp"
 #include "core/types.hpp"
+#include "geo/geo.hpp"
 #include "util/log.hpp"
 
 namespace halo_pm {

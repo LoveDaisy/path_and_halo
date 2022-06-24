@@ -73,10 +73,11 @@ endif()
 # ==================================================================================================
 # Set submodules
 set(proj_src
-	"${PROJ_SRC_DIR}/core/crystal.cpp"
-	"${PROJ_SRC_DIR}/core/geo.cpp"
-	"${PROJ_SRC_DIR}/core/optics.cpp"
-	"${PROJ_SRC_DIR}/util/grid.cpp"
+	"${PROJ_SRC_DIR}/geo/geo.cpp"
+	"${PROJ_SRC_DIR}/geo/grid.cpp"
+	"${PROJ_SRC_DIR}/optics/crystal.cpp"
+	"${PROJ_SRC_DIR}/optics/optics.cpp"
+	"${PROJ_SRC_DIR}/optics/system.cpp"
 	"${PROJ_SRC_DIR}/util/log.cpp")
 
 set(proj_include "${PROJ_SRC_DIR}")

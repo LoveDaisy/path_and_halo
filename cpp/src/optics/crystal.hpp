@@ -1,11 +1,9 @@
-#ifndef CORE_CRYSTAL_H_
-#define CORE_CRYSTAL_H_
+#ifndef OPTICS_CRYSTAL_H_
+#define OPTICS_CRYSTAL_H_
 
 #include <cstddef>
 #include <memory>
 #include <vector>
-
-#include "core/types.hpp"
 
 namespace halo_pm {
 
@@ -25,4 +23,4 @@ float GetIceRefractiveIndex(float lambda);
 
 }  // namespace halo_pm
 
-#endif  // CORE_CRYSTAL_H_
+#endif  // OPTICS_CRYSTAL_H_

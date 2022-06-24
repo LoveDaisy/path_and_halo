@@ -1,12 +1,8 @@
-#include "core/optics.hpp"
+#include "optics/optics.hpp"
 
 #include <cmath>
-#include <tuple>
 
-#include "auto_diff/ad.hpp"
-#include "core/crystal.hpp"
-#include "core/geo.hpp"
-#include "core/types.hpp"
+#include "optics/crystal.hpp"
 #include "util/log.hpp"
 
 namespace halo_pm {
@@ -177,4 +173,5 @@ TraceDirDiffQuat(const Crystal& crystal,                       // crystal
     return std::make_tuple(new_xyz, jac);
   }
 }
+
 }  // namespace halo_pm

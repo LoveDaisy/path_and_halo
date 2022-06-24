@@ -4,9 +4,9 @@
 #include <vector>
 
 #include "auto_diff/ad.hpp"
-#include "core/geo.hpp"
 #include "core/math.hpp"
 #include "core/types.hpp"
+#include "geo/geo.hpp"
 #include "util/log.hpp"
 
 // NOLINTNEXTLINE

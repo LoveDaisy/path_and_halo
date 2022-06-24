@@ -1,14 +1,14 @@
-#include "core/crystal.hpp"
+#include "optics/crystal.hpp"
 
 #include <cmath>
 #include <cstddef>
 #include <memory>
 #include <vector>
 
-#include "core/geo.hpp"
 #include "core/math.hpp"
-#include "core/optics.hpp"
 #include "core/types.hpp"
+#include "geo/geo.hpp"
+#include "optics/optics.hpp"
 #include "util/log.hpp"
 
 namespace halo_pm {
