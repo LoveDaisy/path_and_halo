@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <cstddef>
+#include <tuple>
 #include <vector>
 
 #include "auto_diff/ad.hpp"
@@ -126,6 +129,41 @@ TEST_F(TestOptics, refract_diff) {
     LOG_DEBUG("j: %s", ObjLogFormatter<Vec3f>{ j }.Format());
     LOG_DEBUG("jac.col(%d): %s", i, ObjLogFormatter<Vec3f>{ jac_2.col(i) }.Format());
     EXPECT_NEAR((j - jac_2.col(i)).norm(), 0.0f, 1e-3);
+  }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestOptics, all_contours) {
+  auto crystal = MakePrismCrystal(1.0f);
+  std::vector<int> raypath = { 3, 5 };
+  Vec2f ray_in_ll{ 0, -15 };  // sun at (180, 15)
+  auto config = MakeConfigData(crystal, ray_in_ll, raypath, 3);
+
+  auto optics_system = [&crystal, &ray_in_ll, &raypath](const Vec4f& rot) -> std::tuple<Vec4f, Mat4x4f> {
+    Quatf q{ rot(0), rot(1), rot(2), rot(3) };  // w, x, y, z
+    auto [xyz, j] = TraceDirDiffQuat(crystal, q, ray_in_ll, raypath);
+    Vec4f out;
+    Mat4x4f jac;
+    out << xyz, rot.squaredNorm();
+    jac << j, 2 * rot.transpose();
+    return std::make_tuple(out, jac);
+  };
+
+  Vec2f target_ll{ 24.5, -15 };
+  auto t0 = std::chrono::high_resolution_clock::now();
+  auto [contours, status] = FindAllPoseContour(optics_system, target_ll, config);
+  auto t1 = std::chrono::high_resolution_clock::now();
+  auto dt = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
+  LOG_DEBUG("time elapsed: %dus = %.3fms", dt.count(), dt.count() / 1000.0);
+
+  LOG_DEBUG("contours: %zu, func_eval_cnt: %zu", contours.size(), status.func_eval_cnt_);
+  for (size_t i = 0; i < contours.size(); i++) {
+    const auto& c = contours[i];
+    LOG_DEBUG("contour[%zu].size: %zu", i, c.size());
+    for (const auto& q : c) {
+      LOG_DEBUG("q: %s", ObjLogFormatter<Vec4f>{ q }.Format());
+    }
   }
 }
 

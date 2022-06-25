@@ -187,7 +187,8 @@ SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Functio
 
     bool x2_solved = false;
     bool retry = false;
-    constexpr T kBendingTh = 20.0 * kDegree2Rad;
+    constexpr T kBendingUpperTh = 20.0 * kDegree2Rad;
+    constexpr T kBendingLowerTh = 10.0 * kDegree2Rad;
 
     // Start x2-loop to find new point
     while (!x2_solved && h > h_min) {
@@ -222,7 +223,7 @@ SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Functio
         auto it = res.crbegin();
         bending = BendingAngle(x1, *it, *(it + 1));
       }
-      if (bending > kBendingTh) {
+      if (bending > kBendingUpperTh) {
         h *= 0.5;
         h_extension_cnt = 0;
         retry = true;
@@ -248,19 +249,28 @@ SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Functio
         x2_solved = x2_status.solved_;
         LOG_DEBUG("x2: %s solved: %d", ObjLogFormatter<Vec<T, InputDim>>{ x2 }.Format(), x2_solved);
       }
+      if (!x2_solved) {
+        h *= 0.5;
+        h_extension_cnt = 0;
+        retry = true;
+        res.pop_back();
+        LOG_DEBUG("can't solve x2. shrink h to %.6f and pop one point", h);
+        break;
+      }
       ref_dx = ref_dx1;
 
       // Adaptive scheme
       T dx1 = (x1 - x2).norm();
-      if (!x2_solved || dx1 > h * 0.05) {
+      if (dx1 > h * 0.05) {
         h *= 0.5;
         h_extension_cnt = 0;
-        LOG_DEBUG("can't solve x2 or x2 changes too much. shrink h to %.6f", h);
-      } else if (h < h_max * 0.5 && (dx1 < h * 0.01 || x1_error < std::max(option.abs_eps_ * 100, h * 0.002))) {
+        LOG_DEBUG("x2 changes too much. shrink h to %.6f", h);
+      } else if (h < h_max * 0.5 && bending < kBendingLowerTh &&
+                 (dx1 < h * 0.01 || x1_error < std::max(option.abs_eps_ * 100, h * 0.002))) {
         h_extension_cnt++;
         if (h_extension_cnt > 2) {
           h *= 2;
-          LOG_DEBUG("extent h to %.6f", h);
+          LOG_DEBUG("extend h to %.6f", h);
         }
       }
     }  // x2-loop end

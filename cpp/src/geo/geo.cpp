@@ -35,21 +35,30 @@ Vec3f Ll2Xyz(const Vec2f& ll) {
 }
 
 
-void Xyz2Ll(const float* xyz, float* ll,                    // input & output, ll in degree, xyz normalized
+void Xyz2Ll(const Vec3f* xyz, Vec2f* ll,                    // input & output, ll in degree, xyz normalized
             size_t num,                                     // data number
             size_t xyz_step_bytes, size_t ll_step_bytes) {  // step of input & output
   assert(xyz_step_bytes % sizeof(float) == 0);
   assert(ll_step_bytes % sizeof(float) == 0);
 
-  const float* p = xyz;
-  float* q = ll;
+  const auto* p_ptr = reinterpret_cast<const char*>(xyz);
+  auto* q_ptr = reinterpret_cast<char*>(ll);
   for (size_t i = 0; i < num; i++) {
-    q[1] = std::asin(p[2]) * kRad2Degree;
-    q[0] = std::atan2(p[1], p[0]) * kRad2Degree;
+    const auto& curr_xyz = *reinterpret_cast<const Vec3f*>(p_ptr);
+    auto& curr_ll = *reinterpret_cast<Vec2f*>(q_ptr);
 
-    p += xyz_step_bytes == 0 ? 3 : xyz_step_bytes / sizeof(float);
-    q += ll_step_bytes == 0 ? 2 : ll_step_bytes / sizeof(float);
+    curr_ll.y() = std::asin(curr_xyz.z()) * kRad2Degree;
+    curr_ll.x() = std::atan2(curr_xyz.y(), curr_xyz.x()) * kRad2Degree;
+
+    p_ptr += xyz_step_bytes == 0 ? 3 * sizeof(float) : xyz_step_bytes;
+    q_ptr += ll_step_bytes == 0 ? 2 * sizeof(float) : ll_step_bytes;
   }
+}
+
+Vec2f Xyz2Ll(const Vec3f& xyz) {
+  Vec2f ll;
+  Xyz2Ll(&xyz, &ll);
+  return ll;
 }
 
 

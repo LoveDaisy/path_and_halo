@@ -44,7 +44,7 @@ struct PoseContourStatus {
 };
 
 std::tuple<std::vector<Curve4f>, PoseContourStatus>  // (all contours of rotation, status)
-FindAllPoseContour(const FuncAndDiff<float, 3, 4>& optics_system, const Vec2f& target_ll, const ConfigData& config);
+FindAllPoseContour(const FuncAndDiff<float, 4, 4>& optics_system, const Vec2f& target_ll, const ConfigData& config);
 
 }  // namespace halo_pm
 

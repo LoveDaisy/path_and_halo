@@ -4,11 +4,13 @@
 #include <tuple>
 #include <vector>
 
+#include "core/math.hpp"
 #include "core/solver.hpp"
 #include "core/types.hpp"
 #include "geo/geo.hpp"
 #include "geo/grid.hpp"
 #include "optics/optics.hpp"
+#include "util/log.hpp"
 
 namespace halo_pm {
 
@@ -44,18 +46,19 @@ ConfigData MakeConfigData(const Crystal& crystal, const Vec2f& ray_in_ll, const 
 
 
 std::tuple<std::vector<Curve4f>, PoseContourStatus>  // (all contours, status)
-FindAllPoseContour(const FuncAndDiff<float, 3, 4>& optics_system, const Vec2f& target_ll, const ConfigData& config) {
+FindAllPoseContour(const FuncAndDiff<float, 4, 4>& optics_system, const Vec2f& target_ll, const ConfigData& config) {
   // Find candidate rotations (rotation seeds) from config data
   Vec3f target_xyz = Ll2Xyz(target_ll);
   std::vector<std::tuple<Quatf, float>> sorted_rot_da;
   for (const auto& [q, out_xyz] : config.rot_xyz_) {
-    sorted_rot_da.emplace_back(std::make_tuple(q, std::acos(out_xyz.dot(target_xyz))));
+    auto da = std::acos(out_xyz.dot(target_xyz)) * kRad2Degree;
+    sorted_rot_da.emplace_back(std::make_tuple(q, da));
   }
   std::sort(sorted_rot_da.begin(), sorted_rot_da.end(), [](const auto& x1, const auto& x2) {
     auto a1 = std::get<1>(x1);
     auto a2 = std::get<1>(x2);
     return a1 < a2;
-  });  // from largest to smallest
+  });
 
   PoseContourStatus status;
   std::vector<Curve4f> res_contours;
@@ -66,6 +69,7 @@ FindAllPoseContour(const FuncAndDiff<float, 3, 4>& optics_system, const Vec2f& t
       status.rot_seeds_.emplace_back(q);
     }
   }
+  LOG_DEBUG("find %zu seeds", status.rot_seeds_.size());
 
   if (status.rot_seeds_.empty()) {
     return { res_contours, status };
@@ -81,11 +85,14 @@ FindAllPoseContour(const FuncAndDiff<float, 3, 4>& optics_system, const Vec2f& t
   SolverOption solver_option;
   solver_option.h_ = 0.05;
   constexpr float kReduceTh = 0.05;
+  Vec4f target_out;
+  target_out << target_xyz, 1.0f;
   while (!rot_cand.empty()) {
     // Find initial solution
-    auto [rot0, rot0_status] = FindSolution(optics_system, rot_cand.back(), target_xyz);
+    auto [rot0, rot0_status] = FindSolution(optics_system, rot_cand.back(), target_out);
     rot_cand.pop_back();
     status.func_eval_cnt_ += rot0_status.func_eval_cnt_;
+    LOG_DEBUG("find solution: %zu func_eval_cnt", rot0_status.func_eval_cnt_);
     if (!rot0_status.solved_) {
       continue;
     }
@@ -111,6 +118,7 @@ FindAllPoseContour(const FuncAndDiff<float, 3, 4>& optics_system, const Vec2f& t
     // Find a contour
     auto [contour, contour_status] = FindContour(optics_system, rot0, solver_option);
     status.func_eval_cnt_ += contour_status.func_eval_cnt_;
+    LOG_DEBUG("find contour: %zu func_eval_cnt", contour_status.func_eval_cnt_);
 
     if (contour.empty()) {
       continue;
@@ -122,7 +130,7 @@ FindAllPoseContour(const FuncAndDiff<float, 3, 4>& optics_system, const Vec2f& t
     // NOTE: is it neccessary to use Jacobian? Maybe directly calculate difference in output space.
     Curve4f tmp_rot_cand;
     for (const auto& q : rot_cand) {
-      Mat3x4f jac;
+      Mat4x4f jac;
       auto info = DistanceToPolyLine(q, contour);
       std::tie(std::ignore, jac) = optics_system(info.nearest_point_);
       status.func_eval_cnt_++;
