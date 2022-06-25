@@ -30,7 +30,7 @@ SphGrid GenerateGrid(int level) {
 
   size_t n_side = 1 << level;
   size_t n_pix = 12 * n_side * n_side;
-  std::unique_ptr<Vec3f[]> data{ new Vec3f[n_pix]{} };
+  std::vector<Vec3f> data(n_pix);
 
 
   size_t n_cap = 2 * n_side * (n_side - 1);
@@ -50,7 +50,7 @@ SphGrid GenerateGrid(int level) {
     auto z = 1 - i_ring * i_ring / fact2;
     auto phi = (i_phi - 0.5) * kPi / (2 * i_ring);
 
-    FillVec(z, phi, data.get() + i);
+    FillVec(z, phi, data.data() + i);
   }
 
   // Equatorial region
@@ -63,7 +63,7 @@ SphGrid GenerateGrid(int level) {
     auto z = (nl2 * 1.0 - i_ring) / fact1;
     auto phi = (i_phi - f_odd) * kPi / nl2;
 
-    FillVec(z, phi, data.get() + i);
+    FillVec(z, phi, data.data() + i);
   }
 
   // South cap
@@ -77,12 +77,12 @@ SphGrid GenerateGrid(int level) {
     auto z = -1 + i_ring * i_ring / fact2;
     auto phi = (i_phi - 0.5) * kPi / (2 * i_ring);
 
-    FillVec(z, phi, data.get() + i);
+    FillVec(z, phi, data.data() + i);
   }
 
   float dr = std::sqrt(4 * kPi / n_pix) * 90 / kPi;  // degree
 
-  return SphGrid{ n_pix, dr, std::move(data) };
+  return SphGrid{ dr, data };
 }
 
 }  // namespace halo_pm

@@ -14,7 +14,7 @@ class TestSphGrid : public ::testing::Test {};
 
 // NOLINTNEXTLINE
 TEST_F(TestSphGrid, xyz) {
-  auto [pix_num, dr, grid_data] = GenerateGrid(3);
+  auto [dr, grid_data] = GenerateGrid(3);
 
   Vec3f expected_data[768]{
     { 0.07207475, 0.07207475, 0.9947916 },     //
@@ -787,8 +787,8 @@ TEST_F(TestSphGrid, xyz) {
     { 0.07207475, -0.07207475, -0.9947916 },   //
   };
 
-  ASSERT_EQ(pix_num, 768);
-  for (size_t i = 0; i < pix_num; i++) {
+  ASSERT_EQ(grid_data.size(), 768);
+  for (size_t i = 0; i < grid_data.size(); i++) {
     EXPECT_NEAR((expected_data[i] - grid_data[i]).norm(), 0, 1e-5) << "(" << i << ")";
   }
 }

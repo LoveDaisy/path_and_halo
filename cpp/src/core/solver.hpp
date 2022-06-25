@@ -14,13 +14,6 @@
 
 namespace halo_pm {
 
-template <class T, int OutputDim, int InputDim>
-using Func = std::function<Vec<T, OutputDim>(const Vec<T, InputDim>&)>;
-
-template <class T, int OutputDim, int InputDim>
-using FuncAndDiff = std::function<std::tuple<Vec<T, OutputDim>, Mat<T, OutputDim, InputDim>>(const Vec<T, InputDim>&)>;
-
-
 struct SolverOption {
   static constexpr double kDefaultAbsEps = 5e-6;
   static constexpr double kDefaultRelEps = 1e-7;

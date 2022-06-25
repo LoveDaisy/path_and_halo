@@ -2,6 +2,7 @@
 #define GEO_GEO_H_
 
 #include <cstddef>
+#include <limits>
 #include <tuple>
 
 #include "core/math.hpp"
@@ -31,6 +32,8 @@ Vec3f Ll2Xyz(const Vec2f& ll);
 void Xyz2Ll(const Vec3f* xyz, Vec2f* ll,                           // input & output, ll in degree, xyz normalized
             size_t num = 1,                                        // data number
             size_t xyz_step_bytes = 0, size_t ll_step_bytes = 0);  // step of input & output
+
+Vec2f Xyz2Ll(const Vec3f& xyz);
 
 
 /**
@@ -93,28 +96,45 @@ QuatRotExpr(QW qw0, QX qx0, QY qy0, QZ qz0,        // quaternion
 
 
 template <class T, int Dim>
-T Point2LineDistance(const Vec<T, Dim>& p, const Vec<T, Dim>& p1, const Vec<T, Dim>& p2) {
+struct PointLineDistanceInfo {
+  T distance_;
+  Vec<T, Dim> nearest_point_;
+
+  operator T() const { return distance_; }
+};
+
+
+template <class T, int Dim>
+PointLineDistanceInfo<T, Dim>  // info: (distance, nearest_point)
+Point2LineDistance(const Vec<T, Dim>& p, const Vec<T, Dim>& p1, const Vec<T, Dim>& p2) {
   auto d = p2 - p1;
   auto d2 = d.squaredNorm();
 
+  PointLineDistanceInfo<T, Dim> info{};
   if (d2 < 1e-8) {
-    return (p - p1).norm();
+    info.distance_ = (p - p1).norm();
+    info.nearest_point_ = p1;
   } else {
     T t = ((p - p1).dot(d)) / d2;
     t = std::clamp(t, static_cast<T>(0), static_cast<T>(1));
-    return ((p1 + d * t) - p).norm();
+    info.nearest_point_ = p1 + d * t;
+    info.distance_ = (p - info.nearest_point_).norm();
   }
+  return info;
 }
 
 
 template <class T, int Dim>
-T DistanceToPolyLine(const Vec<T, Dim>& p, const Curve<T, Dim>& poly_line) {
-  T d = std::numeric_limits<T>::max();
+PointLineDistanceInfo<T, Dim>  // info
+DistanceToPolyLine(const Vec<T, Dim>& p, const Curve<T, Dim>& poly_line) {
+  PointLineDistanceInfo<T, Dim> res{ std::numeric_limits<T>::max(), Vec<T, Dim>{} };
   for (size_t i = 0; i + 1 < poly_line.size(); i++) {
-    T curr_d = Point2LineDistance(p, poly_line[i], poly_line[i + 1]);
-    d = std::min(curr_d, d);
+    auto info = Point2LineDistance(p, poly_line[i], poly_line[i + 1]);
+    if (info.distance_ < res.distance_) {
+      res = info;
+    }
   }
-  return d;
+  return res;
 }
 
 

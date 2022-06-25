@@ -8,6 +8,7 @@
 
 namespace halo_pm {
 
+// =============== Data types ===============
 template <class T, int Dim>
 using Vec = Eigen::Matrix<T, Dim, 1>;
 
@@ -43,6 +44,15 @@ using Curve3d = Curve<double, 3>;
 using Curve4d = Curve<double, 4>;
 
 
+// =============== Function types ===============
+template <class T, int OutputDim, int InputDim>
+using Func = std::function<Vec<T, OutputDim>(const Vec<T, InputDim>&)>;
+
+template <class T, int OutputDim, int InputDim>
+using FuncAndDiff = std::function<std::tuple<Vec<T, OutputDim>, Mat<T, OutputDim, InputDim>>(const Vec<T, InputDim>&)>;
+
+
+// =============== Formatter ===============
 template <class T>
 struct ObjLogFormatter {};
 

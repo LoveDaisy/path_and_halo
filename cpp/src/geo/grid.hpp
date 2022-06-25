@@ -3,15 +3,15 @@
 
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 #include "core/types.hpp"
 
 namespace halo_pm {
 
 struct SphGrid {
-  size_t n_pix_;  // pix number
-  float dr_;      // in degree
-  std::unique_ptr<Vec3f[]> v_;
+  float dr_;  // in degree
+  std::vector<Vec3f> xyz_;
 };
 
 
