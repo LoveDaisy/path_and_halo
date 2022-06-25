@@ -1,6 +1,10 @@
 #ifndef OPTICS_SYSTEM_H_
 #define OPTICS_SYSTEM_H_
 
+#include <cstddef>
+#include <tuple>
+#include <vector>
+
 #include "core/types.hpp"
 #include "optics/optics.hpp"
 
@@ -9,6 +13,17 @@ namespace halo_pm {
 // Forward declaration
 struct Crystal;
 
+// =============== Pre-computed cache ===============
+struct ConfigData {
+  float dr;
+  Vec3f in_xyz_;
+  std::vector<std::tuple<Quatf, Vec3f>> rot_xyz_;
+};
+
+ConfigData MakeConfigData(const Crystal& crystal, const Vec2f& ray_in_ll, const std::vector<int>& raypath, int level);
+
+
+// =============== Trace throgh the crystal optics system ===============
 Vec3f TraceDirection(const Crystal& crystal,                                           // Crystal
                      const Quatf& rot, const Vec2f& ray_ll,                            // May be input variables
                      const std::vector<int>& raypath, float wl = kDefaultWavelength);  // Other parameter
@@ -20,15 +35,16 @@ TraceDirDiffQuat(const Crystal& crystal,                 // crystal
                  const std::vector<int>& raypath, float wl = kDefaultWavelength);  // other parameter
 
 
-struct MappingGridData {
-  size_t size_;
-  Vec3f in_xyz_;
-  std::unique_ptr<Vec3f[]> out_xyz_;
-  std::unique_ptr<Quatf[]> rot_;
+// =============== Find all pose contours ===============
+struct PoseContourStatus {
+  size_t func_eval_cnt_;
+  std::vector<Quatf> rot_seeds_;  // quaternion [wxyz]
+
+  PoseContourStatus() : func_eval_cnt_(0) {}
 };
 
-MappingGridData GenerateMappingGridData(const Crystal& crystal, const Vec2f& ray_in_ll, const std::vector<int>& raypath,
-                                        int level);
+std::tuple<std::vector<Curve4f>, PoseContourStatus>  // (all contours of rotation, status)
+FindAllPoseContour(const FuncAndDiff<float, 3, 4>& optics_system, const Vec2f& target_ll, const ConfigData& config);
 
 }  // namespace halo_pm
 
