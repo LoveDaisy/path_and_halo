@@ -152,19 +152,89 @@ TEST_F(TestOptics, all_contours) {
 
   Vec2f target_ll{ 24.5, -15 };
   auto t0 = std::chrono::high_resolution_clock::now();
-  auto [contours, status] = FindAllPoseContour(optics_system, target_ll, config);
+  auto [contours, status] = FindAllCrystalPoses(optics_system, target_ll, config);
   auto t1 = std::chrono::high_resolution_clock::now();
   auto dt = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
-  LOG_DEBUG("time elapsed: %dus = %.3fms", dt.count(), dt.count() / 1000.0);
+  LOG_INFO("time elapsed: %dus = %.3fms", dt.count(), dt.count() / 1000.0);
 
-  LOG_DEBUG("contours: %zu, func_eval_cnt: %zu", contours.size(), status.func_eval_cnt_);
+  LOG_INFO("contours: %zu, func_eval_cnt: %zu", contours.size(), status.func_eval_cnt_);
   for (size_t i = 0; i < contours.size(); i++) {
     const auto& c = contours[i];
-    LOG_DEBUG("contour[%zu].size: %zu", i, c.size());
+    LOG_INFO("contour[%zu].size: %zu", i, c.size());
     for (const auto& q : c) {
       LOG_DEBUG("q: %s", ObjLogFormatter<Vec4f>{ q }.Format());
     }
   }
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestOptics, weight_component) {
+  Vec4f qv{ -0.273748983855590, -0.0131274424612287, 0.000834851418692518, 0.961711219661580 };
+  qv.normalize();
+  auto crystal = MakePrismCrystal(1.0f);
+  std::vector<int> raypath = { 3, 5 };
+  Vec2f ray_in_ll{ 0, -15 };  // sun at (180, 15)
+  AxisPdf a(0, 0.5);
+  Func<float, 1, 3> axis_pdf = [&a](const Vec3f& llr) { return Vec<float, 1>{ a(llr) }; };
+
+  auto data = ComputeWeightComponents(qv, crystal, axis_pdf, ray_in_ll, raypath);
+  LOG_DEBUG("s: %.6f, axis_p: %.4e, jac: %.4f, geo: %.4f, transit: %.4f",  //
+            data.s_, data.axis_prob_, data.jac_factor_, data.geo_factor_, data.transit_factor_);
+
+  EXPECT_NEAR(data.axis_prob_, 3.5348, 5e-4);
+  EXPECT_NEAR(data.jac_factor_, 2.3640, 0.05);
+  EXPECT_NEAR(data.geo_factor_, 0.2460, 5e-4);
+  EXPECT_NEAR(data.transit_factor_, 1.1558, 2e-3);
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestOptics, contour_weight) {
+  // Data from above find_contour case
+  auto crystal = MakePrismCrystal(1.0f);
+  std::vector<int> raypath = { 3, 5 };
+  Vec2f ray_in_ll{ 0, -15 };  // sun at (180, 15)
+  AxisPdf a(0, 0.5);
+  Func<float, 1, 3> axis_pdf = [&a](const Vec3f& llr) { return Vec<float, 1>{ a(llr) }; };
+  Curve4f rot_contour{
+    { -0.252592, 0.056621, -0.002378, 0.965912 },  //
+    { -0.244650, 0.105874, -0.003684, 0.963807 },  //
+    { -0.242699, 0.155373, -0.005351, 0.957563 },  //
+    { -0.246603, 0.204025, -0.008339, 0.947360 },  //
+    { -0.257002, 0.250470, -0.013767, 0.933287 },  //
+    { -0.275563, 0.292183, -0.023002, 0.915513 },  //
+    { -0.288781, 0.309657, -0.029484, 0.905454 },  //
+    { -0.305153, 0.323225, -0.037266, 0.894996 },  //
+    { -0.324682, 0.330994, -0.045930, 0.884824 },  //
+    { -0.346360, 0.331203, -0.054373, 0.876003 },  //
+    { -0.368140, 0.323677, -0.061148, 0.869463 },  //
+    { -0.388190, 0.310088, -0.065401, 0.865376 },  //
+    { -0.405717, 0.292523, -0.067109, 0.863318 },  //
+    { -0.420651, 0.272519, -0.066645, 0.862753 },  //
+    { -0.433174, 0.251019, -0.064437, 0.863248 },  //
+    { -0.443501, 0.228583, -0.060856, 0.864495 },  //
+    { -0.451816, 0.205547, -0.056209, 0.866286 },  //
+    { -0.462896, 0.158466, -0.044657, 0.870988 },  //
+    { -0.463884, 0.063405, -0.017528, 0.883450 },  //
+    { -0.452911, 0.017145, -0.004493, 0.891379 },  //
+    { -0.432388, -0.025908, 0.006162, 0.901294 },  //
+    { -0.417762, -0.044833, 0.009916, 0.907395 },  //
+    { -0.399830, -0.060488, 0.012158, 0.914510 },  //
+    { -0.378753, -0.070942, 0.012595, 0.922688 },  //
+    { -0.355758, -0.074059, 0.011269, 0.931570 },  //
+    { -0.333149, -0.068977, 0.008786, 0.940306 },  //
+    { -0.312938, -0.056934, 0.006002, 0.948046 },  //
+    { -0.295880, -0.040044, 0.003486, 0.954379 },  //
+    { -0.281867, -0.020058, 0.001447, 0.959242 },  //
+    { -0.270526, 0.001875, -0.000112, 0.962710 },  //
+    { -0.261484, 0.025039, -0.001274, 0.964882 },  //
+    { -0.254436, 0.048981, -0.002145, 0.965846 },  //
+    { -0.252592, 0.056621, -0.002378, 0.965912 },  //
+  };
+
+  auto [weight, data] = ComputPoseWeight(rot_contour, crystal, axis_pdf, ray_in_ll, raypath);
+  LOG_INFO("contour weight: %.6f", weight);
 }
 
 }  // namespace

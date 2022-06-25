@@ -26,7 +26,7 @@ Crystal MakePrismCrystal(float h) {
     { 2, 8, 9, 3 },          // fn5
     { 3, 9, 10, 4 },         // fn6
     { 4, 10, 11, 5 },        // fn7
-    { 5, 11, 12, 6 },        // fn8
+    { 5, 11, 6, 0 },         // fn8
   };
   size_t face_cnt = face_id.size();
   std::unique_ptr<float[]> face_norm{ new float[face_cnt * 3]{} };

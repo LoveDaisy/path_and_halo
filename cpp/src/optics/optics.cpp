@@ -1,7 +1,9 @@
 #include "optics/optics.hpp"
 
 #include <cmath>
+#include <limits>
 
+#include "core/types.hpp"
 #include "optics/crystal.hpp"
 #include "util/log.hpp"
 
@@ -13,7 +15,9 @@ Vec3f Refract(const Vec3f& ray_in, const Vec3f& norm, float n0, float n1) {
   auto delta = n * n - (n * n - 1) / (c * c);
 
   if (delta <= 0) {
-    return (Mat3x3f::Identity() - 2 * norm * norm.transpose()) * ray_in;
+    Vec3f r{};
+    r.fill(std::numeric_limits<float>::quiet_NaN());
+    return r;
   } else {
     return n * ray_in + (std::sqrt(delta) - n) * c * norm;
   }

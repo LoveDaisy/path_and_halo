@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <limits>
 #include <tuple>
+#include <vector>
 
 #include "core/math.hpp"
 #include "core/types.hpp"
@@ -51,6 +52,30 @@ void Llr2Mat(const Vec3f* llr, Mat3x3f* mat,                         // input & 
 
 
 Quatf Llr2Quat(const Vec3f& llr);
+
+
+Vec3f Quat2Llr(const Quatf& q);
+
+Vec3f Quat2Llr(const Vec4f& qv);
+
+
+class AxisPdf {
+ public:
+  AxisPdf();
+  AxisPdf(float zenith_mean, float zenith_std);
+  AxisPdf(float zenith_mean, float zenith_std, float roll_mean, float roll_std);
+
+  float operator()(const Vec3f& llr) const;
+
+ private:
+  float zenith_mean_;  // all in degree
+  float zenith_std_;   // std < 0 means it is uniform distributed
+  float roll_mean_;
+  float roll_std_;
+
+  float zenith_int_c_;
+  float roll_int_c_;
+};
 
 
 template <class... VX>
@@ -153,7 +178,7 @@ CheckLoopAndReduce(const Curve<T, Dim>& pts, double eps, double ds) {
       }
     }
     if (ds > 0) {
-      interp_pts = InterpCurve(interp_pts, ds);
+      std::tie(interp_pts, std::ignore, std::ignore) = InterpCurve(interp_pts, ds);
     }
 
     const auto& p = res.back();
@@ -180,6 +205,24 @@ T BendingAngle(const Vec<T, Dim>& x0, const Vec<T, Dim>& x1, const Vec<T, Dim>& 
     return std::acos(std::clamp(d1.dot(d2) / d1_norm / d2_norm, static_cast<T>(0), static_cast<T>(1)));
   }
 }
+
+
+template <class T, int Dim>
+std::vector<T> CumulatedArcLength(const Curve<T, Dim>& pts) {
+  std::vector<T> s;
+  s.emplace_back(0);
+
+  for (size_t i = 1; i < pts.size(); i++) {
+    T len = (pts[i] - pts[i - 1]).norm();
+    s.emplace_back(len + s.back());
+  }
+
+  return s;
+}
+
+
+std::tuple<Curve3f, float>  // (projected intersect polygon, area factor)
+ProjectPolygonIntersection(const Curve3f& p1, const Curve3f& p2, const Vec3f& dir);
 
 }  // namespace halo_pm
 

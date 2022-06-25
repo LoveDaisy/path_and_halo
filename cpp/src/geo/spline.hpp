@@ -1,12 +1,53 @@
 #ifndef GEO_SPLINE_H_
 #define GEO_SPLINE_H_
 
+#include <cassert>
+#include <cstddef>
+#include <tuple>
 #include <vector>
 
 #include "core/math.hpp"
 #include "core/types.hpp"
 
 namespace halo_pm {
+template <class X, class Y>
+Y InterpLinear(const X& x0, const X& x1, const Y& y0, const Y& y1, const X& xq) {
+  return (xq * (y0 - y1) + x0 * y1 - x1 * y0) / (x0 - x1);
+}
+
+template <class X, class Y>
+Y InterpLinear(const std::vector<X>& x, const std::vector<Y>& y, X xq) {
+  assert(x.size() == y.size());
+  assert(x.size() > 1);
+
+  // NOTE: Assume x is sorted in increasing order
+  size_t i = 0;
+  for (; i + 1 < x.size(); i++) {
+    if (x[i] <= xq && xq < x[i + 1]) {
+      break;
+    }
+  }
+
+  X x0 = x[i];
+  X x1 = x[i + 1];
+  const auto& y0 = y[i];
+  const auto& y1 = y[i + 1];
+  return InterpLinear(x0, x1, y0, y1, xq);
+}
+
+
+template <class T, int Dim>
+Curve<T, Dim> InterpLinear(const std::vector<T>& x, const Curve<T, Dim>& y, const std::vector<T>& xq) {
+  Curve<T, Dim> res;
+  res.reverse(xq.size());
+
+  for (auto xi : x) {
+    res.emplace_back(InterpLinear(x, y, xi));
+  }
+
+  return res;
+}
+
 
 template <class T>
 struct Spline {
@@ -131,11 +172,13 @@ Curve<T, Dim> InterpSpline(const std::vector<T>& x, const Curve<T, Dim>& y, cons
 
 
 template <class T, int Dim>
-Curve<T, Dim> InterpCurve(const Curve<T, Dim>& pts, double ds) {
+std::tuple<Curve<T, Dim>, std::vector<T>, std::vector<T>>  // (interp_pts, interp_ss, refined_s0)
+InterpCurve(const Curve<T, Dim>& pts, double ds) {
   assert(pts.size() > 1);
 
   int pt_num = static_cast<int>(pts.size());
   std::vector<T> s(pt_num, 0);
+  std::vector<T> ss;
 
   for (int i = 1; i < pt_num; i++) {
     auto len = (pts[i] - pts[i - 1]).norm();
@@ -148,7 +191,7 @@ Curve<T, Dim> InterpCurve(const Curve<T, Dim>& pts, double ds) {
     auto last_len = s.back();
     auto spline = InterpSpline(s, pts);
 
-    std::vector<T> ss;
+    ss.clear();
     std::vector<int> s_idx;
     {
       double x = ds;
@@ -188,7 +231,7 @@ Curve<T, Dim> InterpCurve(const Curve<T, Dim>& pts, double ds) {
     }
     s.swap(tmp_s);
   }
-  return res;
+  return { res, ss, s };
 }
 
 }  // namespace halo_pm

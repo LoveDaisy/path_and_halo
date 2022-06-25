@@ -6,12 +6,10 @@
 #include <vector>
 
 #include "core/types.hpp"
+#include "optics/crystal.hpp"
 #include "optics/optics.hpp"
 
 namespace halo_pm {
-
-// Forward declaration
-struct Crystal;
 
 // =============== Pre-computed cache ===============
 struct ConfigData {
@@ -36,15 +34,36 @@ TraceDirDiffQuat(const Crystal& crystal,                 // crystal
 
 
 // =============== Find all pose contours ===============
-struct PoseContourStatus {
+struct FindPoseStatus {
   size_t func_eval_cnt_;
   std::vector<Quatf> rot_seeds_;  // quaternion [wxyz]
 
-  PoseContourStatus() : func_eval_cnt_(0) {}
+  FindPoseStatus() : func_eval_cnt_(0) {}
 };
 
-std::tuple<std::vector<Curve4f>, PoseContourStatus>  // (all contours of rotation, status)
-FindAllPoseContour(const FuncAndDiff<float, 4, 4>& optics_system, const Vec2f& target_ll, const ConfigData& config);
+std::tuple<std::vector<Curve4f>, FindPoseStatus>                    // (all contours of rotation, status)
+FindAllCrystalPoses(const FuncAndDiff<float, 4, 4>& optics_system,  // quaternion -> (out_xyz, q_norm2)
+                    const Vec2f& target_ll, const ConfigData& config);
+
+
+struct PoseWeightData {
+  float s_;               // curve arc length parameter
+  float w_;               // total weight
+  float axis_prob_;       // probability of axis orientation
+  float jac_factor_;      // determinator of Jacobian
+  float geo_factor_;      // geometry factor
+  float transit_factor_;  // transit factor
+  Vec3f axis_llr_;        // axis pose
+};
+
+
+PoseWeightData  // one data sample
+ComputeWeightComponents(const Vec4f& rot, const Crystal& crystal, const Func<float, 1, 3>& axis_pdf,
+                        const Vec2f& ray_in_ll, const std::vector<int>& raypath);
+
+std::tuple<float, std::vector<PoseWeightData>>  // (total weight, interpolated weight components)
+ComputPoseWeight(const Curve4f& rots, const Crystal& crystal, const Func<float, 1, 3>& axis_pdf, const Vec2f& ray_in_ll,
+                 const std::vector<int>& raypath);
 
 }  // namespace halo_pm
 
