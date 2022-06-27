@@ -166,7 +166,9 @@ DistanceToPolyLine(const Vec<T, Dim>& p, const Curve<T, Dim>& poly_line) {
 template <class T, int Dim>
 std::tuple<bool, Curve<T, Dim>>  // Check result & reduced curve
 CheckLoopAndReduce(const Curve<T, Dim>& pts, double eps, double ds) {
-  assert(pts.size() > 1);
+  if (pts.size() <= 1) {
+    return { false, pts };
+  }
 
   Curve<T, Dim> res = pts;
   bool closed = false;

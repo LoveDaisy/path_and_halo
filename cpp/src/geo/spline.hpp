@@ -174,7 +174,11 @@ Curve<T, Dim> InterpSpline(const std::vector<T>& x, const Curve<T, Dim>& y, cons
 template <class T, int Dim>
 std::tuple<Curve<T, Dim>, std::vector<T>, std::vector<T>>  // (interp_pts, interp_ss, refined_s0)
 InterpCurve(const Curve<T, Dim>& pts, double ds) {
-  assert(pts.size() > 1);
+  if (pts.size() == 0) {
+    return { pts, std::vector<T>{}, std::vector<T>{} };
+  } else if (pts.size() == 1) {
+    return { pts, std::vector<T>{ 0 }, std::vector<T>{ 0 } };
+  }
 
   int pt_num = static_cast<int>(pts.size());
   std::vector<T> s(pt_num, 0);

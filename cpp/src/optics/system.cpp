@@ -169,22 +169,24 @@ FindAllCrystalPoses(const FuncAndDiff<float, 4, 4>& optics_system, const Vec2f& 
 float ComputeJacobianFactor(const Vec4f& rot, const Crystal& crystal, const Vec2f& ray_in_ll,
                             const std::vector<int>& raypath) {
   Quatf q{ rot(0), rot(1), rot(2), rot(3) };
+  q.normalize();
   Mat3x4f jac;
   std::tie(std::ignore, jac) = TraceDirDiffQuat(crystal, q, ray_in_ll, raypath);
 
   constexpr float kMinVal = 1e-8;
   Eigen::JacobiSVD svd(jac);
+  svd.setThreshold(kDefaultFloatEps);
+
+  float res = 0.0f;
   auto rank = svd.rank();
-  if (rank < 1) {
-    return 1.0f / kMinVal;
-  } else {
+  if (rank > 0) {
+    res = 1.0f;
     const auto& s = svd.singularValues();
-    float res = 1.0f;
     for (int i = 0; i < rank; i++) {
       res *= s(i);
     }
-    return 1.0f / res;
   }
+  return 1.0f / std::max(res, kMinVal);
 }
 
 float ComputeEntryFactor(const Vec4f& rot, const Crystal& crystal, const Vec2f& ray_in_ll,
@@ -380,7 +382,7 @@ ComputPoseWeight(const Curve4f& rots, const Crystal& crystal, const Func<float, 
       }
     }
 
-    if (max_pdf > kPdfTh && high_pdf_cnt < 20 && interp_step > arc_len.back() * 0.001) {
+    if (max_pdf > kPdfTh && high_pdf_cnt < 50 && interp_step > arc_len.back() * 0.001) {
       interp_step *= 0.5;
     } else {
       break;
@@ -396,7 +398,7 @@ ComputPoseWeight(const Curve4f& rots, const Crystal& crystal, const Func<float, 
       j++;
     }
 
-    if (!refine && ((i == 0 && interp_pdf[i] > kPdfTh) ||
+    if (!refine && (((i == 0 || i + 1 == interp_data_num) && interp_pdf[i] > kPdfTh) ||
                     (i + 1 < interp_data_num && interp_pdf[i] < kPdfTh && interp_pdf[i + 1] > kPdfTh))) {
       refine = true;
     }
@@ -404,9 +406,10 @@ ComputPoseWeight(const Curve4f& rots, const Crystal& crystal, const Func<float, 
     // If no refine needed
     if (!refine) {
       // interp jac_factor
+      float y = 0.0f;
       float y0 = std::log(cmp0[j].jac_factor_);
       float y1 = std::log(cmp0[j + 1].jac_factor_);
-      float y = InterpLinear(s0[j], s0[j + 1], y0, y1, interp_s[i]);
+      y = InterpLinear(s0[j], s0[j + 1], y0, y1, interp_s[i]);
       curr_cmp.jac_factor_ = std::exp(y);
 
       // interp geo_factor
@@ -419,7 +422,7 @@ ComputPoseWeight(const Curve4f& rots, const Crystal& crystal, const Func<float, 
       y0 = std::log(cmp0[j].transit_factor_);
       y1 = std::log(cmp0[j + 1].transit_factor_);
       y = InterpLinear(s0[j], s0[j + 1], y0, y1, interp_s[i]);
-      curr_cmp.geo_factor_ = std::exp(y);
+      curr_cmp.transit_factor_ = std::exp(y);
     }
     // Need refine
     else {
@@ -431,13 +434,22 @@ ComputPoseWeight(const Curve4f& rots, const Crystal& crystal, const Func<float, 
     }
     curr_cmp.axis_prob_ = interp_pdf[i];
     curr_cmp.s_ = interp_s[i];
+    if (std::isnan(curr_cmp.jac_factor_)) {
+      curr_cmp.jac_factor_ = 0.0f;
+    }
+    if (std::isnan(curr_cmp.geo_factor_)) {
+      curr_cmp.geo_factor_ = 0.0f;
+    }
+    if (std::isnan(curr_cmp.transit_factor_)) {
+      curr_cmp.transit_factor_ = 0.0f;
+    }
     curr_cmp.w_ = curr_cmp.axis_prob_ * curr_cmp.jac_factor_ * curr_cmp.geo_factor_ * curr_cmp.transit_factor_;
     curr_cmp.w_ = std::max(curr_cmp.w_, 0.0f);
   }
 
   float total_weight = 0;
   for (size_t i = 0; i + 1 < interp_data_num; i++) {
-    total_weight += (w_cmp[i].w_ + w_cmp[i + 1].w_) * (interp_s[i + 1] - interp_s[i]) * 0.5;
+    total_weight += (w_cmp[i].w_ + w_cmp[i + 1].w_) * (w_cmp[i + 1].s_ - w_cmp[i].s_) * 0.5;
   }
   return { total_weight, w_cmp };
 }

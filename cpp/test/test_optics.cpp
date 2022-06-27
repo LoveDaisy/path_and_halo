@@ -150,19 +150,49 @@ TEST_F(TestOptics, all_contours) {
     return std::make_tuple(out, jac);
   };
 
-  Vec2f target_ll{ 24.5, -15 };
-  auto t0 = std::chrono::high_resolution_clock::now();
-  auto [contours, status] = FindAllCrystalPoses(optics_system, target_ll, config);
-  auto t1 = std::chrono::high_resolution_clock::now();
-  auto dt = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
-  LOG_INFO("time elapsed: %dus = %.3fms", dt.count(), dt.count() / 1000.0);
+  {
+    LOG_INFO("test case 1...");
+    Vec2f target_ll{ 24.5, -15 };
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto [contours, status] = FindAllCrystalPoses(optics_system, target_ll, config);
+    auto t1 = std::chrono::high_resolution_clock::now();
+    auto dt = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
+    LOG_INFO("time elapsed: %dus = %.3fms", dt.count(), dt.count() / 1000.0);
 
-  LOG_INFO("contours: %zu, func_eval_cnt: %zu", contours.size(), status.func_eval_cnt_);
-  for (size_t i = 0; i < contours.size(); i++) {
-    const auto& c = contours[i];
-    LOG_INFO("contour[%zu].size: %zu", i, c.size());
-    for (const auto& q : c) {
-      LOG_DEBUG("q: %s", ObjLogFormatter<Vec4f>{ q }.Format());
+    LOG_INFO("contours: %zu, func_eval_cnt: %zu", contours.size(), status.func_eval_cnt_);
+    for (size_t i = 0; i < contours.size(); i++) {
+      const auto& c = contours[i];
+      LOG_INFO("contour[%zu].size: %zu", i, c.size());
+      Vec4f res;
+      for (const auto& q : c) {
+        std::tie(res, std::ignore) = optics_system(q);
+        auto ll = Xyz2Ll(res.head(3));
+        EXPECT_NEAR((ll - target_ll).norm(), 0, 5e-4);
+        LOG_DEBUG("q: %s, ll: %s", ObjLogFormatter<Vec4f>{ q }.Format(), ObjLogFormatter<Vec<float, 2>>{ ll }.Format());
+      }
+    }
+  }
+
+  {
+    LOG_INFO("test case 2...");
+    Vec2f target_ll{ 23.2, -14.4 };
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto [contours, status] = FindAllCrystalPoses(optics_system, target_ll, config);
+    auto t1 = std::chrono::high_resolution_clock::now();
+    auto dt = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
+    LOG_INFO("time elapsed: %dus = %.3fms", dt.count(), dt.count() / 1000.0);
+
+    LOG_INFO("contours: %zu, func_eval_cnt: %zu", contours.size(), status.func_eval_cnt_);
+    for (size_t i = 0; i < contours.size(); i++) {
+      const auto& c = contours[i];
+      LOG_INFO("contour[%zu].size: %zu", i, c.size());
+      Vec4f res;
+      for (const auto& q : c) {
+        std::tie(res, std::ignore) = optics_system(q);
+        auto ll = Xyz2Ll(res.head(3));
+        EXPECT_NEAR((ll - target_ll).norm(), 0, 5e-4);
+        LOG_DEBUG("q: %s, ll: %s", ObjLogFormatter<Vec4f>{ q }.Format(), ObjLogFormatter<Vec<float, 2>>{ ll }.Format());
+      }
     }
   }
 }
@@ -198,43 +228,93 @@ TEST_F(TestOptics, contour_weight) {
   AxisPdf a(0, 0.5);
   Func<float, 1, 3> axis_pdf = [&a](const Vec3f& llr) { return Vec<float, 1>{ a(llr) }; };
   Curve4f rot_contour{
-    { -0.252592, 0.056621, -0.002378, 0.965912 },  //
-    { -0.244650, 0.105874, -0.003684, 0.963807 },  //
-    { -0.242699, 0.155373, -0.005351, 0.957563 },  //
-    { -0.246603, 0.204025, -0.008339, 0.947360 },  //
-    { -0.257002, 0.250470, -0.013767, 0.933287 },  //
-    { -0.275563, 0.292183, -0.023002, 0.915513 },  //
-    { -0.288781, 0.309657, -0.029484, 0.905454 },  //
-    { -0.305153, 0.323225, -0.037266, 0.894996 },  //
-    { -0.324682, 0.330994, -0.045930, 0.884824 },  //
-    { -0.346360, 0.331203, -0.054373, 0.876003 },  //
-    { -0.368140, 0.323677, -0.061148, 0.869463 },  //
-    { -0.388190, 0.310088, -0.065401, 0.865376 },  //
-    { -0.405717, 0.292523, -0.067109, 0.863318 },  //
-    { -0.420651, 0.272519, -0.066645, 0.862753 },  //
-    { -0.433174, 0.251019, -0.064437, 0.863248 },  //
-    { -0.443501, 0.228583, -0.060856, 0.864495 },  //
-    { -0.451816, 0.205547, -0.056209, 0.866286 },  //
-    { -0.462896, 0.158466, -0.044657, 0.870988 },  //
-    { -0.463884, 0.063405, -0.017528, 0.883450 },  //
-    { -0.452911, 0.017145, -0.004493, 0.891379 },  //
-    { -0.432388, -0.025908, 0.006162, 0.901294 },  //
-    { -0.417762, -0.044833, 0.009916, 0.907395 },  //
-    { -0.399830, -0.060488, 0.012158, 0.914510 },  //
-    { -0.378753, -0.070942, 0.012595, 0.922688 },  //
-    { -0.355758, -0.074059, 0.011269, 0.931570 },  //
-    { -0.333149, -0.068977, 0.008786, 0.940306 },  //
-    { -0.312938, -0.056934, 0.006002, 0.948046 },  //
-    { -0.295880, -0.040044, 0.003486, 0.954379 },  //
-    { -0.281867, -0.020058, 0.001447, 0.959242 },  //
-    { -0.270526, 0.001875, -0.000112, 0.962710 },  //
-    { -0.261484, 0.025039, -0.001274, 0.964882 },  //
-    { -0.254436, 0.048981, -0.002145, 0.965846 },  //
-    { -0.252592, 0.056621, -0.002378, 0.965912 },  //
+    { -0.179994, 0.045840, -0.015003, 0.982486 },   //
+    { -0.175987, 0.095466, -0.011578, 0.979686 },   //
+    { -0.175069, 0.144978, -0.008201, 0.973791 },   //
+    { -0.177136, 0.194034, -0.005419, 0.964857 },   //
+    { -0.190652, 0.289243, -0.004053, 0.938071 },   //
+    { -0.202794, 0.334275, -0.006934, 0.920375 },   //
+    { -0.219377, 0.376286, -0.013427, 0.900059 },   //
+    { -0.241351, 0.413436, -0.024604, 0.877621 },   //
+    { -0.269678, 0.442690, -0.041247, 0.854166 },   //
+    { -0.304575, 0.459832, -0.062801, 0.831774 },   //
+    { -0.324060, 0.462570, -0.074546, 0.821864 },   //
+    { -0.344379, 0.461051, -0.086137, 0.813277 },   //
+    { -0.365010, 0.455344, -0.096896, 0.806254 },   //
+    { -0.385417, 0.445800, -0.106235, 0.800896 },   //
+    { -0.405131, 0.432968, -0.113748, 0.797165 },   //
+    { -0.423804, 0.417478, -0.119246, 0.794913 },   //
+    { -0.441217, 0.399933, -0.122725, 0.793929 },   //
+    { -0.471926, 0.360628, -0.124176, 0.794869 },   //
+    { -0.517329, 0.273395, -0.110554, 0.803372 },   //
+    { -0.543785, 0.181687, -0.083730, 0.815035 },   //
+    { -0.552989, 0.088579, -0.050868, 0.826906 },   //
+    { -0.544657, -0.004361, -0.017248, 0.838473 },  //
+    { -0.516278, -0.094680, 0.011522, 0.851095 },   //
+    { -0.493040, -0.136992, 0.021671, 0.858882 },   //
+    { -0.462752, -0.175033, 0.027213, 0.868612 },   //
+    { -0.425198, -0.205309, 0.026779, 0.881102 },   //
+    { -0.404065, -0.216023, 0.024134, 0.888530 },   //
+    { -0.381883, -0.222935, 0.020032, 0.896698 },   //
+    { -0.359247, -0.225564, 0.014807, 0.905454 },   //
+    { -0.336837, -0.223690, 0.008930, 0.914564 },   //
+    { -0.315307, -0.217414, 0.002917, 0.923746 },   //
+    { -0.295185, -0.207125, -0.002768, 0.932717 },  //
+    { -0.276810, -0.193397, -0.007789, 0.941232 },  //
+    { -0.245752, -0.158148, -0.015191, 0.956226 },  //
+    { -0.221869, -0.116084, -0.019039, 0.967957 },  //
+    { -0.204042, -0.070171, -0.019963, 0.976243 },  //
+    { -0.182390, 0.026951, -0.016208, 0.982725 },   //
+    { -0.179994, 0.045840, -0.015003, 0.982486 },   //
   };
 
   auto [weight, data] = ComputPoseWeight(rot_contour, crystal, axis_pdf, ray_in_ll, raypath);
   LOG_INFO("contour weight: %.6f", weight);
+}
+
+
+// NOLINTNEXTLINE
+TEST_F(TestOptics, contour_and_weight) {
+  auto crystal = MakePrismCrystal(1.0f);
+  std::vector<int> raypath = { 3, 5 };
+  Vec2f ray_in_ll{ 0, -15 };  // sun at (180, 15)
+  auto config = MakeConfigData(crystal, ray_in_ll, raypath, 3);
+
+  auto optics_system = [&crystal, &ray_in_ll, &raypath](const Vec4f& rot) -> std::tuple<Vec4f, Mat4x4f> {
+    Quatf q{ rot(0), rot(1), rot(2), rot(3) };  // w, x, y, z
+    auto [xyz, j] = TraceDirDiffQuat(crystal, q, ray_in_ll, raypath);
+    Vec4f out;
+    Mat4x4f jac;
+    out << xyz, rot.squaredNorm();
+    jac << j, 2 * rot.transpose();
+    return std::make_tuple(out, jac);
+  };
+  AxisPdf a(0, 0.5);
+  Func<float, 1, 3> axis_pdf = [&a](const Vec3f& llr) { return Vec<float, 1>{ a(llr) }; };
+
+  Vec2f target_ll{ 26, -15.1 };
+  auto [contours, status] = FindAllCrystalPoses(optics_system, target_ll, config);
+
+  LOG_INFO("contours: %zu, func_eval_cnt: %zu", contours.size(), status.func_eval_cnt_);
+  for (size_t i = 0; i < contours.size(); i++) {
+    const auto& c = contours[i];
+    LOG_INFO("contour[%zu].size: %zu", i, c.size());
+    Vec4f res;
+    for (const auto& q : c) {
+      std::tie(res, std::ignore) = optics_system(q);
+      auto ll = Xyz2Ll(res.head(3));
+      EXPECT_NEAR((ll - target_ll).norm(), 0, 5e-4);
+      LOG_DEBUG("q: %s, ll: %s", ObjLogFormatter<Vec4f>{ q }.Format(), ObjLogFormatter<Vec<float, 2>>{ ll }.Format());
+    }
+
+    auto [weight, data] = ComputPoseWeight(c, crystal, axis_pdf, ray_in_ll, raypath);
+    LOG_DEBUG("--- s, axis_pdf, jac_factor, geo_factor, transit_factor: w ---");
+    for (const auto& d : data) {
+      LOG_DEBUG("%.6f,%.4e,%.4e,%.6f,%.4e:%.6f",  //
+               d.s_, d.axis_prob_, d.jac_factor_, d.geo_factor_, d.transit_factor_, d.w_);
+    }
+    LOG_INFO("weight: %.6e", weight);
+  }
 }
 
 }  // namespace

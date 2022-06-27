@@ -165,9 +165,13 @@ float AxisPdf::operator()(const Vec3f& llr) const {
   float r = 1.0f / (2 * kPi);
 
   if (zenith_std_ > 0) {
-    auto lat = llr(1) + 90.0f;
-    lat -= std::floor(lat / 180.0f) * 180.0f;
-    lat -= 90.0f;
+    auto lat = llr(1);
+    if (lat > 90.0f) {
+      lat = 180.0f - lat;
+    }
+    if (lat < -90.0f) {
+      lat = -180.0f - lat;
+    }
     auto z = 90.0f - lat - zenith_mean_;
     a = std::exp(-z * z / 2.0f / (zenith_std_ * zenith_std_)) / zenith_std_ / zenith_int_c_;
   }
