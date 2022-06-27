@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstddef>
+#include <cstdio>
 #include <memory>
 #include <vector>
 
@@ -11,7 +12,14 @@
 // NOLINTNEXTLINE
 using namespace halo_pm;
 
-int main(int /* argc */, char** /* argv */) {
+int main(int argc, char** argv) {
+  if (argc != 2) {
+    return -1;
+  }
+
+  auto close_file = [](std::FILE* file) { std::fclose(file); };
+  std::unique_ptr<std::FILE, decltype(close_file)> file_ptr(std::fopen(argv[1], "wb"), close_file);
+
   auto crystal = MakePrismCrystal(1.0f);
   std::vector<int> raypath{ 3, 5 };
   Vec2f sun_ll{ 180, 15 };
@@ -33,10 +41,11 @@ int main(int /* argc */, char** /* argv */) {
 
   std::vector<float> lon_list;
   std::vector<float> lat_list;
-  for (float lon = 22.5f; lon < 28.6f; lon += 0.1f) {
+  float dx = 0.02f;
+  for (float lon = 22.5f; lon < 28.5f + dx / 2; lon += dx) {
     lon_list.emplace_back(lon);
   }
-  for (float lat = -16.0f; lat < -13.9f; lat += 0.1f) {
+  for (float lat = -16.0f; lat < -14.0f + dx / 2; lat += dx) {
     lat_list.emplace_back(lat);
   }
   size_t img_wid = lon_list.size();
@@ -58,11 +67,12 @@ int main(int /* argc */, char** /* argv */) {
         weight += w;
       }
       img_data_buf[y * img_wid + x] = weight;
-      LOG_INFO("[%.3f,%.3f]:%.6e", lon, lat, weight);
+      LOG_DEBUG("[%.3f,%.3f]:%.6e", lon, lat, weight);
     }
   }
   auto t1 = std::chrono::high_resolution_clock::now();
   auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0);
+  std::fwrite(img_data_buf.get(), sizeof(float), total_pix, file_ptr.get());
   LOG_INFO("time elapsed: %dms = %.3fs", dt.count(), dt.count() / 1000.0);
 
   return 0;
