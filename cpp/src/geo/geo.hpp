@@ -122,10 +122,11 @@ QuatRotExpr(QW qw0, QX qx0, QY qy0, QZ qz0,        // quaternion
 
 template <class T, int Dim>
 struct PointLineDistanceInfo {
-  T distance_;
+  T d_;
+  T t_;  // paramter for p = p0 + t * (p1 - p0)
   Vec<T, Dim> nearest_point_;
 
-  operator T() const { return distance_; }
+  operator T() const { return d_; }
 };
 
 
@@ -137,29 +138,32 @@ Point2LineDistance(const Vec<T, Dim>& p, const Vec<T, Dim>& p1, const Vec<T, Dim
 
   PointLineDistanceInfo<T, Dim> info{};
   if (d2 < 1e-8) {
-    info.distance_ = (p - p1).norm();
+    info.d_ = (p - p1).norm();
     info.nearest_point_ = p1;
   } else {
     T t = ((p - p1).dot(d)) / d2;
     t = std::clamp(t, static_cast<T>(0), static_cast<T>(1));
     info.nearest_point_ = p1 + d * t;
-    info.distance_ = (p - info.nearest_point_).norm();
+    info.d_ = (p - info.nearest_point_).norm();
+    info.t_ = t;
   }
   return info;
 }
 
 
 template <class T, int Dim>
-PointLineDistanceInfo<T, Dim>  // info
+std::tuple<PointLineDistanceInfo<T, Dim>, size_t>  // (distance info, line segment index)
 DistanceToPolyLine(const Vec<T, Dim>& p, const Curve<T, Dim>& poly_line) {
-  PointLineDistanceInfo<T, Dim> res{ std::numeric_limits<T>::max(), Vec<T, Dim>{} };
+  PointLineDistanceInfo<T, Dim> res{ std::numeric_limits<T>::max(), 0, Vec<T, Dim>{} };
+  size_t idx = 0;
   for (size_t i = 0; i + 1 < poly_line.size(); i++) {
     auto info = Point2LineDistance(p, poly_line[i], poly_line[i + 1]);
-    if (info.distance_ < res.distance_) {
+    if (info.d_ < res.d_) {
       res = info;
+      idx = i;
     }
   }
-  return res;
+  return { res, idx };
 }
 
 
@@ -172,7 +176,7 @@ CheckLoopAndReduce(const Curve<T, Dim>& pts, double eps, double ds) {
 
   Curve<T, Dim> res = pts;
   bool closed = false;
-  for (double d = 0; d < eps && !res.empty(); /* nothing */) {
+  for (T d = 0; d < eps && !res.empty(); /* nothing */) {
     Curve<T, Dim> interp_pts;
     for (auto it = res.rbegin() + 1; it != res.rend(); it++) {
       if (interp_pts.empty() || (interp_pts.back() - *it).norm() > kDefaultFloatEps) {
@@ -184,7 +188,7 @@ CheckLoopAndReduce(const Curve<T, Dim>& pts, double eps, double ds) {
     }
 
     const auto& p = res.back();
-    d = DistanceToPolyLine(p, interp_pts);
+    std::tie(d, std::ignore) = DistanceToPolyLine(p, interp_pts);
     if (d < eps) {
       closed = true;
       res.pop_back();

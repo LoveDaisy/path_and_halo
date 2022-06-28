@@ -107,12 +107,13 @@ FindAllCrystalPoses(const FuncAndDiff<float, 4, 4>& optics_system, const Vec2f& 
     // Check if it locates on/close to previous contour
     bool reduced = false;
     for (const auto& c : res_contours) {
-      float d = DistanceToPolyLine(rot0, c);
+      float d = 0;
+      std::tie(d, std::ignore) = DistanceToPolyLine(rot0, c);
       if (d < kReduceTh) {
         reduced = true;
         break;
       }
-      d = DistanceToPolyLine(Vec4f(-rot0), c);
+      std::tie(d, std::ignore) = DistanceToPolyLine(Vec4f(-rot0), c);
       if (d < kReduceTh) {
         reduced = true;
         break;
@@ -135,21 +136,27 @@ FindAllCrystalPoses(const FuncAndDiff<float, 4, 4>& optics_system, const Vec2f& 
 
     // Reduce seeds
     // NOTE: is it neccessary to use Jacobian? Maybe we can directly calculate difference in output space.
+    std::vector<Mat4x4f> contour_jac;
+    for (const auto& q : contour) {
+      Mat4x4f jac;
+      std::tie(std::ignore, jac) = optics_system(q);
+      status.func_eval_cnt_++;
+      contour_jac.emplace_back(jac);
+    }
     Curve4f tmp_rot_cand;
     for (const auto& q : rot_cand) {
-      Mat4x4f jac;
-      auto info = DistanceToPolyLine(q, contour);
-      std::tie(std::ignore, jac) = optics_system(info.nearest_point_);
-      status.func_eval_cnt_++;
+      PointLineDistanceInfo<float, 4> info{};
+      size_t idx = 0;
+      std::tie(info, idx) = DistanceToPolyLine(q, contour);
+      Mat4x4f jac = contour_jac[idx] * (1 - info.t_) + contour_jac[idx + 1] * info.t_;
       Vec4f dx = q - info.nearest_point_;
       auto dy = (jac * dx).norm();
       if (dy < config.dr * 2.5) {
         continue;
       }
 
-      info = DistanceToPolyLine(Vec4f(-q), contour);
-      std::tie(std::ignore, jac) = optics_system(info.nearest_point_);
-      status.func_eval_cnt_++;
+      std::tie(info, idx) = DistanceToPolyLine(Vec4f(-q), contour);
+      jac = contour_jac[idx] * (1 - info.t_) + contour_jac[idx + 1] * info.t_;
       dx = -q - info.nearest_point_;
       dy = (jac * dx).norm();
       if (dy < config.dr * 2.5) {

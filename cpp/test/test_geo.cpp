@@ -251,11 +251,13 @@ TEST_F(TestGeo, distance_poly_line) {
   Curve2f pts{ { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
 
   Vec2f p1{ 0.5, 0.1 };
-  float d1 = DistanceToPolyLine(p1, pts);
+  float d1 = 0;
+  std::tie(d1, std::ignore) = DistanceToPolyLine(p1, pts);
   ASSERT_NEAR(d1, 0.1, 1e-5);
 
   Vec2f p2{ -0.5, 0.1 };
-  float d2 = DistanceToPolyLine(p2, pts);
+  float d2 = 0;
+  std::tie(d2, std::ignore) = DistanceToPolyLine(p2, pts);
   ASSERT_NEAR(d2, 0.509902, 1e-5);
 }
 

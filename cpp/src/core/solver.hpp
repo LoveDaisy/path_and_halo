@@ -187,7 +187,7 @@ SearchDirection(const FuncAndDiff<T, OutputDim, InputDim>& func_jac,  // Functio
 
     bool x2_solved = false;
     bool retry = false;
-    constexpr T kBendingUpperTh = 20.0 * kDegree2Rad;
+    constexpr T kBendingUpperTh = 30.0 * kDegree2Rad;
     constexpr T kBendingLowerTh = 10.0 * kDegree2Rad;
 
     // Start x2-loop to find new point
