@@ -92,6 +92,46 @@ TEST_F(TestOptics, trace_direction_diff) {
 
 
 // NOLINTNEXTLINE
+TEST_F(TestOptics, llr_output) {
+  auto crystal = MakePrismCrystal(1.0f);
+  Vec2f ray_in_ll{ 0, -15 };
+  std::vector<int> raypath = { 3, 5 };
+
+  {
+    LOG_INFO("case 1...");
+    Vec3f llr{ 12.2499996679285, 51.9668075825233, 125.527501860455 };
+    Quatf q = Llr2Quat(llr);
+
+    auto [ray_out, jac] = TraceDirDiffQuat(crystal, q, ray_in_ll, raypath);
+    Vec2f out_ll = Xyz2Ll(ray_out);
+    LOG_DEBUG("llr: %s, quat: %s", ObjLogFormatter<Vec3f>{ llr }.Format(), ObjLogFormatter<Quatf>{ q }.Format());
+    LOG_DEBUG("out_xyz: %s, out_ll: %s", ObjLogFormatter<Vec3f>{ ray_out }.Format(),
+              ObjLogFormatter<Vec2f>{ out_ll }.Format());
+
+    Vec2f expected_out_ll{ 24.5, -15 };
+
+    EXPECT_NEAR((out_ll - expected_out_ll).norm(), 0, 0.1);
+  }
+
+  {
+    LOG_INFO("case 2...");
+    Vec3f llr{ -63.7804477035974, -2.17764029100887, 209.573936971985 };
+    Quatf q = Llr2Quat(llr);
+
+    auto [ray_out, jac] = TraceDirDiffQuat(crystal, q, ray_in_ll, raypath);
+    Vec2f out_ll = Xyz2Ll(ray_out);
+    LOG_DEBUG("llr: %s, quat: %s", ObjLogFormatter<Vec3f>{ llr }.Format(), ObjLogFormatter<Quatf>{ q }.Format());
+    LOG_DEBUG("out_xyz: %s, out_ll: %s", ObjLogFormatter<Vec3f>{ ray_out }.Format(),
+              ObjLogFormatter<Vec2f>{ out_ll }.Format());
+
+    Vec2f expected_out_ll{ -0.4, 9 };
+
+    EXPECT_NEAR((out_ll - expected_out_ll).norm(), 0, 0.1);
+  }
+}
+
+
+// NOLINTNEXTLINE
 TEST_F(TestOptics, refract_diff) {
   float n = 1.31f;
   Vec3f ray_in{ -0.4423, 0.1474, -0.8847 };
@@ -311,7 +351,7 @@ TEST_F(TestOptics, contour_and_weight) {
     LOG_DEBUG("--- s, axis_pdf, jac_factor, geo_factor, transit_factor: w ---");
     for (const auto& d : data) {
       LOG_DEBUG("%.6f,%.4e,%.4e,%.6f,%.4e:%.6f",  //
-               d.s_, d.axis_prob_, d.jac_factor_, d.geo_factor_, d.transit_factor_, d.w_);
+                d.s_, d.axis_prob_, d.jac_factor_, d.geo_factor_, d.transit_factor_, d.w_);
     }
     LOG_INFO("weight: %.6e", weight);
   }
