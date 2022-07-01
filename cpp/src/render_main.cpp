@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
   Vec2f ray_in_ll{ sun_ll.x() + 180, -sun_ll.y() };
   auto config = MakeConfigData(crystal, ray_in_ll, raypath, 3);
 
-  AxisPdf a(0, 0.5);
+  AxisPdf a(90, 0.5);
   Func<float, 1, 3> axis_pdf = [&a](const Vec3f& llr) { return Vec<float, 1>{ a(llr) }; };
 
   auto optics_system = [&crystal, &ray_in_ll, &raypath](const Vec4f& rot) -> std::tuple<Vec4f, Mat4x4f> {
@@ -42,10 +42,10 @@ int main(int argc, char** argv) {
   std::vector<float> lon_list;
   std::vector<float> lat_list;
   float dx = 0.02f;
-  for (float lon = 22.5f; lon < 28.5f + dx / 2; lon += dx) {
+  for (float lon = -2.5f; lon < 2.5f + dx / 2; lon += dx) {
     lon_list.emplace_back(lon);
   }
-  for (float lat = -16.0f; lat < -14.0f + dx / 2; lat += dx) {
+  for (float lat = 6.0f; lat < 22.0f + dx / 2; lat += dx) {
     lat_list.emplace_back(lat);
   }
   size_t img_wid = lon_list.size();

@@ -53,8 +53,16 @@ Vec3f TraceDirection(const Crystal& crystal,                       // Crystal
     Eigen::Map<const Vec3f> norm1(crystal.face_norm_.get() + (raypath.front() - 1) * 3);
     Eigen::Map<const Vec3f> norm2(crystal.face_norm_.get() + (raypath.back() - 1) * 3);
     auto r = rot.inverse() * xyz;
+    if (r.dot(norm1) > 0) {
+      r.fill(std::numeric_limits<float>::quiet_NaN());
+      return r;
+    }
     r = Refract(r, norm1, 1.0f, refractive_index);
     r = m * r;
+    if (r.dot(norm2) < 0) {
+      r.fill(std::numeric_limits<float>::quiet_NaN());
+      return r;
+    }
     r = Refract(r, norm2, refractive_index, 1.0f);
     return rot * r;
   }
@@ -128,6 +136,11 @@ TraceDirDiffQuat(const Crystal& crystal,                       // crystal
                     { Diff(v1y, wrt(qw)), Diff(v1y, wrt(qx)), Diff(v1y, wrt(qy)), Diff(v1y, wrt(qz)) },
                     { Diff(v1z, wrt(qw)), Diff(v1z, wrt(qx)), Diff(v1z, wrt(qy)), Diff(v1z, wrt(qz)) } };
     }
+    if (v1.dot(norm1) > 0) {
+      new_xyz.fill(std::numeric_limits<float>::quiet_NaN());
+      jac.fill(std::numeric_limits<float>::quiet_NaN());
+      return { new_xyz, jac };
+    }
 
     Vec3f v2;
     Mat3x3f j2;
@@ -144,6 +157,11 @@ TraceDirDiffQuat(const Crystal& crystal,                       // crystal
 
     Vec3f v3 = m * v2;
     Mat3x3f j3 = m;
+    if (v3.dot(norm2) < 0) {
+      new_xyz.fill(std::numeric_limits<float>::quiet_NaN());
+      jac.fill(std::numeric_limits<float>::quiet_NaN());
+      return { new_xyz, jac };
+    }
 
     Vec3f v4;
     Mat3x3f j4;

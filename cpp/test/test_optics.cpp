@@ -22,31 +22,46 @@ class TestOptics : public ::testing::Test {};
 // NOLINTNEXTLINE
 TEST_F(TestOptics, trace_direction_1) {
   auto crystal = MakePrismCrystal(1.0f);
-  Quatf q0{ 1.0f, 0.0f, 0.0f, 0.0f };
-  Vec2f ray_in_ll{ -40.0f + 180.0f, 0 };
-  Vec2f ray_out_ll{ 161.934798401879f, 0 };
-  auto ray_out_xyz0 = Ll2Xyz(ray_out_ll);
-  std::vector<int> raypath = { 3, 5 };
 
-  auto ray_out_xyz = TraceDirection(crystal, q0, ray_in_ll, raypath);
-  LOG_DEBUG("ray_out_xyz: %s", ObjLogFormatter<Vec3f>{ ray_out_xyz }.Format());
-  ASSERT_NEAR((ray_out_xyz - ray_out_xyz0).norm(), 0, 1e-5);
+  {
+    LOG_INFO("case 1...");
+    Quatf q0{ 1.0f, 0.0f, 0.0f, 0.0f };
+    Vec2f ray_in_ll{ -40.0f + 180.0f, 0 };
+    Vec2f ray_out_ll{ 161.934798401879f, 0 };
+    auto ray_out_xyz0 = Ll2Xyz(ray_out_ll);
+    std::vector<int> raypath = { 3, 5 };
+
+    auto ray_out_xyz = TraceDirection(crystal, q0, ray_in_ll, raypath);
+    LOG_DEBUG("ray_out_xyz: %s", ObjLogFormatter<Vec3f>{ ray_out_xyz }.Format());
+    ASSERT_NEAR((ray_out_xyz - ray_out_xyz0).norm(), 0, 1e-5);
+  }
+
+  {
+    LOG_INFO("case 2...");
+    Quatf q{ 0.424935669519169, -0.480586073753202, 0.669476669301674, 0.374523285804727 };
+    Vec2f ray_in_ll{ 180, -15 };
+    std::vector<int> raypath = { 1, 3, 2, 4, 5, 1 };
+
+    Vec2f ray_out_ll{ 5, 25 };
+    auto ray_out_xyz0 = Ll2Xyz(ray_out_ll);
+
+    auto ray_out_xyz = TraceDirection(crystal, q, ray_in_ll, raypath);
+    LOG_DEBUG("ray_out_xyz: %s", ObjLogFormatter<Vec3f>{ ray_out_xyz }.Format());
+    ASSERT_NEAR((ray_out_xyz - ray_out_xyz0).norm(), 0, 1e-5);
+  }
 }
 
 
 // NOLINTNEXTLINE
 TEST_F(TestOptics, trace_direction_2) {
   auto crystal = MakePrismCrystal(1.0f);
-  Quatf q{ 0.424935669519169, -0.480586073753202, 0.669476669301674, 0.374523285804727 };
-  Vec2f ray_in_ll{ 180, -15 };
-  std::vector<int> raypath = { 1, 3, 2, 4, 5, 1 };
-
-  Vec2f ray_out_ll{ 5, 25 };
-  auto ray_out_xyz0 = Ll2Xyz(ray_out_ll);
+  Quatf q{ 0.628391, 0.720253, 0.008909, 0.293736 };
+  Vec2f ray_in_ll{ 0, -15 };
+  std::vector<int> raypath = { 3, 5 };
 
   auto ray_out_xyz = TraceDirection(crystal, q, ray_in_ll, raypath);
   LOG_DEBUG("ray_out_xyz: %s", ObjLogFormatter<Vec3f>{ ray_out_xyz }.Format());
-  ASSERT_NEAR((ray_out_xyz - ray_out_xyz0).norm(), 0, 1e-5);
+  ASSERT_TRUE(ray_out_xyz.hasNaN());
 }
 
 
@@ -127,6 +142,20 @@ TEST_F(TestOptics, llr_output) {
     Vec2f expected_out_ll{ -0.4, 9 };
 
     EXPECT_NEAR((out_ll - expected_out_ll).norm(), 0, 0.1);
+  }
+
+  {
+    LOG_INFO("case 3...");
+    Quatf q{ 0.628391, 0.720253, 0.008909, 0.293736 };
+    Vec3f llr = Quat2Llr(q);
+
+    auto [ray_out, jac] = TraceDirDiffQuat(crystal, q, ray_in_ll, raypath);
+    Vec2f out_ll = Xyz2Ll(ray_out);
+    LOG_DEBUG("llr: %s, quat: %s", ObjLogFormatter<Vec3f>{ llr }.Format(), ObjLogFormatter<Quatf>{ q }.Format());
+    LOG_DEBUG("out_xyz: %s, out_ll: %s", ObjLogFormatter<Vec3f>{ ray_out }.Format(),
+              ObjLogFormatter<Vec2f>{ out_ll }.Format());
+
+    ASSERT_TRUE(ray_out.hasNaN());
   }
 }
 
@@ -332,7 +361,7 @@ TEST_F(TestOptics, contour_and_weight) {
   AxisPdf a(0, 0.5);
   Func<float, 1, 3> axis_pdf = [&a](const Vec3f& llr) { return Vec<float, 1>{ a(llr) }; };
 
-  Vec2f target_ll{ 26, -15.1 };
+  Vec2f target_ll{ -0.411521, 9.094161 };
   auto [contours, status] = FindAllCrystalPoses(optics_system, target_ll, config);
 
   LOG_INFO("contours: %zu, func_eval_cnt: %zu", contours.size(), status.func_eval_cnt_);
